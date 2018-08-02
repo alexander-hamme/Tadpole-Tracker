@@ -89,8 +89,9 @@ public class Tracker {
         FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoPath);
         grabber.start();
 
-        CanvasFrame canvasFrame = new CanvasFrame("Test");
-        canvasFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        // todo this is not currently being used...
+//        CanvasFrame canvasFrame = new CanvasFrame("Test");
+//        canvasFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         OpenCVFrameConverter.ToMat converterToMat = new OpenCVFrameConverter.ToMat();
 
@@ -101,9 +102,6 @@ public class Tracker {
 
         while ((frame = grabber.grabImage()) != null) {  // put in something to write remaining data to file upon reaching last frame
 
-            canvasFrame.showImage(frame);
-
-
             frameNumber = grabber.getFrameNumber();
 
             videoFrameMat = converterToMat.convertToMat(frame);
@@ -113,7 +111,7 @@ public class Tracker {
             current_time_pos = grabber.getTimestamp();
 
             //todo  use FrameConverter to convert to the type of array Darknet reads?
-            predictions = null;//ycv.detect(net, meta, frame, CONF_THRESH2, CONF_THRESH2)  # thresh=.5, hier_thresh=.5, nms=.45
+            predictions = new Object[0][]; //ycv.detect(net, meta, frame, CONF_THRESH2, CONF_THRESH2)  # thresh=.5, hier_thresh=.5, nms=.45
 
             // if (predictions.length == animals.size()) { }
 
