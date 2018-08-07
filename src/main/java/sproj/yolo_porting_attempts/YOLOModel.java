@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -128,17 +129,31 @@ public class YOLOModel {
     }
 
     private class BoundingBox {
-        // todo  use doubles??
-        private int topleftX;
-        private int topleftY;
-        private int botRightX;
-        private int botRightY;
+        // todo  decide which to use:  floats?  ints?  doubles?
+        // todo OR don't use a separate class if it takes too much memory / time?
+        private double topleftX;
+        private double topleftY;
+        private double botRightX;
+        private double botRightY;
 
         private BoundingBox(int x1, int y1, int x2, int y2) {
             this.topleftX = x1;
             this.topleftY = y1;
             this.botRightX = x2;
             this.botRightY = y2;
+        }
+
+        private BoundingBox(double[] topLeft, double[] bottomRight) {
+            this.topleftX = topLeft[0];
+            this.topleftY = topLeft[1];
+            this.botRightX = bottomRight[0];
+            this.botRightY = bottomRight[1];
+        }
+
+        public String toString() {
+            return String.format(
+                    "Detection at topleft: (%4.3f, %4.3f), bottomright: (%4.3f, %4.3f)",
+                    this.topleftX, this.topleftY, this.botRightX, this.botRightY);
         }
     }
 
@@ -155,13 +170,41 @@ public class YOLOModel {
      */
     private List<BoundingBox> parseDetections(List<DetectedObject> detections, double iouThreshold) {
 
-        // todo apply non maxima suppression (NMS)
+        List<BoundingBox> boundingBoxes = new ArrayList<>(detections.size());
 
         System.out.println(String.format("currently there are %s boxes detected", detections.size()));
-        YoloUtils.nms(detections, iouThreshold);
+
+        YoloUtils.nms(detections, iouThreshold);            // apply non maxima suppression (NMS)  todo  does this work well enough?
+
         System.out.println(String.format("now there are %s boxes detected", detections.size()));
 
-        return null;
+//        int numberOfGridCells = 13;
+        double pixelsPerCell = 32.0;
+
+        double centerX, centerY;
+        double width, height;
+
+        double topLeftX, topLeftY, botRightX, botRightY;
+
+
+        //todo    do the math?
+
+        for (DetectedObject object : detections) {
+
+            // convert from grid cell units to pixels
+            centerX = object.getCenterX() * pixelsPerCell;
+            centerY = object.getCenterX() * pixelsPerCell;
+            width = object.getWidth() * pixelsPerCell;
+            height = object.getHeight() * pixelsPerCell;
+
+
+
+            boundingBoxes.add(
+                    new BoundingBox(object.getTopLeftXY(), object.getBottomRightXY())
+            );
+        }
+
+        return boundingBoxes;
     }
 
 
@@ -200,14 +243,11 @@ public class YOLOModel {
 
     public static void main(String[] args) throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
 
-        String model_weights = "/home/alex/Documents/coding/java/Sproj/src/main/resources/yolo_files/yolo_tad.h5";
         String dl4jModel = "/home/alex/Documents/coding/java/Sproj/src/main/resources/yolo_files/yolo2_dl4j_tad.zip";
-        double iouThreshold = 0.5;  //todo  ???
-
-
-//        YOLOModel model = new YOLOModel(model_weights);
+        double iouThreshold = 0.4;  //todo  ???
 
         /*
+        String model_weights = "/home/alex/Documents/coding/java/Sproj/src/main/resources/yolo_files/yolo_tad.h5";
         YOLOModel model = new YOLOModel();
         model.convertYAD2KWeights(model_weights);
         */
@@ -215,8 +255,10 @@ public class YOLOModel {
         YOLOModel trainedModel = new YOLOModel(dl4jModel);
         List<DetectedObject> detections = trainedModel.detect(new File("/home/alex/Documents/coding/java/Sproj/src/main/resources/images/test_image.png"), 0.5);
 
-        trainedModel.parseDetections(detections, iouThreshold);
+        List<BoundingBox> boundingBoxes = trainedModel.parseDetections(detections, iouThreshold);
 
+
+        boundingBoxes.forEach(boundingBox -> System.out.println(boundingBox.toString()));
         detections.forEach(detectedObject -> System.out.println(detectedObject.toString()));
 
     }
