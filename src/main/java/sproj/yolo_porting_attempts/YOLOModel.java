@@ -198,7 +198,6 @@ public class YOLOModel {
             height = object.getHeight() * pixelsPerCell;
 
 
-
             boundingBoxes.add(
                     new BoundingBox(object.getTopLeftXY(), object.getBottomRightXY())
             );
