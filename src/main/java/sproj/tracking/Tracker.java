@@ -1,8 +1,4 @@
-package sproj;
-
-import org.apache.commons.collections4.map.HashedMap;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
+package sproj.tracking;
 
 import static org.bytedeco.javacpp.opencv_highgui.destroyAllWindows;
 import static org.bytedeco.javacpp.opencv_highgui.imshow;
@@ -14,14 +10,8 @@ import org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.*;
 
-import javax.swing.*;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 public class Tracker {
 

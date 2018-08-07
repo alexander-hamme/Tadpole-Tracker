@@ -1,4 +1,4 @@
-package sproj;
+package sproj.tracking;
 
 import org.bytedeco.javacpp.opencv_core.Scalar;
 
@@ -7,12 +7,12 @@ import java.util.ArrayList;
 
 public class Animal {
 
-    int x, y;
-    Scalar color;
-    int linePointsSize = 16;
-    static int BUFF_INDEX = 60;
-    ArrayDeque<int[]> linePoints;
-    ArrayList<double[]> dataPoints;
+    public int x, y;
+    public final Scalar color;
+    public static int BUFF_INDEX = 60;
+    public ArrayList<double[]> dataPoints;
+    private final int linePointsSize = 16;
+    private ArrayDeque<int[]> linePoints;
 
     public Animal(int x, int y, int[] clr) {
         this.x = x;
@@ -31,5 +31,8 @@ public class Animal {
     public int[][] getLinePointsAsArray() {
         return (int[][]) this.linePoints.toArray();
     }
+
+
+
 
 }

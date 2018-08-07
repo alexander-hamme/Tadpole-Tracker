@@ -1,14 +1,12 @@
-package sproj;
+package sproj.yolo_porting_attempts;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
-import org.deeplearning4j.nn.layers.objdetect.YoloUtils;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -17,7 +15,6 @@ import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceTo
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.util.ModelSerializer;
-import org.deeplearning4j.zoo.model.YOLO2;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -109,6 +106,6 @@ public class TestDL4J {
         rewriteModel(fileName);
 
         YOLOModel yoloModel = new YOLOModel();
-        List<DetectedObject> detectedObjects = yoloModel.detect(new File("resources/sample/test_image.png"), 0.7);
+        List<DetectedObject> detectedObjects = yoloModel.detect(new File("resources/images/test_image.png"), 0.7);
     }
 }
