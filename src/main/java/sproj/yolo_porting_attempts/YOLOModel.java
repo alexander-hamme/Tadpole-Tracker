@@ -2,41 +2,41 @@ package sproj.yolo_porting_attempts;
 
 import lombok.Builder;
 import lombok.Getter;
+
+import org.bytedeco.javacpp.opencv_core;
+import org.bytedeco.javacv.*;
 import org.datavec.image.loader.NativeImageLoader;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+
 import org.deeplearning4j.nn.conf.CacheMode;
-import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
-import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-
-import org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer;
-
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
+
+import org.deeplearning4j.zoo.model.YOLO2;
+import org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.layers.objdetect.YoloUtils;
-import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
-import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
+
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceToDepth;
-import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
-import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.util.ModelSerializer;
-import org.deeplearning4j.zoo.model.YOLO2;
-import org.nd4j.linalg.activations.Activation;
+
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.IUpdater;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sproj.util.IOFunctions;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.ArrayList;
+import javax.swing.*;
 
 /**
  *
@@ -48,12 +48,17 @@ public class YOLOModel {
 
     private final String[] CLASSES = { "tadpole" };
 
-    private final int INPUT_WIDTH = 608;
+    private final int INPUT_WIDTH = 608;        // TODO: 8/8/18    you should be able to change these as needed
     private final int INPUT_HEIGHT = 608;
     private final int INPUT_CHANNELS = 3;
+
+    //todo move this to a separate file, e.g. a json doc
     private final String MODEL_FILE_NAME = "/home/alex/Documents/coding/java/Sproj/src/main/resources/yolo_files/yolo_tadpole.h5";
     private ComputationGraph yoloModel;
     private NativeImageLoader imageLoader;
+
+    private CanvasFrame canvas;
+    private String canvasCaption = "Tracker";
 
     public static final double[][] DEFAULT_PRIOR_BOXES = {{0.57273, 0.677385}, {1.87446, 2.06253}, {3.33843, 5.47434}, {7.88282, 3.52778}, {9.77052, 9.16828}};
 
@@ -62,7 +67,7 @@ public class YOLOModel {
 
     private String layerOutputsName = "conv2d_22";
     @Builder.Default private long seed = 1234;
-    @Builder.Default private int[] inputShape = {3, 608, 608};
+    @Builder.Default private int[] inputShape = {1, 3, INPUT_WIDTH, INPUT_HEIGHT};
     @Builder.Default private int numClasses = 0;
     @Builder.Default private IUpdater updater = new Adam(1e-3);
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
@@ -71,7 +76,7 @@ public class YOLOModel {
 
 
     public YOLOModel() {
-
+        imageLoader = new NativeImageLoader(INPUT_WIDTH, INPUT_HEIGHT, INPUT_CHANNELS);
     }
 
     public YOLOModel(String filename) throws IOException {
@@ -92,28 +97,59 @@ public class YOLOModel {
         }
     }
 
-    public List<DetectedObject> detect(File input, double threshold) {
+    private void warmupModel(int iterations) {
+        /* Why Warmup?   from  https://deeplearning4j.org/benchmark
+
+        Guideline 1: Run Warm-Up Iterations Before Benchmarking
+
+        A warm-up period is where you run a number of iterations (for example, a few hundred) of your benchmark without timing,
+        before commencing timing for further iterations.
+
+        Why is a warm-up required? The first few iterations of any ND4J/DL4J execution may be slower than those that come later,
+        for a number of reasons:
+
+        In the initial benchmark iterations, the JVM has not yet had time to perform just-in-time compilation of code.
+        Once JIT has completed, code is likely to execute faster for all subsequent operations ND4J and DL4J
+        (and, some other libraries) have some degree of lazy initialization: the first operation may trigger
+        some one-off execution code. DL4J or ND4J (when using workspaces) can take some iterations
+        to learn memory requirements for execution.
+
+        During this learning phase, performance will be lower than after its completion.
+         */
+        long seed = 12345L; // for reproducibility
+
+        INDArray warmupArray = Nd4j.rand(new int[]{1, INPUT_CHANNELS, INPUT_WIDTH,INPUT_HEIGHT}, seed);  // TODO   check if these dimensions are right??
+
+        for (int i=0; i<iterations; i++) {
+            yoloModel.outputSingle(warmupArray);
+        }
+    }
+
+    public List<DetectedObject> detectSingleImage(File input, double threshold) {
         INDArray img;
         try {
-            img = loadImage(input);
+            img = IOFunctions.loadImage(input);
         } catch (IOException e) {
             throw new Error("Not able to load image from: " + input.getAbsolutePath(), e);
         }
 
         INDArray array;
         //warm up the model
+
+        System.out.println(Arrays.toString(img.shape()));
+
         for(int i =0; i< 10; i++) {
             array = yoloModel.outputSingle(img);
         }
+        Yolo2OutputLayer outputLayer = (Yolo2OutputLayer) yoloModel.getOutputLayer(0);
 
         long start = System.currentTimeMillis();
         INDArray output = yoloModel.outputSingle(img);
-        long end = System.currentTimeMillis();
-        logger.info("simple forward took :" + (end - start));
-
-        Yolo2OutputLayer outputLayer = (Yolo2OutputLayer) yoloModel.getOutputLayer(0);
-
         List<DetectedObject> predictedObjects = outputLayer.getPredictedObjects(output, threshold);
+        long end = System.currentTimeMillis();
+        logger.info("detection took :" + (end - start));
+
+
         for (DetectedObject detectedObject : predictedObjects) {
             System.out.println(CLASSES[detectedObject.getPredictedClass()]);
         }
@@ -121,12 +157,29 @@ public class YOLOModel {
         return predictedObjects;
     }
 
-    private INDArray loadImage(File imgFile) throws IOException {
-        INDArray image = imageLoader.asMatrix(imgFile);
+    private List<DetectedObject> detectImg(opencv_core.Mat image, double threshold) throws IOException {
+
+        INDArray imgArr = imageLoader.asMatrix(image);
         ImagePreProcessingScaler scaler = new ImagePreProcessingScaler(0, 1);
-        scaler.transform(image);
-        return image;
+        scaler.transform(imgArr);
+        Yolo2OutputLayer outputLayer = (Yolo2OutputLayer) yoloModel.getOutputLayer(0);
+        INDArray output = yoloModel.outputSingle(imgArr);
+        return outputLayer.getPredictedObjects(output, threshold);
     }
+
+    // The Frame gets converted to a Mat object anyway, better to only have this conversion run once.
+//    private List<DetectedObject> detectFrame(org.bytedeco.javacv.Frame videoFrame, double threshold) throws IOException {
+//
+//        INDArray imgArr = imageLoader.asMatrix(videoFrame);
+//        // Note that this converts it to a
+//        ImagePreProcessingScaler scaler = new ImagePreProcessingScaler(0, 1);
+//        scaler.transform(imgArr);
+//        Yolo2OutputLayer outputLayer = (Yolo2OutputLayer) yoloModel.getOutputLayer(0);
+//        INDArray output = yoloModel.outputSingle(imgArr);
+//        return outputLayer.getPredictedObjects(output, threshold);
+//    }
+
+
 
     private class BoundingBox {
         // todo  decide which to use:  floats?  ints?  doubles?
@@ -143,12 +196,12 @@ public class YOLOModel {
             this.botRightY = y2;
         }
 
-        private BoundingBox(double[] topLeft, double[] bottomRight) {
-            this.topleftX = topLeft[0];
-            this.topleftY = topLeft[1];
-            this.botRightX = bottomRight[0];
-            this.botRightY = bottomRight[1];
-        }
+//        private BoundingBox(double[] topLeft, double[] bottomRight) {
+//            this.topleftX = topLeft[0];
+//            this.topleftY = topLeft[1];
+//            this.botRightX = bottomRight[0];
+//            this.botRightY = bottomRight[1];
+//        }
 
         public String toString() {
             return String.format(
@@ -184,10 +237,8 @@ public class YOLOModel {
         double centerX, centerY;
         double width, height;
 
-        double topLeftX, topLeftY, botRightX, botRightY;
+        int topLeftX, topLeftY, botRightX, botRightY;
 
-
-        //todo    do the math?
 
         for (DetectedObject object : detections) {
 
@@ -197,50 +248,50 @@ public class YOLOModel {
             width = object.getWidth() * pixelsPerCell;
             height = object.getHeight() * pixelsPerCell;
 
+            topLeftX = (int) Math.round(centerX - (width / 2));
+            topLeftY = (int) Math.round(centerY - (height / 2));
+            botRightX = (int) Math.round(centerX + (width / 2));
+            botRightY = (int) Math.round(centerY + (height / 2));
 
             boundingBoxes.add(
-                    new BoundingBox(object.getTopLeftXY(), object.getBottomRightXY())
+                    new BoundingBox(topLeftX, topLeftY, botRightX, botRightY)
             );
         }
 
         return boundingBoxes;
     }
 
+    private void setUpDisplay() {
+        // Create image window named "My Image".
+        canvas = new CanvasFrame(canvasCaption, 1.0);       // gamma: CanvasFrame.getDefaultGamma()/grabber.getGamma());
 
-    private void convertYAD2KWeights(String filename) throws InvalidKerasConfigurationException, IOException, UnsupportedKerasConfigurationException {
-      KerasLayer.registerCustomLayer("Lambda", KerasSpaceToDepth.class);
-      ComputationGraph graph = KerasModelImport.importKerasModelAndWeights(filename, false);
-      INDArray priors = Nd4j.create(priorBoxes);
-
-      FineTuneConfiguration fineTuneConf = new FineTuneConfiguration.Builder()
-                             .seed(seed)
-                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                             .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
-                             .gradientNormalizationThreshold(1.0)
-                             .updater(new Adam.Builder().learningRate(1e-3).build())
-                             .l2(0.00001)
-                             .activation(Activation.IDENTITY)
-                             .trainingWorkspaceMode(workspaceMode)
-                             .inferenceWorkspaceMode(workspaceMode)
-                             .build();
-
-      ComputationGraph model = new TransferLearning.GraphBuilder(graph)
-                             .fineTuneConfiguration(fineTuneConf)
-                             .addLayer("outputs",
-                                     new org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer.Builder()  // different class with same name
-                                             .boundingBoxPriors(priors)
-                                             .build(),
-                      "conv2d_22")
-              .setOutputs("outputs")
-                             .build();
-
-      System.out.println(model.summary(InputType.convolutional(608, 608, 3)));
-
-      ModelSerializer.writeModel(model, "yolo2_dl4j_tad.zip", false);
+        //todo  canvas.setCanvasSize(WIDTH, HEIGHT)
+        // Exit application when window is closed.
+        canvas.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
 
 
-    public static void main(String[] args) throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    private void trackVideo(String fileName) throws FrameGrabber.Exception, InterruptedException {
+        FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(fileName);
+//        OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(fileName);
+        OpenCVFrameConverter frameConverter = new OpenCVFrameConverter.ToMat();
+        grabber.start(); // open video file
+
+        Frame frame;
+        while ((frame = grabber.grabImage()) != null) {
+
+
+
+
+            canvas.showImage(frame);
+            Thread.sleep(10L);
+        }
+        grabber.release();
+    }
+
+
+    public static void main(String[] args)
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException, InterruptedException {
 
         String dl4jModel = "/home/alex/Documents/coding/java/Sproj/src/main/resources/yolo_files/yolo2_dl4j_tad.zip";
         double iouThreshold = 0.4;  //todo  ???
@@ -251,7 +302,21 @@ public class YOLOModel {
         model.convertYAD2KWeights(model_weights);
         */
 
+//        new YOLOModel().trackVideo("/home/alex/Documents/coding/java/Sproj/src/main/resources/videos/IRTestVid2.mp4");
+//        "/home/alex/Documents/coding/java/Sproj/src/main/resources/videos/IMG_3085.MOV"
+
+
         YOLOModel trainedModel = new YOLOModel(dl4jModel);
+
+        trainedModel.setUpDisplay();
+        trainedModel.trackVideo("/home/alex/Documents/coding/java/Sproj/src/main/resources/videos/IRTestVid2.mp4");
+
+        if (1==0) {
+            return;
+        }
+
+        trainedModel.warmupModel(10);
+
         List<DetectedObject> detections = trainedModel.detect(new File("/home/alex/Documents/coding/java/Sproj/src/main/resources/images/test_image.png"), 0.5);
 
         List<BoundingBox> boundingBoxes = trainedModel.parseDetections(detections, iouThreshold);
@@ -260,5 +325,11 @@ public class YOLOModel {
         boundingBoxes.forEach(boundingBox -> System.out.println(boundingBox.toString()));
         detections.forEach(detectedObject -> System.out.println(detectedObject.toString()));
 
+        /**
+         *
+        boundingBoxes.forEach(boundingBox ->
+            cvRectangle(grabbedImage, cvPoint(x, y), cvPoint(x+w, y+h), opencv_core.CvScalar.RED, 1, CV_AA, 0);
+        )
+         */
     }
 }
