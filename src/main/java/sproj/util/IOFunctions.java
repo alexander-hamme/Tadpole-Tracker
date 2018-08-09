@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceTo
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.util.ModelSerializer;
+import org.deeplearning4j.zoo.model.YOLO2;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
@@ -142,6 +143,27 @@ public final class IOFunctions {
         }
 
         bw.close();
+    }
+
+
+    private void saveNewYoloModelOrSomething(String modelFilePath) throws IOException {
+        try {
+
+            File modelFile = new File(modelFilePath);
+            ComputationGraph yoloModel;
+
+            if (!modelFile.exists()) {
+                System.out.println("Cached model does NOT exists");
+                yoloModel = (ComputationGraph) YOLO2.builder().build().initPretrained();
+                yoloModel.save(modelFile);
+            } else {
+                System.out.println("Cached model does exists");
+                yoloModel = ModelSerializer.restoreComputationGraph(modelFile);
+            }
+
+        } catch (IOException e) {
+            throw new IOException("Not able to init the model", e);
+        }
     }
 
 
