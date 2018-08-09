@@ -106,6 +106,6 @@ public class TestDL4J {
         rewriteModel(fileName);
 
         YOLOModel yoloModel = new YOLOModel();
-        List<DetectedObject> detectedObjects = yoloModel.detect(new File("resources/images/test_image.png"), 0.7);
+//        List<DetectedObject> detectedObjects = yoloModel.detect(new File("resources/images/test_image.png"), 0.7);
     }
 }

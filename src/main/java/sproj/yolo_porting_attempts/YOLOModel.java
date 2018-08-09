@@ -51,11 +51,14 @@ public class YOLOModel {
 
     private final String[] CLASSES = { "tadpole" };
 
-    private final int INPUT_WIDTH = 608;        // TODO: 8/8/18    you should be able to change these as needed
-    private final int INPUT_HEIGHT = 608;
-    private final int INPUT_CHANNELS = 3;
+    private final int WINDOW_WIDTH = 900;           // TODO  these things need to go in a separate display class
+    private final int WINDOW_HEIGHT = 600;
 
-    //todo move this to a separate file, e.g. a json doc
+    private final int IMG_WIDTH = 608;        // reshaping constraints to set on input
+    private final int IMG_HEIGHT = 608;
+    private final int IMG_CHANNELS = 3;
+
+    // TODO move this to a separate class or file, e.g. a json doc
     private final String MODEL_FILE_NAME = "/home/alex/Documents/coding/java/Sproj/src/main/resources/yolo_files/yolo_tadpole.h5";
     private ComputationGraph yoloModel;
     private NativeImageLoader imageLoader;
@@ -70,7 +73,7 @@ public class YOLOModel {
 
     private String layerOutputsName = "conv2d_22";
     @Builder.Default private long seed = 1234;
-    @Builder.Default private int[] inputShape = {1, 3, INPUT_WIDTH, INPUT_HEIGHT};
+    @Builder.Default private int[] inputShape = {1, 3, IMG_WIDTH, IMG_HEIGHT};
     @Builder.Default private int numClasses = 0;
     @Builder.Default private IUpdater updater = new Adam(1e-3);
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
@@ -79,7 +82,7 @@ public class YOLOModel {
 
 
     public YOLOModel() {
-        imageLoader = new NativeImageLoader(INPUT_WIDTH, INPUT_HEIGHT, INPUT_CHANNELS);
+        imageLoader = new NativeImageLoader(IMG_WIDTH, IMG_HEIGHT, IMG_CHANNELS);
     }
 
     public YOLOModel(String filename) throws IOException {
@@ -94,79 +97,62 @@ public class YOLOModel {
                 yoloModel = ModelSerializer.restoreComputationGraph(modelFile);
             }
 
-            imageLoader = new NativeImageLoader(INPUT_WIDTH, INPUT_HEIGHT, INPUT_CHANNELS);
+            imageLoader = new NativeImageLoader(IMG_WIDTH, IMG_HEIGHT, IMG_CHANNELS);
         } catch (IOException e) {
             throw new IOException("Not able to init the model", e);
         }
     }
 
+    /** Explanation adopted from https://deeplearning4j.org/benchmark
+
+     Justification for running warm-up iterations before using the model for inference:
+
+     A warm-up period is where you run a number of iterations (for example, a few hundred) of your benchmark without timing,
+     before commencing timing for further iterations.
+
+     Why is a warm-up required? The first few iterations of any ND4J/DL4J execution may be slower than those that come later,
+     for a number of reasons:
+
+     In the initial benchmark iterations, the JVM has not yet had time to perform just-in-time compilation of code.
+     Once JIT has completed, code is likely to execute faster for all subsequent operations ND4J and DL4J
+     (and, some other libraries) have some degree of lazy initialization: the first operation may trigger
+     some one-off execution code. DL4J or ND4J (when using workspaces) can take some iterations
+     to learn memory requirements for execution.
+
+     During this learning phase, performance will be lower than after its completion.
+     */
     private void warmupModel(int iterations) {
-        /* Why Warmup?   from  https://deeplearning4j.org/benchmark
 
-        Guideline 1: Run Warm-Up Iterations Before Benchmarking
+        // todo time these iterations
 
-        A warm-up period is where you run a number of iterations (for example, a few hundred) of your benchmark without timing,
-        before commencing timing for further iterations.
-
-        Why is a warm-up required? The first few iterations of any ND4J/DL4J execution may be slower than those that come later,
-        for a number of reasons:
-
-        In the initial benchmark iterations, the JVM has not yet had time to perform just-in-time compilation of code.
-        Once JIT has completed, code is likely to execute faster for all subsequent operations ND4J and DL4J
-        (and, some other libraries) have some degree of lazy initialization: the first operation may trigger
-        some one-off execution code. DL4J or ND4J (when using workspaces) can take some iterations
-        to learn memory requirements for execution.
-
-        During this learning phase, performance will be lower than after its completion.
-         */
         long seed = 12345L; // for reproducibility
 
-        INDArray warmupArray = Nd4j.rand(new int[]{1, INPUT_CHANNELS, INPUT_WIDTH,INPUT_HEIGHT}, seed);  // TODO   check if these dimensions are right??
+        INDArray warmupArray = Nd4j.rand(new int[]{1, IMG_CHANNELS, IMG_WIDTH, IMG_HEIGHT}, seed);  // TODO   check if these dimensions are right??
 
         for (int i=0; i<iterations; i++) {
             yoloModel.outputSingle(warmupArray);
         }
     }
 
-    public List<DetectedObject> detectSingleImage(File input, double threshold) {
-        INDArray img;
-        try {
-            img = IOFunctions.loadImage(input);
-        } catch (IOException e) {
-            throw new Error("Not able to load image from: " + input.getAbsolutePath(), e);
-        }
-
-        INDArray array;
-        //warm up the model
-
-        System.out.println(Arrays.toString(img.shape()));
-
-        for(int i =0; i< 10; i++) {
-            array = yoloModel.outputSingle(img);
-        }
-        Yolo2OutputLayer outputLayer = (Yolo2OutputLayer) yoloModel.getOutputLayer(0);
-
-        long start = System.currentTimeMillis();
-        INDArray output = yoloModel.outputSingle(img);
-        List<DetectedObject> predictedObjects = outputLayer.getPredictedObjects(output, threshold);
-        long end = System.currentTimeMillis();
-        logger.info("detection took :" + (end - start));
-
-
-        for (DetectedObject detectedObject : predictedObjects) {
-            System.out.println(CLASSES[detectedObject.getPredictedClass()]);
-        }
-
-        return predictedObjects;
-    }
-
-    private List<DetectedObject> detectImg(opencv_core.Mat image, double threshold) throws IOException {
+    /**
+     * Passing a Frame object to the asMatrix() function results in it being converted to a Mat object anyway,
+     * so it is more efficient to have only one Frame to Mat conversion happening
+     * in each iteration of the main program. That is why this function takes a Mat object instead of a Frame.
+     *
+     * Also, a single ImagePreProcessingScaler object is instantiated outside the main loop instead of
+     * making a new instance every iteration.
+     * @param image
+     * @param threshold
+     * @return
+     * @throws IOException
+     */
+    private List<DetectedObject> detectImg(opencv_core.Mat image, double threshold, ImagePreProcessingScaler scaler) throws IOException {
 
         INDArray imgArr = imageLoader.asMatrix(image);
-        ImagePreProcessingScaler scaler = new ImagePreProcessingScaler(0, 1);
         scaler.transform(imgArr);
         Yolo2OutputLayer outputLayer = (Yolo2OutputLayer) yoloModel.getOutputLayer(0);
         INDArray output = yoloModel.outputSingle(imgArr);
+        System.out.println(yoloModel.summary());
         return outputLayer.getPredictedObjects(output, threshold);
     }
 
@@ -226,8 +212,8 @@ public class YOLOModel {
 
         System.out.println(String.format("now there are %s boxes detected", detections.size()));
 
-//        int numberOfGridCells = 13;
-        double pixelsPerCell = 32.0;
+        double numberOfGridCells = 13.0;
+        double pixelsPerCell = (double) IMG_WIDTH / numberOfGridCells;   // 32.0;       // assumes 1:1 image aspect ratio
 
         double centerX, centerY;
         double width, height;
@@ -260,7 +246,7 @@ public class YOLOModel {
         // Create image window named "My Image".
         canvas = new CanvasFrame(canvasCaption, 1.0);       // gamma: CanvasFrame.getDefaultGamma()/grabber.getGamma());
 
-        //todo  canvas.setCanvasSize(WIDTH, HEIGHT)
+//        canvas.setCanvasSize(IMG_WIDTH, IMG_HEIGHT);      // WINDOW_WIDTH, WINDOW_HEIGHT);
         // Exit application when window is closed.
         canvas.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
@@ -273,6 +259,9 @@ public class YOLOModel {
         FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(fileName);
 //        OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(fileName);
         OpenCVFrameConverter frameConverter = new OpenCVFrameConverter.ToMat();
+
+        ImagePreProcessingScaler normalizingScaler = new ImagePreProcessingScaler(0, 1);
+
         grabber.start(); // open video file
 
         List<BoundingBox> boundingBoxes;
@@ -285,7 +274,7 @@ public class YOLOModel {
 
             opencv_core.Mat frameImg = frameConverter.convertToMat(frame);
 
-            predictedObjects = detectImg(frameImg, confThresh);
+            predictedObjects = detectImg(frameImg, confThresh, normalizingScaler);
 
             for (DetectedObject detectedObject : predictedObjects) {
                 System.out.println(CLASSES[detectedObject.getPredictedClass()]);
@@ -294,9 +283,13 @@ public class YOLOModel {
             boundingBoxes = parseDetections(predictedObjects, iouThreshold);
 
             for (BoundingBox box : boundingBoxes) {
+
                 org.bytedeco.javacpp.opencv_imgproc.rectangle(frameImg, new opencv_core.Point(box.topleftX, box.topleftY),
-                        new opencv_core.Point(box.botRightX, box.botRightY), opencv_core.CvScalar.RED, 1, CV_AA, 0);
+                        new opencv_core.Point(box.botRightX, box.botRightY), opencv_core.Scalar.RED, 1, CV_AA, 0);
             }
+
+            System.out.println("Canvas Dimensions:" + canvas.getCanvasSize().toString());
+            System.out.println("IMG size: " + frameImg.size().toString());
 
 
             canvas.showImage(frame);
