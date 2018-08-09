@@ -38,6 +38,9 @@ import java.util.List;
 import java.util.ArrayList;
 import javax.swing.*;
 
+import static org.bytedeco.javacpp.opencv_imgproc.CV_AA;
+import static org.bytedeco.javacpp.opencv_imgproc.rectangle;
+
 /**
  *
  */
@@ -180,14 +183,13 @@ public class YOLOModel {
 //    }
 
 
-
     private class BoundingBox {
         // todo  decide which to use:  floats?  ints?  doubles?
         // todo OR don't use a separate class if it takes too much memory / time?
-        private double topleftX;
-        private double topleftY;
-        private double botRightX;
-        private double botRightY;
+        private int topleftX;
+        private int topleftY;
+        private int botRightX;
+        private int botRightY;
 
         private BoundingBox(int x1, int y1, int x2, int y2) {
             this.topleftX = x1;
@@ -196,16 +198,9 @@ public class YOLOModel {
             this.botRightY = y2;
         }
 
-//        private BoundingBox(double[] topLeft, double[] bottomRight) {
-//            this.topleftX = topLeft[0];
-//            this.topleftY = topLeft[1];
-//            this.botRightX = bottomRight[0];
-//            this.botRightY = bottomRight[1];
-//        }
-
         public String toString() {
             return String.format(
-                    "Detection at topleft: (%4.3f, %4.3f), bottomright: (%4.3f, %4.3f)",
+                    "Detection at (%d, %d)topleft, (%d, %d)bottomright",
                     this.topleftX, this.topleftY, this.botRightX, this.botRightY);
         }
     }
@@ -271,16 +266,37 @@ public class YOLOModel {
     }
 
 
-    private void trackVideo(String fileName) throws FrameGrabber.Exception, InterruptedException {
+    private void trackVideo(String fileName, double confThresh) throws FrameGrabber.Exception, InterruptedException, IOException {
+
+        double iouThreshold = 0.5;
+
         FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(fileName);
 //        OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(fileName);
         OpenCVFrameConverter frameConverter = new OpenCVFrameConverter.ToMat();
         grabber.start(); // open video file
 
+        List<BoundingBox> boundingBoxes;
+        List<DetectedObject> predictedObjects;
+
         Frame frame;
         while ((frame = grabber.grabImage()) != null) {
 
+            // TODO     switch to org.opencv.core functions  ???
 
+            opencv_core.Mat frameImg = frameConverter.convertToMat(frame);
+
+            predictedObjects = detectImg(frameImg, confThresh);
+
+            for (DetectedObject detectedObject : predictedObjects) {
+                System.out.println(CLASSES[detectedObject.getPredictedClass()]);
+            }
+
+            boundingBoxes = parseDetections(predictedObjects, iouThreshold);
+
+            for (BoundingBox box : boundingBoxes) {
+                org.bytedeco.javacpp.opencv_imgproc.rectangle(frameImg, new opencv_core.Point(box.topleftX, box.topleftY),
+                        new opencv_core.Point(box.botRightX, box.botRightY), opencv_core.CvScalar.RED, 1, CV_AA, 0);
+            }
 
 
             canvas.showImage(frame);
@@ -308,22 +324,18 @@ public class YOLOModel {
 
         YOLOModel trainedModel = new YOLOModel(dl4jModel);
 
-        trainedModel.setUpDisplay();
-        trainedModel.trackVideo("/home/alex/Documents/coding/java/Sproj/src/main/resources/videos/IRTestVid2.mp4");
 
         if (1==0) {
             return;
         }
 
+        trainedModel.setUpDisplay();
         trainedModel.warmupModel(10);
+        trainedModel.trackVideo("/home/alex/Documents/coding/java/Sproj/src/main/resources/videos/IRTestVid2.mp4", 0.5);
 
-        List<DetectedObject> detections = trainedModel.detect(new File("/home/alex/Documents/coding/java/Sproj/src/main/resources/images/test_image.png"), 0.5);
-
-        List<BoundingBox> boundingBoxes = trainedModel.parseDetections(detections, iouThreshold);
-
-
-        boundingBoxes.forEach(boundingBox -> System.out.println(boundingBox.toString()));
-        detections.forEach(detectedObject -> System.out.println(detectedObject.toString()));
+//        List<BoundingBox> boundingBoxes = trainedModel.parseDetections(detections, iouThreshold);
+//        boundingBoxes.forEach(boundingBox -> System.out.println(boundingBox.toString()));
+//        detections.forEach(detectedObject -> System.out.println(detectedObject.toString()));
 
         /**
          *
