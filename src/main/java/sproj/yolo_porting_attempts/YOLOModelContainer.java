@@ -1,27 +1,18 @@
 package sproj.yolo_porting_attempts;
 
-import lombok.Builder;
-import lombok.Getter;
 import org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacv.*;
 import org.datavec.image.loader.NativeImageLoader;
-import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 import org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.util.ModelSerializer;
-import org.deeplearning4j.zoo.model.YOLO2;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.linalg.learning.config.IUpdater;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
 
@@ -33,13 +24,16 @@ import java.util.List;
 
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
+
 /**
  *
  */
 
 public class YOLOModelContainer {
 
-    Logger logger = LoggerFactory.getLogger(YOLOModelContainer.class);
+//    Logger logger = LoggerFactory.getLogger(YOLOModelContainer.class);
 
     private final String[] CLASSES = {"tadpole"};
 
@@ -69,17 +63,17 @@ public class YOLOModelContainer {
 
     public static final double[][] DEFAULT_PRIOR_BOXES = {{0.57273, 0.677385}, {1.87446, 2.06253}, {3.33843, 5.47434}, {7.88282, 3.52778}, {9.77052, 9.16828}};
 
-    @Builder.Default @Getter private int nBoxes = 5;
-    @Builder.Default @Getter private double[][] priorBoxes = DEFAULT_PRIOR_BOXES;
+    private int[] inputShape = {1, IMG_CHANNELS, IMG_WIDTH, IMG_HEIGHT};
+
+
+    private int nBoxes = 5;
+    private double[][] priorBoxes = DEFAULT_PRIOR_BOXES;
 
     private String layerOutputsName = "conv2d_22";
-    @Builder.Default private long seed = 1234;
-    @Builder.Default private int[] inputShape = {1, 3, IMG_WIDTH, IMG_HEIGHT};
-    @Builder.Default private int numClasses = 0;
-    @Builder.Default private IUpdater updater = new Adam(1e-3);
-    @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
-    @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
-    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+    private long seed = 1234L;
+    private int numClasses = 1;
+    private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+//    private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     private int[] cropDimensions = {550, 160, 500, 500};        // todo  -->  user can manually drag this at the beginning
 
@@ -121,7 +115,7 @@ public class YOLOModelContainer {
 
         long seed = 12345L; // for reproducibility
 
-        INDArray warmupArray = Nd4j.rand(new int[]{1, IMG_CHANNELS, IMG_WIDTH, IMG_HEIGHT}, seed);  // TODO   check if these dimensions are right??
+        INDArray warmupArray = Nd4j.rand(inputShape, seed);  // TODO   check if these dimensions are right??
 
         for (int i=0; i<iterations; i++) {
             yoloModel.outputSingle(warmupArray);
@@ -130,13 +124,13 @@ public class YOLOModelContainer {
 
     /**
      * Passing a Frame object to the asMatrix() function results in it being converted to a Mat object anyway,
-     * so it is more efficient to have only one Frame to Mat conversion happening
-     * in each iteration of the main program. That is why this function takes a Mat object instead of a Frame.
+     * so it is more efficient to have only one Frame to Mat conversion happening in each iteration of the main program.
+     * That is the reasoning behind having this function take the converted Mat object instead of the original Frame.
      *
-     * Also, a single ImagePreProcessingScaler object is instantiated outside the main loop instead of
-     * making a new instance every iteration.
      * @param image
      * @param threshold
+     * @param scaler an ImagePreProcessingScaler object, which is instantiated once outside the main loop instead of
+     *               making a new instance every iteration.
      * @return
      * @throws IOException
      */

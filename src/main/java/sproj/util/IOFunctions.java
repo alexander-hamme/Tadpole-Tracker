@@ -104,7 +104,7 @@ public final class IOFunctions {
                         new org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer.Builder()  // different class with same name
                                 .boundingBoxPriors(priors)
                                 .build(),
-                        "conv2d_22")
+                        layerOutputsName)
                 .setOutputs("outputs")
                 .build();
 
