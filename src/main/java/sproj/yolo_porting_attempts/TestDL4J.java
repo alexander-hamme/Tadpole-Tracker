@@ -5,7 +5,6 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
@@ -20,9 +19,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 public class TestDL4J {
 
@@ -105,7 +102,7 @@ public class TestDL4J {
 
         rewriteModel(fileName);
 
-        YOLOModel yoloModel = new YOLOModel();
+        YOLOModelContainer yoloModel = new YOLOModelContainer();
 //        List<DetectedObject> detectedObjects = yoloModel.detect(new File("resources/images/test_image.png"), 0.7);
     }
 }
