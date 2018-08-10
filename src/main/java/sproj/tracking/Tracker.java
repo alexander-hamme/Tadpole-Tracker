@@ -77,6 +77,8 @@ public class Tracker {
 
     public void trackVideo(String videoPath, int[] cropDimensions, CanvasFrame canvasFrame) throws InterruptedException, IOException {
 
+        int msDelay = 10;
+
         // todo should this be in the constructor, or in a different class?
         setup(cropDimensions[2], cropDimensions[3]);
 
@@ -104,6 +106,8 @@ public class Tracker {
             resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
 
             detectedObjects = yoloModelContainer.detectImg(frameImg);
+            // TODO   pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), try with lower confidence?
+
             boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
             updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
@@ -114,9 +118,18 @@ public class Tracker {
             }
 
             canvasFrame.showImage(frameConverter.convert(frameImg));
-            Thread.sleep(10L);
+
+            /**
+            char key = (char) waitKey(msDelay);
+            if (key == 27) { // Escape key to exit      todo check char number for 'q' and other letters
+                destroyAllWindows();
+                break;
+            }
+             */
+//            Thread.sleep(10L);
         }
         grabber.release();
+        destroyAllWindows();
     }
 
 

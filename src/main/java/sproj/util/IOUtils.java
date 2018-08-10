@@ -123,14 +123,18 @@ public final class IOUtils {
 
             for (Animal anml : anmls) {
 
+                double[][] dataPoints = anml.getDataPoints();
+
 //                out.printRecord(Arrays.toString(anml.color));
-                startIdx = anml.dataPoints.size() - Animal.BUFF_INDEX;
-                endIdx = anml.dataPoints.size();
+                startIdx = dataPoints.length - Animal.BUFF_INDEX;
+                endIdx = dataPoints.length;
 
                 if (startIdx < 0) { continue; }
 
                 for (int i=startIdx; i<endIdx; i++) {
-                    out.printRecord(anml.dataPoints.get(i));
+                    out.printRecord(
+                            (double[]) dataPoints[i]
+                    );
                 }
                 out.println();  // two blank lines
                 out.println();
