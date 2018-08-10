@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.bytedeco.javacpp.opencv_imgproc.*;
+import static sproj.util.IOUtils.logSimpleMessage;
 
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
@@ -35,7 +36,8 @@ public class YOLOModelContainer {
 
 //    Logger logger = LoggerFactory.getLogger(YOLOModelContainer.class);
 
-    private final String[] CLASSES = {"tadpole"};
+    // it should probably be hardcoded like this.
+    public final String[] CLASSES = {"tadpole"};
 
     private final int WINDOW_WIDTH = 900;           // TODO  these things need to go in a separate display class
     private final int WINDOW_HEIGHT = 600;
@@ -48,23 +50,25 @@ public class YOLOModelContainer {
     private int INPUT_FRAME_HEIGHT;
 
     // TODO move this to a separate class or file, e.g. a json doc
-    private final String MODEL_FILE_NAME = "/home/alex/Documents/coding/java/Sproj/src/main/resources/yolo_files/yolo_tadpole.h5";
-    private ComputationGraph yoloModel;
-    private NativeImageLoader imageLoader;
+    private final String MODEL_FILE_PATH = "src/main/resources/yolo_files/yolo2_dl4j_tad.zip";
     private FFmpegFrameGrabber grabber;
     private OpenCVFrameConverter frameConverter;
-    private ImagePreProcessingScaler normalizingScaler;
-    private DetectionsParser detectionsParser;
+    private NativeImageLoader imageLoader = new NativeImageLoader(IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS);
 
+    // an ImagePreProcessingScaler object, which is instantiated once outside the main loop instead of making a new instance every iteration.
+    private ImagePreProcessingScaler normalizingScaler = new ImagePreProcessingScaler(0, 1);;
+    private DetectionsParser detectionsParser = new DetectionsParser();
+
+    private ComputationGraph yoloModel;
     private Yolo2OutputLayer outputLayer;
 
     private CanvasFrame canvas;
-    private String canvasCaption = "Tracker";
 
     public static final double[][] DEFAULT_PRIOR_BOXES = {{0.57273, 0.677385}, {1.87446, 2.06253}, {3.33843, 5.47434}, {7.88282, 3.52778}, {9.77052, 9.16828}};
 
     private int[] inputShape = {1, IMG_CHANNELS, IMG_WIDTH, IMG_HEIGHT};
 
+    private double CONF_THRESHOLD = 0.5;
 
     private int nBoxes = 5;
     private double[][] priorBoxes = DEFAULT_PRIOR_BOXES;
@@ -77,18 +81,19 @@ public class YOLOModelContainer {
 
     private int[] cropDimensions = {550, 160, 500, 500};        // todo  -->  user can manually drag this at the beginning
 
-    public YOLOModelContainer() {
-    }
-
-    public YOLOModelContainer(String modelFilePath) throws IOException {
+    public YOLOModelContainer() throws IOException {
 
         try {
-            yoloModel = ModelSerializer.restoreComputationGraph(new File(modelFilePath));
+            yoloModel = ModelSerializer.restoreComputationGraph(new File(MODEL_FILE_PATH));
         } catch (FileNotFoundException e) {
-            throw new IOException("Invalid file path to model: " + modelFilePath, e);
+            throw new IOException("Invalid file path to model: " + MODEL_FILE_PATH, e);
         } catch (IOException e) {
-            throw new IOException("Model file could not be restored: " + modelFilePath, e);
+            throw new IOException("Model file could not be restored: " + MODEL_FILE_PATH, e);
         }
+
+        logSimpleMessage("Warming up model...");
+        warmupModel(10);
+        outputLayer = (Yolo2OutputLayer) yoloModel.getOutputLayer(0);
     }
 
     /** Explanation adopted from https://deeplearning4j.org/benchmark
@@ -128,20 +133,17 @@ public class YOLOModelContainer {
      * That is the reasoning behind having this function take the converted Mat object instead of the original Frame.
      *
      * @param image
-     * @param threshold
-     * @param scaler an ImagePreProcessingScaler object, which is instantiated once outside the main loop instead of
-     *               making a new instance every iteration.
      * @return
      * @throws IOException
      */
-    private List<DetectedObject> detectImg(Mat image, double threshold, ImagePreProcessingScaler scaler) throws IOException {
+    public List<DetectedObject> detectImg(Mat image) throws IOException {
 
         INDArray imgArr = imageLoader.asMatrix(image);
-        scaler.transform(imgArr);
+        normalizingScaler.transform(imgArr);
         INDArray output = yoloModel.outputSingle(imgArr);
 //        System.out.println(yoloModel.summary());
 
-        return outputLayer.getPredictedObjects(output, threshold);
+        return outputLayer.getPredictedObjects(output, CONF_THRESHOLD);
     }
 
 
@@ -154,7 +156,7 @@ public class YOLOModelContainer {
 
         // TODO  this should be in a different class
 
-        canvas = new CanvasFrame(canvasCaption, 1.0);               // gamma: CanvasFrame.getDefaultGamma()/grabber.getGamma());
+        canvas = new CanvasFrame("blah", 1.0);               // gamma: CanvasFrame.getDefaultGamma()/grabber.getGamma());
         // canvas.setCanvasSize(IMG_WIDTH, IMG_HEIGHT);                    // WINDOW_WIDTH, WINDOW_HEIGHT);
 
         canvas.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);    // Exit application when window is closed.
@@ -169,18 +171,18 @@ public class YOLOModelContainer {
 
     private void setUpUtilities() {
 
+        // todo these should all be in a separate class
         detectionsParser = new DetectionsParser();
-
         frameConverter = new OpenCVFrameConverter.ToMat();
         normalizingScaler = new ImagePreProcessingScaler(0, 1);
         imageLoader = new NativeImageLoader(IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS);
-
-        outputLayer = (Yolo2OutputLayer) yoloModel.getOutputLayer(0);
 
     }
 
 
     private void trackVideo(double confThresh) throws InterruptedException, IOException {
+
+        // todo this  should be in a different class
 
         double iouThreshold = 0.5;
 
@@ -202,7 +204,7 @@ public class YOLOModelContainer {
 
             resize(frameImg.clone(), frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
 
-            detectedObjects = detectImg(frameImg, confThresh, normalizingScaler);
+            detectedObjects = detectImg(frameImg);
 
             for (DetectedObject detectedObject : detectedObjects) {
                 System.out.println(CLASSES[detectedObject.getPredictedClass()]);
@@ -229,7 +231,7 @@ public class YOLOModelContainer {
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException, InterruptedException {
 
         //todo Probably the most logical thing to do is first is try to load the video stream, either from file or a camera device
-        String videoPath = "/home/alex/Documents/coding/java/Sproj/src/main/resources/videos/IMG_3085.MOV";
+        String videoPath = "src/main/resources/videos/IMG_3085.MOV";
         // // todo  this could be an int camera index, e.g. "0";
 
 
@@ -239,7 +241,7 @@ public class YOLOModelContainer {
             throw new FileNotFoundException("Could not find file: " + videoPath);
         }
 
-        String dl4jModel = "/home/alex/Documents/coding/java/Sproj/src/main/resources/yolo_files/yolo2_dl4j_tad.zip";
+        String dl4jModel = "src/main/resources/yolo_files/yolo2_dl4j_tad.zip";
 
         /*
         String model_weights = "/home/alex/Documents/coding/java/Sproj/src/main/resources/yolo_files/yolo_tad.h5";
@@ -251,12 +253,9 @@ public class YOLOModelContainer {
 //        "/home/alex/Documents/coding/java/Sproj/src/main/resources/videos/IMG_3085.MOV"
 
 
-        YOLOModelContainer trainedModel = new YOLOModelContainer(dl4jModel);
+        YOLOModelContainer trainedModel = new YOLOModelContainer();
 
-
-        trainedModel.setUpUtilities();
-        trainedModel.setUpDisplay(videoPath);
-        trainedModel.warmupModel(10);
+        trainedModel.setUpDisplay(videoPath);       // todo put this functionality elsewhere
         trainedModel.trackVideo(0.5);
 
 //        List<BoundingBox> boundingBoxes = trainedModel.parseDetections(detections, iouThreshold);

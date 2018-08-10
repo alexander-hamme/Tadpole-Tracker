@@ -102,7 +102,7 @@ public class TestDL4J {
 
         rewriteModel(fileName);
 
-        YOLOModelContainer yoloModel = new YOLOModelContainer();
+//        YOLOModelContainer yoloModel = new YOLOModelContainer();
 //        List<DetectedObject> detectedObjects = yoloModel.detect(new File("resources/images/test_image.png"), 0.7);
     }
 }

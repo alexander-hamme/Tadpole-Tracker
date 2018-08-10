@@ -1,12 +1,8 @@
 package sproj.util;
 
-import lombok.Builder;
-import lombok.Getter;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
-import org.bytedeco.javacpp.opencv_core;
-import org.bytedeco.javacv.Frame;
 import org.datavec.image.loader.NativeImageLoader;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -34,21 +30,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sproj.tracking.Animal;
 
-import org.apache.commons.io.IOUtils;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class IOFunctions {
-    private final static Logger LOGGER = LoggerFactory.getLogger(IOFunctions.class);
-    private IOFunctions() {}
+public final class IOUtils {
+    private final static Logger LOGGER = LoggerFactory.getLogger(IOUtils.class);
+    private IOUtils() {}
+
+    public static void logSimpleMessage(String message) {
+        // todo don't do this in the end?
+        // logger.info(...)
+        System.out.println(message);
+    }
 
     public static INDArray loadImage(File imgFile) throws IOException {
         INDArray image = new NativeImageLoader().asMatrix(imgFile);

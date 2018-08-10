@@ -5,14 +5,28 @@ import static org.bytedeco.javacpp.opencv_highgui.imshow;
 import static org.bytedeco.javacpp.opencv_highgui.waitKey;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 import static org.opencv.imgproc.Imgproc.LINE_4;
+import static sproj.util.IOUtils.logSimpleMessage;
 
 import org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.*;
+import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
+import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
+import sproj.util.BoundingBox;
+import sproj.util.DetectionsParser;
+import sproj.yolo_porting_attempts.YOLOModelContainer;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
+
+/**
+ * This class will implement tracking functions and store the recorded data.
+ *
+ * It should call a function in IOUtils to actually write the data?
+ */
 public class Tracker {
 
     static int VERBOSITY_LEVEL = 3;             // 1, 2, 3, or 4
@@ -22,33 +36,96 @@ public class Tracker {
     final int frame_resize_width = 720;
     boolean DRAW_CIRCLES = true;
 
-    private ArrayList<Animal> animals;
+    private final int IMG_WIDTH = YOLOModelContainer.IMG_WIDTH;
+    private final int IMG_HEIGHT = YOLOModelContainer.IMG_HEIGHT;
+    private int INPUT_FRAME_WIDTH;
+    private int INPUT_FRAME_HEIGHT;
 
-    public Tracker() {
-        int counter = 0;
-        int dx = 0, dy = 0;
+
+    private ArrayList<Animal> animals;
+    private YOLOModelContainer yoloModelContainer = new YOLOModelContainer();
+
+    public FFmpegFrameGrabber grabber;
+    private DetectionsParser detectionsParser = new DetectionsParser();
+    private OpenCVFrameConverter frameConverter = new OpenCVFrameConverter.ToMat();
+
+    private int number_of_objs;
+
+
+    public Tracker(int n_objs, boolean display) throws IOException {
+
         this.animals = new ArrayList<>();
+        number_of_objs = n_objs;
+        yoloModelContainer = new YOLOModelContainer();
+
     }
 
-    private void setup(int width, int height, int n_objs) {
+    private void setup(int width, int height) {
         int[][] colors = {{1, 1, 1}, {90, 90, 90}, {255, 0, 255}, {0, 255, 255}, {0, 0, 255}, {47, 107, 85},
                 {113, 179, 60}, {255, 0, 0}, {255, 255, 255}, {0, 180, 0}, {255, 255, 0}, {160, 160, 160},
                 {160, 160, 0}, {0, 0, 0}, {202, 204, 249}, {0, 255, 127}, {40, 46, 78}};
 
         int x, y;
 
-        for (int i = 0; i < n_objs; i++) {
-            x = (int) ((i + 1) / ((double) n_objs * width));
-            y = (int) ((i + 1) / ((double) n_objs * height));
+        for (int i = 0; i < number_of_objs; i++) {
+            x = (int) ((i + 1) / ((double) number_of_objs * width));            // distribute animal objects diagonally across screen
+            y = (int) ((i + 1) / ((double) number_of_objs * height));
             this.animals.add(new Animal(x, y, colors[i]));
         }
     }
 
-    public void run(String videoPath, int n_objs, int[] crop, String cfg, String wgts,
-                    String meta, String filename, boolean display, int sig_figs) throws FrameGrabber.Exception {
 
-        this.setup(crop[1] - crop[0], crop[3] - crop[2], n_objs);
+    public void trackVideo(String videoPath, int[] cropDimensions, CanvasFrame canvasFrame) throws InterruptedException, IOException {
 
+        // todo should this be in the constructor, or in a different class?
+        setup(cropDimensions[2], cropDimensions[3]);
+
+        List<BoundingBox> boundingBoxes;
+        List<DetectedObject> detectedObjects;
+
+        Rect cropRect = new Rect(new Point(cropDimensions[0], cropDimensions[1]), new Size(cropDimensions[2], cropDimensions[3]));
+        //  new Range(300,600), new Range(200,400)); //
+
+
+        grabber = new FFmpegFrameGrabber(videoPath);                       // OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(fileName);
+        grabber.start();    // open video file
+
+        INPUT_FRAME_WIDTH = grabber.getImageWidth();        // todo are these necessary?
+        INPUT_FRAME_HEIGHT = grabber.getImageHeight();
+
+
+        Frame frame;
+        while ((frame = grabber.grabImage()) != null) {
+
+            // TODO     switch to org.opencv.core functions  ???
+
+//            Mat frameImg = frameConverter.convertToMat(frame);
+            Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);
+
+            // todo clone this, so you can show the original scaled up image in the display window?
+            resize(frameImg.clone(), frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
+
+            detectedObjects = yoloModelContainer.detectImg(frameImg);
+            boundingBoxes = detectionsParser.parseDetections(detectedObjects);
+
+            for (BoundingBox box : boundingBoxes) {
+
+                rectangle(frameImg, new Point(box.topleftX, box.topleftY),
+                        new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
+            }
+
+            canvasFrame.showImage(frameConverter.convert(frameImg));
+            Thread.sleep(10L);
+        }
+        grabber.release();
+    }
+
+    public void run(int n_objs, String filename, boolean display) throws FrameGrabber.Exception {
+
+//        this.setup(crop[1] - crop[0], crop[3] - crop[2], n_objs);
+        int[] crop = new int[0];
+
+        String videoPath = "";
 
         int msDelay = 20;
 
@@ -220,7 +297,7 @@ public class Tracker {
         boolean display = true;
         int sig_figs = 0;
 
-        Tracker tracker = new Tracker();
-        tracker.run(vidpath, n_objs, crop, cfg, wgts, meta, filename, display, sig_figs);
+//        Tracker tracker = new Tracker();
+//        tracker.run(vidpath, n_objs, crop, cfg, wgts, meta, filename, display, sig_figs);
     }
 }
