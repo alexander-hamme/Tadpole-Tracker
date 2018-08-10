@@ -9,8 +9,9 @@ public class Animal {
 
     public int x, y;
     public final Scalar color;
+    public final int lineThicknessBuffer = 5;
     public static int BUFF_INDEX = 60;
-    public ArrayList<double[]> dataPoints;
+    private ArrayList<double[]> dataPoints;
     private final int linePointsSize = 16;
     private ArrayDeque<int[]> linePoints;
 
@@ -33,6 +34,8 @@ public class Animal {
     }
 
 
-
+    public double[][] getDataPoints() {
+        return (double[][]) dataPoints.toArray();
+    }
 
 }

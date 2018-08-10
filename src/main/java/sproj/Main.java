@@ -5,7 +5,11 @@ import org.bytedeco.javacv.FrameGrabber;
 import sproj.tracking.Tracker;
 
 import javax.swing.*;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+
+import static sproj.util.IOUtils.logSimpleMessage;
 
 public class Main {
 
@@ -38,26 +42,43 @@ public class Main {
         canvas.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);    // Exit application when window is closed.
     }
 
+    private void loadVideoFromFile() throws IOException {
+        // etc etc, choose file from file window
+        // OR select the check box for webcam  -->  can Java autodetect camera devices?
+
+        videoPath = "src/main/resources/videos/IMG_3085.MOV";
+
+        try {
+            assert (new File(videoPath).exists() && new File(videoPath).isFile());
+        } catch (AssertionError e) {
+            throw new FileNotFoundException("Could not find file: " + videoPath);
+        }
+    }
+
+    private void getInputDataFromUser() {
+        NUMBER_OF_OBJECTS_TO_TRACK = 5;
+        cropDimensions = new int[]{550, 160, 500, 500};
+    }
+
     private void setUpUtilities() throws IOException {
         tadpoleTracker = new Tracker(NUMBER_OF_OBJECTS_TO_TRACK, showDisplay);
     }
 
 
     private void run() throws IOException, InterruptedException {
-
-        NUMBER_OF_OBJECTS_TO_TRACK = 5;
-        videoPath = "src/main/resources/videos/IMG_3085.MOV";
-        cropDimensions = new int[]{550, 160, 500, 500};
-
+        loadVideoFromFile();
+        getInputDataFromUser();
         tadpoleTracker.trackVideo(videoPath, cropDimensions, canvas);
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
 
         Main main = new Main();
+
         try {
             main.run();
         } catch (Exception e) {
+            logSimpleMessage(e.getMessage());
             throw e;
         } finally {
             main.tadpoleTracker.grabber.release();      // todo    tearDown function

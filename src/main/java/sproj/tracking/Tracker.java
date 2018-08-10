@@ -35,6 +35,7 @@ public class Tracker {
     final int ARRAY_MAX_SIZE = 60;              // buffer size of array to accumulate data
     final int frame_resize_width = 720;
     boolean DRAW_CIRCLES = true;
+    int circleRadius = 5;
 
     private final int IMG_WIDTH = YOLOModelContainer.IMG_WIDTH;
     private final int IMG_HEIGHT = YOLOModelContainer.IMG_HEIGHT;
@@ -42,8 +43,8 @@ public class Tracker {
     private int INPUT_FRAME_HEIGHT;
 
 
-    private ArrayList<Animal> animals;
-    private YOLOModelContainer yoloModelContainer = new YOLOModelContainer();
+    private YOLOModelContainer yoloModelContainer;
+    private ArrayList<Animal> animals = new ArrayList<>();
 
     public FFmpegFrameGrabber grabber;
     private DetectionsParser detectionsParser = new DetectionsParser();
@@ -54,7 +55,6 @@ public class Tracker {
 
     public Tracker(int n_objs, boolean display) throws IOException {
 
-        this.animals = new ArrayList<>();
         number_of_objs = n_objs;
         yoloModelContainer = new YOLOModelContainer();
 
@@ -97,19 +97,18 @@ public class Tracker {
         Frame frame;
         while ((frame = grabber.grabImage()) != null) {
 
-            // TODO     switch to org.opencv.core functions  ???
-
 //            Mat frameImg = frameConverter.convertToMat(frame);
             Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);
 
-            // todo clone this, so you can show the original scaled up image in the display window?
-            resize(frameImg.clone(), frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
+            // TODO clone this, so you can show the original scaled up image in the display window???
+            resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
 
             detectedObjects = yoloModelContainer.detectImg(frameImg);
             boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
-            for (BoundingBox box : boundingBoxes) {
+            updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
 
+            for (BoundingBox box : boundingBoxes) {
                 rectangle(frameImg, new Point(box.topleftX, box.topleftY),
                         new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
             }
@@ -118,6 +117,78 @@ public class Tracker {
             Thread.sleep(10L);
         }
         grabber.release();
+    }
+
+
+    private void updateObjectTracking(List<BoundingBox> boundingBoxes,  Mat frameImage, int frameNumber, long timePos) {
+
+        double min_prox, prox;
+        int prox_start_val = (int) (Math.sqrt(Math.pow(frameImage.rows(), 2) + Math.pow(frameImage.cols(), 2)) + 0.5);
+        // start out with large proximity threshold to quickly snap to objects
+        double displThresh = (frameNumber > 10) ? DISPL_THRESH : prox_start_val;
+
+        ArrayList<BoundingBox> assignedBoxes = new ArrayList<>(boundingBoxes.size());   //    initialize this outside the main loop?
+        BoundingBox closestBox;
+
+        for (Animal animal : animals) {
+
+            min_prox = displThresh;
+            closestBox = null;
+            circleRadius = 5;     // todo   define this above  or something
+
+            for (BoundingBox box : boundingBoxes) {
+
+                if (!assignedBoxes.contains(box)) {  // skip already assigned boxes
+//                    circleRadius = Math.round(box[2] + box[3] / 2);  // approximate circle from rectangle dimensions
+
+                    prox = Math.pow(Math.abs(animal.x - box.centerX) ^ 2 + Math.abs(animal.y - box.centerY) ^ 2, 0.5);
+
+                    if (prox < min_prox) {
+                        min_prox = prox;
+                        closestBox = box;
+                    }
+                }
+            }
+
+            if (boundingBoxes.size() == animals.size() && closestBox != null) {   // This means min_prox < displacement_thresh?
+                // todo: instead of min_prox --> use (Decision tree? / Markov? / SVM? / ???) to determine if the next point is reasonable
+                animal.updateLocation(closestBox.centerX, closestBox.centerY, timePos);
+                assignedBoxes.add(closestBox);
+
+            } else if (closestBox != null) {
+                System.out.println("First if-statement");
+                animal.updateLocation(closestBox.centerX, closestBox.centerY, timePos);
+                assignedBoxes.add(closestBox);
+
+            } else {
+                System.out.println("Predicting trajectory goes here?");
+                animal.updateLocation(animal.x, animal.y, timePos);
+            }
+
+            if (DRAW_CIRCLES) {
+                drawShapesOnImageFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
+            }
+        }
+    }
+
+
+    private void drawShapesOnImageFrame(Mat videoFrameMat, Animal animal) {
+
+        // info : http://bytedeco.org/javacpp-presets/opencv/apidocs/org/bytedeco/javacpp/opencv_imgproc.html#method.detail
+
+        circle(videoFrameMat, new Point(animal.x, animal.y), circleRadius, new Scalar(0, 255, 0, 1));
+
+        int thickness;
+        int[][] linePointsArr = animal.getLinePointsAsArray();
+        for (int i = 1; i < linePointsArr.length; i++) {
+            // if (linePointsArr[i] == null || linePointsArr[i-1] == null) { continue; }   // check for null values
+            thickness = (int) Math.round(Math.sqrt(animal.lineThicknessBuffer / (i + 1)) * 2);  // todo what does this do?
+            line(videoFrameMat,
+                    new Point(linePointsArr[i - 1][0], linePointsArr[i - 1][1]),
+                    new Point(linePointsArr[i][0], linePointsArr[i][1]),
+                    animal.color, thickness, 0, LINE_4); // thickness, line type, shift     //LINE_4, LINE_8, or LINE_AA
+        }
+
     }
 
     public void run(int n_objs, String filename, boolean display) throws FrameGrabber.Exception {

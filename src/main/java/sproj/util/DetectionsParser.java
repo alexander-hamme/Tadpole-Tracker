@@ -55,7 +55,6 @@ public class DetectionsParser {
                     new BoundingBox(topLeftX, topLeftY, botRightX, botRightY)
             );
         }
-
         return boundingBoxes;
     }
 
