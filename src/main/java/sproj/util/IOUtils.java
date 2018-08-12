@@ -68,6 +68,8 @@ public final class IOUtils {
 
     private void convertYAD2KWeights(String fileName, String saveName) throws InvalidKerasConfigurationException, IOException, UnsupportedKerasConfigurationException {
 
+        // to be run on an .h5 weights file, and output a zip file
+
         int nBoxes = 5;
         double[][] priorBoxes = {{0.57273, 0.677385}, {1.87446, 2.06253}, {3.33843, 5.47434}, {7.88282, 3.52778}, {9.77052, 9.16828}};
 
