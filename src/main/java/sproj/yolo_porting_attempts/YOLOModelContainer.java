@@ -49,7 +49,7 @@ public class YOLOModelContainer {
     private int INPUT_FRAME_HEIGHT;
 
     // TODO move this to a separate class or file, e.g. a json doc
-    private final String MODEL_FILE_PATH = "src/main/resources/yolo_files/yolo2_dl4j_tad.zip";
+    private final String MODEL_FILE_PATH = "src/main/resources/inference/yolo2_dl4j_tad.zip";
     private FFmpegFrameGrabber grabber;
     private OpenCVFrameConverter frameConverter;
     private NativeImageLoader imageLoader = new NativeImageLoader(IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS);

@@ -1,7 +1,6 @@
 package sproj;
 
 import org.bytedeco.javacv.CanvasFrame;
-import org.bytedeco.javacv.FrameGrabber;
 import sproj.tracking.Tracker;
 
 import javax.swing.*;
@@ -27,8 +26,10 @@ public class Main {
     private String videoPath;       // this will get passed in?
 
     public Main() throws IOException {
+        getInputDataFromUser();         // // TODO: 8/12/18  this has to go first to set the value of   n_objs
         setUpDisplay();
         setUpUtilities();
+        loadVideoFromFile();
     }
 
 
@@ -66,8 +67,6 @@ public class Main {
 
 
     private void run() throws IOException, InterruptedException {
-        loadVideoFromFile();
-        getInputDataFromUser();
         tadpoleTracker.trackVideo(videoPath, cropDimensions, canvas);
     }
 
