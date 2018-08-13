@@ -94,6 +94,7 @@ public class YOLOModelContainer {
         logSimpleMessage("Warming up model...");
         warmupModel(10);
         outputLayer = (Yolo2OutputLayer) yoloModel.getOutputLayer(0);
+        //        System.out.println(yoloModel.summary());
     }
 
     /**
@@ -142,8 +143,6 @@ public class YOLOModelContainer {
         INDArray imgArr = imageLoader.asMatrix(image);
         normalizingScaler.transform(imgArr);
         INDArray output = yoloModel.outputSingle(imgArr);
-//        System.out.println(yoloModel.summary());
-
         return outputLayer.getPredictedObjects(output, CONF_THRESHOLD);
     }
 

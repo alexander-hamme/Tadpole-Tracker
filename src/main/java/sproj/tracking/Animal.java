@@ -17,7 +17,7 @@ public class Animal {
     public final int CIRCLE_RADIUS = 15;
     public static int BUFF_INDEX = 60;
     private ArrayList<double[]> dataPoints;
-    private final int linePointsSize = 32;
+    private final int linePointsSize = 16;
     private CircularFifoQueue<int[]> linePoints;
 
     private int[][] linePointsArray;

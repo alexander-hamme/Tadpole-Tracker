@@ -42,7 +42,7 @@ public final class IOUtils {
     private final static Logger LOGGER = LoggerFactory.getLogger(IOUtils.class);
     private IOUtils() {}
 
-    public static void logSimpleMessage(String message) {
+    public static void logSimpleMessage(Object message) {
         // todo don't do this in the end?
         // logger.info(...)
         System.out.println(message);

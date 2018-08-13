@@ -9,6 +9,7 @@ import static org.opencv.imgproc.Imgproc.LINE_4;
 import com.sun.xml.internal.bind.v2.TODO;
 import org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacpp.opencv_core;
+import org.bytedeco.javacpp.opencv_highgui;
 import org.bytedeco.javacv.*;
 
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
@@ -17,6 +18,8 @@ import org.opencv.imgproc.Imgproc;
 import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
 import sproj.yolo_porting_attempts.YOLOModelContainer;
+
+import static org.opencv.imgproc.Imgproc.LINE_AA;
 import static sproj.util.IOUtils.logSimpleMessage;
 
 import java.io.IOException;
@@ -91,75 +94,55 @@ public class Tracker {
         Rect cropRect = new Rect(new Point(cropDimensions[0], cropDimensions[1]), new Size(cropDimensions[2], cropDimensions[3]));
         //  new Range(300,600), new Range(200,400)); //
 
-
-        grabber = new FFmpegFrameGrabber(videoPath);                       // OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(fileName);
+        grabber = new FFmpegFrameGrabber(videoPath);        // OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(videoPath);
         grabber.start();    // open video file
 
         INPUT_FRAME_WIDTH = grabber.getImageWidth();        // todo are these necessary?
         INPUT_FRAME_HEIGHT = grabber.getImageHeight();
 
 
-        double time1, time2, time3, time4, time5, time6, time7;
-
         Frame frame;
         while ((frame = grabber.grabImage()) != null) {
 
-//            time1 = System.nanoTime();
+            // TODO   this needs to be done using opencv.high_gui   instead
+
 
 //            Mat frameImg = frameConverter.convertToMat(frame);
-            Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);
+            Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);   // crop the frame
 
-//            time2 = System.nanoTime();
-
-
-            // TODO clone this, so you can show the original scaled up image in the display window???
+            // clone this, so you can show the original scaled up image in the display window???
             resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
 
-//            time3 = System.nanoTime();
-
-
-            detectedObjects = yoloModelContainer.detectImg(frameImg);
-            // TODO   pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), try with lower confidence?
-//            time4 = System.nanoTime();
+            detectedObjects = yoloModelContainer.detectImg(frameImg);    // TODO   pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), try with lower confidence?
 
             boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
-//            time5 = (double) System.nanoTime();
-
-
             updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
 
-//            time6 = System.nanoTime();
+
+            /*opencv_highgui.imshow("BLAH BLAH BLAH", frameImg);
 
 
-            for (BoundingBox box : boundingBoxes) {
-                rectangle(frameImg, new Point(box.topleftX, box.topleftY),
-                        new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
-            }
-
-//            time7 = System.nanoTime();
+            int key = waitKey(msDelay);
+            logSimpleMessage(key);
+            if (key == 27) { // Escape key to exit      todo check char number for 'q' and other letters
+            destroyAllWindows();
+            break;
+            }*/
 
             canvasFrame.showImage(frameConverter.convert(frameImg));
 
+                        /*logSimpleMessage(
 
-/*            logSimpleMessage(
-
-                    String.format("%n---------------Time Profiles (s)-------------" +
-                                    "%nFrame to Mat Conversion:\t%.7f %nResize Mat Object:\t\t\t%.7f %nYolo Detection:\t\t\t\t%.7f" +
-                                    "%nParse Detections:\t\t\t%.7f %nUpdate Obj Tracking:\t\t%.7f %nDraw Graphics:\t\t\t\t%.7f%n" +
-                                    "----------------------------------------------%n",
-                            (time2 - time1) / 1.0e9, (time3 - time2) / 1.0e9, (time4 - time3) / 1.0e9,
-                            (time5 - time4) / 1.0e9, (time6 - time5) / 1.0e9, (time7 - time6) / 1.0e9
-                    )
+            String.format("%n---------------Time Profiles (s)-------------" +
+                            "%nFrame to Mat Conversion:\t%.7f %nResize Mat Object:\t\t\t%.7f %nYolo Detection:\t\t\t\t%.7f" +
+                            "%nParse Detections:\t\t\t%.7f %nUpdate Obj Tracking:\t\t%.7f %nDraw Graphics:\t\t\t\t%.7f%n" +
+                            "----------------------------------------------%n",
+                    (time2 - time1) / 1.0e9, (time3 - time2) / 1.0e9, (time4 - time3) / 1.0e9,
+                    (time5 - time4) / 1.0e9, (time6 - time5) / 1.0e9, (time7 - time6) / 1.0e9
+            )
             );*/
 
-            /**
-             char key = (char) waitKey(msDelay);
-             if (key == 27) { // Escape key to exit      todo check char number for 'q' and other letters
-             destroyAllWindows();
-             break;
-             }
-             */
 //            Thread.sleep(10L);
         }
         grabber.release();
@@ -170,22 +153,24 @@ public class Tracker {
     private void updateObjectTracking(List<BoundingBox> boundingBoxes, Mat frameImage, int frameNumber, long timePos) {
 
         double min_prox, prox;
-        int prox_start_val = (int) (Math.sqrt(Math.pow(frameImage.rows(), 2) + Math.pow(frameImage.cols(), 2)) + 0.5);
-        // start out with large proximity threshold to quickly snap to objects
-        double displThresh = (frameNumber > 10) ? DISPL_THRESH : prox_start_val;
 
-        ArrayList<BoundingBox> assignedBoxes = new ArrayList<>(boundingBoxes.size());   //    initialize this outside the main loop?
+        // the length of the diagonal across the frame--> the largest possible displacement distance for an object in the image
+        int prox_start_val = (int) Math.round(Math.sqrt(Math.pow(frameImage.rows(), 2) + Math.pow(frameImage.cols(), 2)));
+
+        double displThresh = (frameNumber < 10) ? prox_start_val : DISPL_THRESH;   // start out with large proximity threshold to quickly snap to objects
+
+        ArrayList<BoundingBox> assignedBoxes = new ArrayList<>(boundingBoxes.size());
         BoundingBox closestBox;
 
         for (Animal animal : animals) {
 
-            min_prox = displThresh;
+            min_prox = displThresh;     // start at max allowed value and then favor smaller values
             closestBox = null;
 
             for (BoundingBox box : boundingBoxes) {
 
                 if (!assignedBoxes.contains(box)) {  // skip already assigned boxes
-//                    circleRadius = Math.round(box[2] + box[3] / 2);  // approximate circle from rectangle dimensions
+                    // circleRadius = Math.round(box[2] + box[3] / 2);  // approximate circle from rectangle dimensions
 
                     prox = Math.pow(Math.abs(animal.x - box.centerX) ^ 2 + Math.abs(animal.y - box.centerY) ^ 2, 0.5);
 
@@ -194,8 +179,10 @@ public class Tracker {
                         closestBox = box;
                     }
                 }
+                // this rectangle drawing will be removed later   (?)
+                rectangle(frameImage, new Point(box.topleftX, box.topleftY),
+                        new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
             }
-
             if (boundingBoxes.size() == animals.size() && closestBox != null) {   // This means min_prox < displacement_thresh?
                 // todo: instead of min_prox --> use (Decision tree? / Markov? / SVM? / ???) to determine if the next point is reasonable
                 animal.updateLocation(closestBox.centerX, closestBox.centerY, timePos);
@@ -241,7 +228,7 @@ public class Tracker {
             line(videoFrameMat,
                     new Point(linePointsArr[i-1][0], linePointsArr[i-1][1]),
                     new Point(linePointsArr[i][0], linePointsArr[i][1]),
-                    animal.color, thickness, LINE_4, 0); // thickness, line type, shift     //LINE_4, LINE_8, or LINE_AA
+                    animal.color, thickness, LINE_AA, 0); // thickness, line type, shift  -->   //line type is LINE_4, LINE_8, or LINE_AA
         }
     }
 
