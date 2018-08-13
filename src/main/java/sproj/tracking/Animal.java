@@ -13,7 +13,7 @@ public class Animal {
 
     public int x, y;
     public final Scalar color;
-    public final double LINE_THICKNESS = 25.0;
+    public final double LINE_THICKNESS = 2.0;
     public final int CIRCLE_RADIUS = 15;
     public static int BUFF_INDEX = 60;
     private ArrayList<double[]> dataPoints;

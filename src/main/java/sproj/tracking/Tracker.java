@@ -104,32 +104,32 @@ public class Tracker {
         Frame frame;
         while ((frame = grabber.grabImage()) != null) {
 
-            time1 = System.nanoTime();
+//            time1 = System.nanoTime();
 
 //            Mat frameImg = frameConverter.convertToMat(frame);
             Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);
 
-            time2 = System.nanoTime();
+//            time2 = System.nanoTime();
 
 
             // TODO clone this, so you can show the original scaled up image in the display window???
             resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
 
-            time3 = System.nanoTime();
+//            time3 = System.nanoTime();
 
 
             detectedObjects = yoloModelContainer.detectImg(frameImg);
             // TODO   pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), try with lower confidence?
-            time4 = System.nanoTime();
+//            time4 = System.nanoTime();
 
             boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
-            time5 = (double) System.nanoTime();
+//            time5 = (double) System.nanoTime();
 
 
             updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
 
-            time6 = System.nanoTime();
+//            time6 = System.nanoTime();
 
 
             for (BoundingBox box : boundingBoxes) {
@@ -137,12 +137,12 @@ public class Tracker {
                         new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
             }
 
-            time7 = System.nanoTime();
+//            time7 = System.nanoTime();
 
             canvasFrame.showImage(frameConverter.convert(frameImg));
 
 
-            logSimpleMessage(
+/*            logSimpleMessage(
 
                     String.format("%n---------------Time Profiles (s)-------------" +
                                     "%nFrame to Mat Conversion:\t%.7f %nResize Mat Object:\t\t\t%.7f %nYolo Detection:\t\t\t\t%.7f" +
@@ -151,7 +151,7 @@ public class Tracker {
                             (time2 - time1) / 1.0e9, (time3 - time2) / 1.0e9, (time4 - time3) / 1.0e9,
                             (time5 - time4) / 1.0e9, (time6 - time5) / 1.0e9, (time7 - time6) / 1.0e9
                     )
-            );
+            );*/
 
             /**
              char key = (char) waitKey(msDelay);
@@ -234,9 +234,9 @@ public class Tracker {
 
             if (linePointsArr[i-1] == null || linePointsArr[i] == null) { break; }   // check for null values
 
-            thickness = (int) Math.round(Math.sqrt(animal.LINE_THICKNESS / (i + 1)) * 2);  // todo what does this do?
-            Point pt1 = new Point(linePointsArr[i - 1][0], linePointsArr[i - 1][1]);
-            Point pt2 = new Point(linePointsArr[i][0], linePointsArr[i][1]);
+            // todo just use one thickness value??
+//            thickness = (int) Math.round(Math.sqrt(animal.LINE_THICKNESS / (linePointsArr.length - i)) * 2);  // todo what does this do?
+            thickness = (int) animal.LINE_THICKNESS;
 
             line(videoFrameMat,
                     new Point(linePointsArr[i-1][0], linePointsArr[i-1][1]),
