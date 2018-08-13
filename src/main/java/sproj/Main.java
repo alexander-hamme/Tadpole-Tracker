@@ -1,5 +1,6 @@
 package sproj;
 
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.bytedeco.javacv.CanvasFrame;
 import sproj.tracking.Tracker;
 

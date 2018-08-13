@@ -24,7 +24,7 @@ public class BoundingBox {
 
     public String toString() {
         return String.format(
-                "Detection at (%d, %d)topleft, (%d, %d)bottomright",
+                "Top Left: (%d, %d), Bottom Right:(%d, %d)",
                 this.topleftX, this.topleftY, this.botRightX, this.botRightY);
     }
 }

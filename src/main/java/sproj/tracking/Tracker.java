@@ -5,12 +5,15 @@ import static org.bytedeco.javacpp.opencv_highgui.imshow;
 import static org.bytedeco.javacpp.opencv_highgui.waitKey;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 import static org.opencv.imgproc.Imgproc.LINE_4;
+
+import com.sun.xml.internal.bind.v2.TODO;
 import org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.*;
 
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 
+import org.opencv.imgproc.Imgproc;
 import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
 import sproj.yolo_porting_attempts.YOLOModelContainer;
@@ -19,6 +22,7 @@ import static sproj.util.IOUtils.logSimpleMessage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 
@@ -60,7 +64,7 @@ public class Tracker {
     }
 
     private void setup(int width, int height) {
-        int[][] colors = {{1, 1, 1}, {90, 90, 90}, {255, 0, 255}, {0, 255, 255}, {0, 0, 255}, {47, 107, 85},
+        int[][] colors = {{100, 100, 100}, {90, 90, 90}, {255, 0, 255}, {0, 255, 255}, {0, 0, 255}, {47, 107, 85},
                 {113, 179, 60}, {255, 0, 0}, {255, 255, 255}, {0, 180, 0}, {255, 255, 0}, {160, 160, 160},
                 {160, 160, 0}, {0, 0, 0}, {202, 204, 249}, {0, 255, 127}, {40, 46, 78}};
 
@@ -100,32 +104,32 @@ public class Tracker {
         Frame frame;
         while ((frame = grabber.grabImage()) != null) {
 
-                                    time1 = System.nanoTime();
+            time1 = System.nanoTime();
 
 //            Mat frameImg = frameConverter.convertToMat(frame);
             Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);
 
-                                    time2 = System.nanoTime();
+            time2 = System.nanoTime();
 
 
             // TODO clone this, so you can show the original scaled up image in the display window???
             resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
 
-                                    time3 = System.nanoTime();
+            time3 = System.nanoTime();
 
 
             detectedObjects = yoloModelContainer.detectImg(frameImg);
             // TODO   pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), try with lower confidence?
-                                    time4 = System.nanoTime();
+            time4 = System.nanoTime();
 
             boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
-                                    time5 = (double) System.nanoTime();
+            time5 = (double) System.nanoTime();
 
 
             updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
 
-                                    time6 = System.nanoTime();
+            time6 = System.nanoTime();
 
 
             for (BoundingBox box : boundingBoxes) {
@@ -133,28 +137,28 @@ public class Tracker {
                         new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
             }
 
-                                    time7 = System.nanoTime();
+            time7 = System.nanoTime();
 
             canvasFrame.showImage(frameConverter.convert(frameImg));
 
 
             logSimpleMessage(
 
-                String.format("%n---------------Time Profiles (s)-------------" +
-                        "%nFrame to Mat Conversion:\t%.7f %nResize Mat Object:\t\t\t%.7f %nYolo Detection:\t\t\t\t%.7f" +
-                        "%nParse Detections:\t\t\t%.7f %nUpdate Obj Tracking:\t\t%.7f %nDraw Graphics:\t\t\t\t%.7f%n" +
-                        "----------------------------------------------%n",
-                        (time2-time1) / 1.0e9, (time3-time2) / 1.0e9, (time4-time3) / 1.0e9,
-                        (time5-time4) / 1.0e9, (time6-time5) / 1.0e9, (time7-time6) / 1.0e9
-                )
+                    String.format("%n---------------Time Profiles (s)-------------" +
+                                    "%nFrame to Mat Conversion:\t%.7f %nResize Mat Object:\t\t\t%.7f %nYolo Detection:\t\t\t\t%.7f" +
+                                    "%nParse Detections:\t\t\t%.7f %nUpdate Obj Tracking:\t\t%.7f %nDraw Graphics:\t\t\t\t%.7f%n" +
+                                    "----------------------------------------------%n",
+                            (time2 - time1) / 1.0e9, (time3 - time2) / 1.0e9, (time4 - time3) / 1.0e9,
+                            (time5 - time4) / 1.0e9, (time6 - time5) / 1.0e9, (time7 - time6) / 1.0e9
+                    )
             );
 
             /**
-            char key = (char) waitKey(msDelay);
-            if (key == 27) { // Escape key to exit      todo check char number for 'q' and other letters
-                destroyAllWindows();
-                break;
-            }
+             char key = (char) waitKey(msDelay);
+             if (key == 27) { // Escape key to exit      todo check char number for 'q' and other letters
+             destroyAllWindows();
+             break;
+             }
              */
 //            Thread.sleep(10L);
         }
@@ -163,7 +167,7 @@ public class Tracker {
     }
 
 
-    private void updateObjectTracking(List<BoundingBox> boundingBoxes,  Mat frameImage, int frameNumber, long timePos) {
+    private void updateObjectTracking(List<BoundingBox> boundingBoxes, Mat frameImage, int frameNumber, long timePos) {
 
         double min_prox, prox;
         int prox_start_val = (int) (Math.sqrt(Math.pow(frameImage.rows(), 2) + Math.pow(frameImage.cols(), 2)) + 0.5);
@@ -177,7 +181,6 @@ public class Tracker {
 
             min_prox = displThresh;
             closestBox = null;
-            circleRadius = 5;     // todo   define this above  or something
 
             for (BoundingBox box : boundingBoxes) {
 
@@ -210,8 +213,6 @@ public class Tracker {
 
             if (DRAW_CIRCLES) {
                 drawShapesOnImageFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
-                circle(frameImage, new Point(animal.x, animal.y), circleRadius, new Scalar(0, 255, 0, 1));
-
             }
         }
     }
@@ -219,22 +220,29 @@ public class Tracker {
 
     private void drawShapesOnImageFrame(Mat videoFrameMat, Animal animal) {
 
+        // TODO: 8/12/18    need to rework this to use    org.bytedeco.javacpp.opencv_highgui
+
         // info : http://bytedeco.org/javacpp-presets/opencv/apidocs/org/bytedeco/javacpp/opencv_imgproc.html#method.detail
 
-        circle(videoFrameMat, new Point(animal.x, animal.y), circleRadius, new Scalar(0, 255, 0, 1));
+        circle(videoFrameMat, new Point(animal.x, animal.y), animal.CIRCLE_RADIUS, new Scalar(0, 255, 0, 1));
 
         int thickness;
+
         int[][] linePointsArr = animal.getLinePointsAsArray();
 
         for (int i = 1; i < linePointsArr.length; i++) {
-            // if (linePointsArr[i] == null || linePointsArr[i-1] == null) { continue; }   // check for null values
-            thickness = (int) Math.round(Math.sqrt(animal.lineThicknessBuffer / (i + 1)) * 2);  // todo what does this do?
-            line(videoFrameMat,
-                    new Point(linePointsArr[i - 1][0], linePointsArr[i - 1][1]),
-                    new Point(linePointsArr[i][0], linePointsArr[i][1]),
-                    animal.color, thickness, 0, LINE_4); // thickness, line type, shift     //LINE_4, LINE_8, or LINE_AA
-        }
 
+            if (linePointsArr[i-1] == null || linePointsArr[i] == null) { break; }   // check for null values
+
+            thickness = (int) Math.round(Math.sqrt(animal.LINE_THICKNESS / (i + 1)) * 2);  // todo what does this do?
+            Point pt1 = new Point(linePointsArr[i - 1][0], linePointsArr[i - 1][1]);
+            Point pt2 = new Point(linePointsArr[i][0], linePointsArr[i][1]);
+
+            line(videoFrameMat,
+                    new Point(linePointsArr[i-1][0], linePointsArr[i-1][1]),
+                    new Point(linePointsArr[i][0], linePointsArr[i][1]),
+                    animal.color, thickness, LINE_4, 0); // thickness, line type, shift     //LINE_4, LINE_8, or LINE_AA
+        }
     }
 
     public void run(int n_objs, String filename, boolean display) throws FrameGrabber.Exception {
@@ -384,7 +392,7 @@ public class Tracker {
                         line(videoFrameMat,
                                 new Point(((int[]) linePointsArr[i - 1])[0], linePointsArr[i - 1][1]),
                                 new Point(linePointsArr[i][0], linePointsArr[i][1]),
-                                animal.color, thickness, 0, LINE_4); // thickness, line type, shift     //LINE_4, LINE_8, or LINE_AA
+                                animal.color, thickness, LINE_4, 0); // thickness, line type, shift     //LINE_4, LINE_8, or LINE_AA
                     }
                 }
 

@@ -1,21 +1,24 @@
 package sproj.tracking;
 
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.bytedeco.javacpp.opencv_core.Scalar;
 
 import java.lang.reflect.Array;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Objects;
 
 public class Animal {
 
     public int x, y;
     public final Scalar color;
-    public final double lineThicknessBuffer = 5.0;
+    public final double LINE_THICKNESS = 25.0;
+    public final int CIRCLE_RADIUS = 15;
     public static int BUFF_INDEX = 60;
     private ArrayList<double[]> dataPoints;
-    private final int linePointsSize = 16;
-    private ArrayDeque<int[]> linePoints;
+    private final int linePointsSize = 32;
+    private CircularFifoQueue<int[]> linePoints;
 
     private int[][] linePointsArray;
     private Iterator pointsIterator;
@@ -24,7 +27,7 @@ public class Animal {
         this.x = x;
         this.y = y;
         this.color = new Scalar(clr[0], clr[1], clr[2], 1.0);
-        this.linePoints = new ArrayDeque<>(linePointsSize);
+        this.linePoints = new CircularFifoQueue<>(linePointsSize);
         this.dataPoints = new ArrayList<>(BUFF_INDEX);
 
         linePointsArray = new int[linePointsSize][];
@@ -32,11 +35,15 @@ public class Animal {
 
     public void updateLocation(int x, int y, long timePos) {
         dataPoints.add(new double[]{x, y, timePos});
-        linePoints.push(new int[]{x, y});   // calls the addFirst() method, adds to front of Deque
+        linePoints.add(new int[]{x, y});   // calls the addFirst() method, adds to front of Deque
         this.x = x; this.y = y;
     }
 
-    public int[][] getLinePointsAsArray() {      // TODO  don't do this, just pass the Deque and iterate through it?
+    public Iterator<int[]> getLinePointsIterator() {      // TODO  figure out how to use this instead?   -->   use linePoints.size() to know when to stop
+        return linePoints.iterator();
+    }
+
+    public int[][] getLinePointsAsArray() {      // TODO  don't do this, just pass an Iterator of the Queue!!!
 
         pointsIterator = linePoints.iterator();
 
