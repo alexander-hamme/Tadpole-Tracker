@@ -3,15 +3,16 @@ package sproj;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.bytedeco.javacv.CanvasFrame;
 import sproj.tracking.Tracker;
+import sproj.util.Logger;
 
 import javax.swing.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import static sproj.util.IOUtils.logSimpleMessage;
-
 public class Main {
+
+    private static Logger logger = new Logger();
 
     private String canvasCaption = "Tadpole Tracker";
 
@@ -71,15 +72,14 @@ public class Main {
         tadpoleTracker.trackVideo(videoPath, cropDimensions, canvas);
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException, Exception {
 
         Main main = new Main();
 
         try {
             main.run();
         } catch (Exception e) {
-            logSimpleMessage(e.getMessage());
-            throw e;
+            logger.error(e);
         } finally {
             main.tadpoleTracker.grabber.release();      // todo    tearDown function
         }

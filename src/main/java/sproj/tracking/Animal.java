@@ -53,6 +53,10 @@ public class Animal {
         return linePointsArray;
     }
 
+    public Iterator<double[]> getDataPointsIterator() {      // TODO  figure out how to use this instead?   -->   use linePoints.size() to know when to stop
+        return dataPoints.iterator();
+    }
+
 
     public double[][] getDataPoints() {
         return (double[][]) dataPoints.toArray();

@@ -36,17 +36,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public final class IOUtils {
     private final static Logger LOGGER = LoggerFactory.getLogger(IOUtils.class);
     private IOUtils() {}
-
-    public static void logSimpleMessage(Object message) {
-        // todo don't do this in the end?
-        // logger.info(...)
-        System.out.println(message);
-    }
 
     public static INDArray loadImage(File imgFile) throws IOException {
         INDArray image = new NativeImageLoader().asMatrix(imgFile);
@@ -126,6 +121,9 @@ public final class IOUtils {
             for (Animal anml : anmls) {
 
                 double[][] dataPoints = anml.getDataPoints();
+
+
+                Iterator<double[]> dataPointsIterator = anml.getDataPointsIterator();
 
 //                out.printRecord(Arrays.toString(anml.color));
                 startIdx = dataPoints.length - Animal.BUFF_INDEX;

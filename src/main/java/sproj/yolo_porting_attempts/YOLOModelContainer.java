@@ -15,14 +15,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
 import sproj.util.DetectionsParser;
+import sproj.util.Logger;
 
 import javax.swing.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
-
-import static sproj.util.IOUtils.logSimpleMessage;
 
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
@@ -32,6 +31,9 @@ import static sproj.util.IOUtils.logSimpleMessage;
  */
 
 public class YOLOModelContainer {
+
+    private Logger logger = new Logger();
+
 
 //    Logger logger = LoggerFactory.getLogger(YOLOModelContainer.class);
 
@@ -91,7 +93,7 @@ public class YOLOModelContainer {
             throw new IOException("Model file could not be restored: " + MODEL_FILE_PATH, e);
         }
 
-        logSimpleMessage("Warming up model...");
+        logger.info("Warming up model...");
         warmupModel(10);
         outputLayer = (Yolo2OutputLayer) yoloModel.getOutputLayer(0);
         //        System.out.println(yoloModel.summary());
