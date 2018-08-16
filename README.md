@@ -1,9 +1,7 @@
 # Tadpole-Tracker
-Undergraduate Thesis project that records and analyzes movement data of many *Xenopus laevis* tadpoles in real time. 
+A computational system that applies computer vision and deep learning to record and analyze movement data of many *Xenopus laevis* tadpoles in real time, for neuroscience research. This is my undergraduate thesis, and is in collaboration with the neuroscience department at Bard College.
 
-Project is in collaboration with the neuroscience department at Bard College.
-
-The program will be implemented in both Java and Python, to increase portability and allow wider access for researchers in biology. The Python code is a work in progress, available [here](https://github.com/alexander-hamme/Sproj-Java).
+The program will be implemented in both Java and Python, to increase portability and allow wider access for researchers in biology. The Python code is a work in progress, available [here](https://github.com/alexander-hamme/Sproj-Java-Python).
 
 -----
 
@@ -22,7 +20,7 @@ Approaches:
 
 Current Progress:
 
-This program runs at approximately 0.9 seconds / frame on my laptop CPU. While still far too slow for real-time analysis, this is a significant time speedup from my Python version of the code, which runs at ~5 seconds a frame. The next step is to enable GPU acceleration with CUDA and try to reach at least 20 frame per second.
+This program runs at approximately 0.9 seconds / frame on my laptop CPU. While still far too slow for real-time analysis, this Java version is a significant time speedup from my Python version of the code, which runs at ~5 seconds a frame. The next step is to enable GPU acceleration with CUDA and try to reach at least 20 frame per second.
 
 ###### Proof of Concept gif:
 
