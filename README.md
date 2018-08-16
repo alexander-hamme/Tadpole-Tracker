@@ -1,7 +1,7 @@
 # Tadpole-Tracker
 A computational system that applies computer vision and deep learning to record and analyze movement data of many *Xenopus laevis* tadpoles in real time, for neuroscience research. This is my undergraduate thesis, in collaboration with the neuroscience department at Bard College.
 
-The program will be implemented in both Java and Python, to increase portability (think single exectuable JAR files) and allow wider access for biology researchers to use in the future. The Python code is a work in progress, available [here](https://github.com/alexander-hamme/Sproj-Java-Python).
+The program will be implemented in both Java and Python, to increase portability (think single exectuable JAR files) and allow wider access for biology researchers to use in the future. The Python code is a work in progress, available [here](https://github.com/alexander-hamme/Tadpole-Tracker-Python).
 
 -----
 
