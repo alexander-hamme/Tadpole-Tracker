@@ -20,7 +20,7 @@ Approaches:
 
 Current Progress:
 
-This program runs at approximately 0.9 seconds / frame on my laptop CPU. While still far too slow for real-time analysis, this Java version is a significant time speedup from my Python version of the code, which runs at ~5 seconds a frame. The next step is to enable GPU acceleration with CUDA and try to reach at least 20 frame per second.
+This program runs at approximately 0.9 seconds / frame on my laptop CPU. While still far too slow for real-time analysis, this Java version is a significant time speedup from my Python version of the code, which runs at ~5 seconds a frame. The next step is to enable GPU acceleration with CUDA and try to reach at least 20 frames per second.
 
 ![Uh oh, it appears the image  didn't load. Please find the proof of concpet at /samples/tracking.png in this repositiory.](/sample/tracker.png?raw=true "Proof of Concept")
 
