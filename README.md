@@ -24,12 +24,6 @@ This program runs at approximately 0.9 seconds / frame on my laptop CPU. While s
 
 ###### Proof of Concept gif:
 
-![Uh oh, it appears the gif didn't load. Please find the gif in the images folder of this repositiory.](/images/proof_of_concept.gif?raw=true "Proof of Concept")
-
-<br>
-
-###### Detection results of custom trained Yolo
-
-![Uh oh, it appears the gif didn't load. Please find it as "yolo_detections.jpg" in the images folder of this repositiory.](/images/yolo_detections.jpg?raw=true "Detection Results")
+![Uh oh, it appears the gif didn't load. Please find the gif in the images folder of this repositiory.](/sample/tracking.png?raw=true "Proof of Concept")
 
 ###### More files will be added soon.
