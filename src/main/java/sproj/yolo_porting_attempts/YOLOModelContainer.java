@@ -1,5 +1,7 @@
 package sproj.yolo_porting_attempts;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bytedeco.javacpp.opencv_core.Mat;
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
@@ -15,7 +17,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
 import sproj.util.DetectionsParser;
-import sproj.util.Logger;
 
 import javax.swing.*;
 import java.io.File;
@@ -32,7 +33,7 @@ import java.util.List;
 
 public class YOLOModelContainer {
 
-    private Logger logger = new Logger();
+    private static final Logger logger = LogManager.getLogger("YOLOModelContainer");   // Todo just have one logger, the Main's?
 
 
 //    Logger logger = LoggerFactory.getLogger(YOLOModelContainer.class);
@@ -100,23 +101,23 @@ public class YOLOModelContainer {
     }
 
     /**
-     * Explanation adopted from https://deeplearning4j.org/benchmark
-     * <p>
-     * Justification for running warm-up iterations before using the model for inference:
-     * <p>
+     * Justification for running warm-up iterations before using the model for inference
+     *
+     * (explanation adopted from https://deeplearning4j.org/benchmark)
+     *
      * A warm-up period is where you run a number of iterations (for example, a few hundred) of your benchmark without timing,
      * before commencing timing for further iterations.
-     * <p>
+     *
      * Why is a warm-up required? The first few iterations of any ND4J/DL4J execution may be slower than those that come later,
      * for a number of reasons:
-     * <p>
+     *
      * In the initial benchmark iterations, the JVM has not yet had time to perform just-in-time compilation of code.
-     * Once JIT has completed, code is likely to execute faster for all subsequent operations ND4J and DL4J
+     * Once JIT has completed, code is likely to execute faster for all subsequent operations. ND4J and DL4J
      * (and, some other libraries) have some degree of lazy initialization: the first operation may trigger
      * some one-off execution code. DL4J or ND4J (when using workspaces) can take some iterations
      * to learn memory requirements for execution.
-     * <p>
-     * During this learning phase, performance will be lower than after its completion.
+
+     * During this initialization phase, performance will be slower than after its completion.
      */
     private void warmupModel(int iterations) {
 

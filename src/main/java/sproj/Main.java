@@ -1,9 +1,10 @@
 package sproj;
 
 import org.apache.commons.collections4.queue.CircularFifoQueue;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bytedeco.javacv.CanvasFrame;
 import sproj.tracking.Tracker;
-import sproj.util.Logger;
 
 import javax.swing.*;
 import java.io.File;
@@ -12,7 +13,7 @@ import java.io.IOException;
 
 public class Main {
 
-    private static Logger logger = new Logger();
+    static final Logger logger = LogManager.getLogger("Main");
 
     private String canvasCaption = "Tadpole Tracker";
 
@@ -49,7 +50,7 @@ public class Main {
         // etc etc, choose file from file window
         // OR select the check box for webcam  -->  can Java autodetect camera devices?
 
-        videoPath = "src/main/resources/videos/IMG_3085.MOV";
+        videoPath = "src/main/resources/videos/IMG_3086.MOV";
 
         try {
             assert (new File(videoPath).exists() && new File(videoPath).isFile());
@@ -60,7 +61,10 @@ public class Main {
 
     private void getInputDataFromUser() {
         NUMBER_OF_OBJECTS_TO_TRACK = 5;
-        cropDimensions = new int[]{550, 160, 500, 500};
+        // IMG_3086  -->  {60,210,500,500}
+        // IMG_3085  -->  550, 160, 500, 500
+        cropDimensions = new int[]{60,210,500,500}; //new int[]{550, 160, 500, 500};
+
     }
 
     private void setUpUtilities() throws IOException {
@@ -81,7 +85,7 @@ public class Main {
         } catch (Exception e) {
             logger.error(e);
         } finally {
-            main.tadpoleTracker.grabber.release();      // todo    tearDown function
+            main.tadpoleTracker.grabber.release();      // TODO    tearDown function
         }
     }
 }

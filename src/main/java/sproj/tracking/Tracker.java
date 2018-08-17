@@ -13,13 +13,15 @@ import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 
 import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
-import sproj.util.Logger;
 import sproj.yolo_porting_attempts.YOLOModelContainer;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import static org.bytedeco.javacpp.opencv_highgui.destroyAllWindows;
 import static org.bytedeco.javacpp.opencv_highgui.waitKey;
@@ -35,14 +37,15 @@ import static org.opencv.imgproc.Imgproc.LINE_AA;
  */
 public class Tracker {
 
-    // TODO  get logger working!!!
-    Logger logger = new Logger();
+
+    private static final Logger logger = LogManager.getLogger("Tracker");
 
     final double DISPL_THRESH_FRACT = 1.5;      // used for distance thresholding
     final int DISPL_THRESH = 80;
     final int ARRAY_MAX_SIZE = 60;              // buffer size of array to accumulate data
     final int frame_resize_width = 720;
     boolean DRAW_SHAPES = true;
+    boolean DRAW_RECTANGLES = false;
     int circleRadius = 5;
 
     private String CANVAS_NAME = "Tadpole Tracker";
@@ -68,7 +71,6 @@ public class Tracker {
     public Tracker(int n_objs, boolean display) throws IOException {
         this.number_of_objs = n_objs;
         this.DRAW_SHAPES = display;
-
 
     }
 
@@ -97,7 +99,9 @@ public class Tracker {
         List<BoundingBox> boundingBoxes;
         List<DetectedObject> detectedObjects;
 
-        Rect cropRect = new Rect(new Point(cropDimensions[0], cropDimensions[1]), new Size(cropDimensions[2], cropDimensions[3]));
+
+        //TODO      use Range instead of Rect?
+        Rect cropRect = new Rect(cropDimensions[0], cropDimensions[1], cropDimensions[2], cropDimensions[3]);
         //  new Range(300,600), new Range(200,400)); //
 
         grabber = new FFmpegFrameGrabber(videoPath);        // OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(videoPath);
@@ -106,11 +110,13 @@ public class Tracker {
         INPUT_FRAME_WIDTH = grabber.getImageWidth();        // todo are these necessary?
         INPUT_FRAME_HEIGHT = grabber.getImageHeight();
 
-        // TODO    bytepointer??
-        opencv_highgui.namedWindow(new BytePointer(CANVAS_NAME));
+        BytePointer windowPointer = new BytePointer(CANVAS_NAME);
 
-        opencv_highgui.namedWindow(CANVAS_NAME);   //, int i?     todo   difference with cvNamedWindow?
-        opencv_highgui.resizeWindow(CANVAS_NAME,WINDOW_WIDTH, WINDOW_HEIGHT);
+        // TODO    bytepointer??
+        opencv_highgui.namedWindow(windowPointer);
+
+//        opencv_highgui.namedWindow(CANVAS_NAME);   //, int i?     todo   difference with cvNamedWindow?
+        opencv_highgui.resizeWindow(windowPointer, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 
 
@@ -125,8 +131,6 @@ public class Tracker {
         canvasFrame.setGlassPane();
 
 
-
-
         Component frameContainer = new Component() {
             @Override
             public boolean imageUpdate(Image img, int infoflags, int x, int y, int w, int h) {
@@ -139,6 +143,10 @@ public class Tracker {
          */
 
 //        opencv_highgui.ButtonCallback testButton = new opencv_highgui.ButtonCallback();
+
+//        opencv_highgui.ButtonCallback buttonCallback = new opencv_highgui.ButtonCallback(windowPointer);
+//        opencv_highgui.createButton(windowPointer, buttonCallback);
+
 
         Frame frame;
         while ((frame = grabber.grabImage()) != null) {
@@ -160,8 +168,6 @@ public class Tracker {
             // TODO: 8/13/18 change everything to opencv_highui
             opencv_highgui.imshow(CANVAS_NAME, frameImg);
 //            opencv_highgui.resizeWindow(CANVAS_NAME,WINDOW_WIDTH, WINDOW_HEIGHT);
-
-//            opencv_highgui.CvButtonCallback button = new opencv_highgui.CvButtonCallback()
 
             int key = waitKey(msDelay);
 
@@ -225,10 +231,11 @@ public class Tracker {
                     }
                 }
 
-                // this rectangle drawing will be removed later  (?)
-                rectangle(frameImage, new Point(box.topleftX, box.topleftY),
-                        new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
-
+                if (DRAW_RECTANGLES) {
+                    // this rectangle drawing will be removed later  (?)
+                    rectangle(frameImage, new Point(box.topleftX, box.topleftY),
+                            new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
+                }
             }
             if (boundingBoxes.size() == animals.size() && closestBox != null) {   // This means min_prox < displacement_thresh?
                 // todo: instead of min_prox --> use (Decision tree? / Markov? / SVM? / ???) to determine if the next point is reasonable
