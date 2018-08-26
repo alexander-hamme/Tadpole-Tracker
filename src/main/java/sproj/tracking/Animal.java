@@ -2,12 +2,8 @@ package sproj.tracking;
 
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.bytedeco.javacpp.opencv_core.Scalar;
-
-import java.lang.reflect.Array;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Objects;
 
 public class Animal {
 

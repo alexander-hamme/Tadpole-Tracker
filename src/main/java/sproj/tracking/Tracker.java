@@ -110,13 +110,9 @@ public class Tracker {
         INPUT_FRAME_WIDTH = grabber.getImageWidth();        // todo are these necessary?
         INPUT_FRAME_HEIGHT = grabber.getImageHeight();
 
-        BytePointer windowPointer = new BytePointer(CANVAS_NAME);
-
-        // TODO    bytepointer??
-        opencv_highgui.namedWindow(windowPointer);
-
-//        opencv_highgui.namedWindow(CANVAS_NAME);   //, int i?     todo   difference with cvNamedWindow?
-        opencv_highgui.resizeWindow(windowPointer, WINDOW_WIDTH, WINDOW_HEIGHT);
+//        opencv_highgui.namedWindow(windowPointer);
+//        opencv_highgui.namedWindow(CANVAS_NAME);   //, int i?
+//        opencv_highgui.resizeWindow(windowPointer, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 
 
@@ -142,16 +138,9 @@ public class Tracker {
         canvasFrame.add("frame", frameContainer);
          */
 
-//        opencv_highgui.ButtonCallback testButton = new opencv_highgui.ButtonCallback();
-
-//        opencv_highgui.ButtonCallback buttonCallback = new opencv_highgui.ButtonCallback(windowPointer);
-//        opencv_highgui.createButton(windowPointer, buttonCallback);
-
 
         Frame frame;
         while ((frame = grabber.grabImage()) != null) {
-
-            // TODO   this needs to be done using opencv.high_gui   instead
 
 //            Mat frameImg = frameConverter.convertToMat(frame);
             Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);   // crop the frame
@@ -165,9 +154,6 @@ public class Tracker {
 
             updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
 
-            // TODO: 8/13/18 change everything to opencv_highui
-            opencv_highgui.imshow(CANVAS_NAME, frameImg);
-//            opencv_highgui.resizeWindow(CANVAS_NAME,WINDOW_WIDTH, WINDOW_HEIGHT);
 
             int key = waitKey(msDelay);
 
@@ -177,10 +163,11 @@ public class Tracker {
                 break;
             }
 
-            /*
+
             canvasFrame.showImage(frameConverter.convert(frameImg));
-            */
-                        /*logSimpleMessage(
+
+
+            /*logSimpleMessage(
 
             String.format("%n---------------Time Profiles (s)-------------" +
                             "%nFrame to Mat Conversion:\t%.7f %nResize Mat Object:\t\t\t%.7f %nYolo Detection:\t\t\t\t%.7f" +
@@ -192,6 +179,7 @@ public class Tracker {
             );*/
 
 //            Thread.sleep(10L);
+
         }
         grabber.release();
         destroyAllWindows();

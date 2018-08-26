@@ -7,11 +7,16 @@ import org.bytedeco.javacv.CanvasFrame;
 import sproj.tracking.Tracker;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class Main {
+
+    private final int CANVAS_WIDTH = 700;
+    private final int CANVAS_HEIGHT = 700;
+
 
     static final Logger logger = LogManager.getLogger("Main");
 
@@ -41,9 +46,13 @@ public class Main {
         // TODO  this should be in a different class
 
         canvas = new CanvasFrame(canvasCaption, 1.0);               // gamma: CanvasFrame.getDefaultGamma()/grabber.getGamma());
-        // canvas.setCanvasSize(IMG_WIDTH, IMG_HEIGHT);                    // WINDOW_WIDTH, WINDOW_HEIGHT);
+         canvas.setCanvasSize(CANVAS_WIDTH, CANVAS_HEIGHT);                    // WINDOW_WIDTH, WINDOW_HEIGHT);
 
         canvas.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);    // Exit application when window is closed.
+
+//        canvas.getContentPane().add();
+        canvas.pack();
+        canvas.setVisible(showDisplay);
     }
 
     private void loadVideoFromFile() throws IOException {
