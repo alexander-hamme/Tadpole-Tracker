@@ -12,6 +12,7 @@ import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
 import sproj.yolo_porting_attempts.YOLOModelContainer;
 
+import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -115,7 +116,6 @@ public class Tracker {
         } finally {
             grabber.release();
         }
-
     }
 
     private void track(Rect cropRect, CanvasFrame canvasFrame) throws InterruptedException, IOException {
@@ -124,31 +124,11 @@ public class Tracker {
         List<BoundingBox> boundingBoxes;
         List<DetectedObject> detectedObjects;
 
-//        opencv_highgui.namedWindow(windowPointer);
-//        opencv_highgui.namedWindow(CANVAS_NAME);   //, int i?
-//        opencv_highgui.resizeWindow(windowPointer, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-
-        /**         TODO    Move these graphic functions to separate class
-
-
-        canvasFrame.setContentPane(new Container());
-        canvasFrame.setIconImage(new Image());                      // convert frame to Graphics Object??
-        canvasFrame.setLayeredPane(new JLayeredPane().paint(new Graphics()););
-        canvasFrame.setGlassPane();
-
-
-        Component frameContainer = new Component() {
-            @Override
-            public boolean imageUpdate(Image img, int infoflags, int x, int y, int w, int h) {
-                return super.imageUpdate(img, infoflags, x, y, w, h);
-            }
-        };
-        canvasFrame.update(new Graphics().create());
-        canvasFrame.createImage(new ImageProducer());
-        canvasFrame.add("frame", frameContainer);
-         */
-
+        int ESCAPE = KeyEvent.VK_ESCAPE;
+        int PAUSE = KeyEvent.VK_P;
+        KeyEvent keyEvent;
+        char keyChar;
 
         Frame frame;
         while ((frame = grabber.grabImage()) != null) {
@@ -166,14 +146,24 @@ public class Tracker {
             updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
 
 
-            int key = waitKey(msDelay);
+            keyEvent = canvasFrame.waitKey(msDelay);
+            if (keyEvent != null) {
+                keyChar = keyEvent.getKeyChar();
+                if (keyChar == ESCAPE) {   // hold escape key to quit
+                    break;
+                } else if (keyChar == PAUSE) {
 
-            if (key == 27) { // Escape key to exit      todo check char number for 'q' and other letters
-                break;
-            } else if (key == (int) 'q') {
-                break;
+                    // todo stop the video stream, but not the whole app?
+
+                    /*Thread.sleep(1000);
+                    int pauseDelay = 100;
+                    do {
+                        Thread.sleep(pauseDelay);
+                        keyEvent = canvasFrame.waitKey();
+                    } while (keyEvent == null || keyEvent.getKeyChar() != PAUSE);
+                    */
+                }
             }
-
 
             canvasFrame.showImage(frameConverter.convert(frameImg));
 
