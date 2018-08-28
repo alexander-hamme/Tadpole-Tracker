@@ -1,24 +1,19 @@
 package sproj;
 
-import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bytedeco.javacv.CanvasFrame;
 import sproj.tracking.Tracker;
 
 import javax.swing.*;
-import java.awt.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class Main {
 
-
-
     private final int CANVAS_WIDTH = 700;
     private final int CANVAS_HEIGHT = 700;
-
 
     static final Logger logger = LogManager.getLogger("Main");
 
@@ -35,7 +30,11 @@ public class Main {
     private int[] cropDimensions;
     private String videoPath;       // this will get passed in?
 
-    public Main() throws IOException {
+    // not to be instantiated
+    private Main(){
+    }
+
+    private void setUp() throws IOException {
         getInputDataFromUser();         // // TODO: 8/12/18  this has to go first to set the value of   n_objs
         setUpDisplay();
         setUpUtilities();
@@ -72,39 +71,43 @@ public class Main {
         }
     }
 
+    /**
+     * This will have input text fields for the user to enter information into.
+     * In addition, the user will be able to select a region of the video to crop to,
+     * which will automatically set the values of cropDimensions.
+     */
     private void getInputDataFromUser() {
-        NUMBER_OF_OBJECTS_TO_TRACK = 5;
-        // IMG_3086  -->  {60,210,500,500}
-        // IMG_3085  -->  550, 160, 500, 500
-        cropDimensions = new int[]{60,210,500,500}; //new int[]{550, 160, 500, 500};
 
+        NUMBER_OF_OBJECTS_TO_TRACK = 5;
+        // video file IMG_3086  -->  {60,210,500,500}
+        // video file IMG_3085  -->  550, 160, 500, 500
+        cropDimensions = new int[]{60,210,500,500};
     }
 
     private void setUpUtilities() throws IOException {
         tadpoleTracker = new Tracker(NUMBER_OF_OBJECTS_TO_TRACK, showDisplay);
+
     }
 
 
-    private void run() throws IOException, InterruptedException {
+    private void runTracker() throws IOException, InterruptedException {
         tadpoleTracker.trackVideo(videoPath, cropDimensions, canvas);
     }
 
     private void tearDown() {
-
-
         canvas.dispose();
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException, Exception {
-
-        Main main = new Main();
+    public void main(String[] args) throws IOException, InterruptedException, Exception {
 
         try {
-            main.run();
-        } catch (Exception e) {
+            setUp();
+            runTracker();
+        } catch (IOException e) {
+            // todo    specific error handling, etc
             logger.error(e);
         } finally {
-            main.tadpoleTracker.grabber.release();      // TODO    tearDown function
+            tearDown();
         }
     }
 }

@@ -104,12 +104,13 @@ public class Tracker {
         grabber = new FFmpegFrameGrabber(videoPath);        // use OpenCVFrameGrabber to automatically require OpenCV as a dependency
         grabber.start();    // open video file
 
-        INPUT_FRAME_WIDTH = grabber.getImageWidth();        // todo     use em or lose em
+        INPUT_FRAME_WIDTH = grabber.getImageWidth();        // todo     use these for canvas frame
         INPUT_FRAME_HEIGHT = grabber.getImageHeight();
 
         try {
             track(cropRect, canvasFrame);
         } catch (InterruptedException | IOException e) {
+            // todo specific error handling
             logger.error(e);
         } finally {
             grabber.release();
