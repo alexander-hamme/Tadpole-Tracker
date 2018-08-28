@@ -14,6 +14,8 @@ import java.io.IOException;
 
 public class Main {
 
+
+
     private final int CANVAS_WIDTH = 700;
     private final int CANVAS_HEIGHT = 700;
 
@@ -49,10 +51,12 @@ public class Main {
          canvas.setCanvasSize(CANVAS_WIDTH, CANVAS_HEIGHT);                    // WINDOW_WIDTH, WINDOW_HEIGHT);
 
         canvas.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);    // Exit application when window is closed.
+        canvas.setResizable(true);
 
 //        canvas.getContentPane().add();
         canvas.pack();
         canvas.setVisible(showDisplay);
+
     }
 
     private void loadVideoFromFile() throws IOException {
@@ -83,6 +87,12 @@ public class Main {
 
     private void run() throws IOException, InterruptedException {
         tadpoleTracker.trackVideo(videoPath, cropDimensions, canvas);
+    }
+
+    private void tearDown() {
+
+
+        canvas.dispose();
     }
 
     public static void main(String[] args) throws IOException, InterruptedException, Exception {

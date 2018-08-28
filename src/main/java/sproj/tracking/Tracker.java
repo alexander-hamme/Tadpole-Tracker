@@ -4,10 +4,7 @@ import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacpp.opencv_core.Point;
 import org.bytedeco.javacpp.opencv_highgui;
-import org.bytedeco.javacv.FFmpegFrameGrabber;
-import org.bytedeco.javacv.OpenCVFrameConverter;
-import org.bytedeco.javacv.CanvasFrame;
-import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.*;
 
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 
@@ -41,7 +38,7 @@ public class Tracker {
     private static final Logger logger = LogManager.getLogger("Tracker");
 
     final double DISPL_THRESH_FRACT = 1.5;      // used for distance thresholding
-    final int DISPL_THRESH = 80;
+    final int DISPL_THRESH = 15;
     final int ARRAY_MAX_SIZE = 60;              // buffer size of array to accumulate data
     final int frame_resize_width = 720;
     boolean DRAW_SHAPES = true;
@@ -88,37 +85,50 @@ public class Tracker {
         }
     }
 
-
-    public void trackVideo(String videoPath, int[] cropDimensions, CanvasFrame canvasFrame) throws InterruptedException, IOException {
-
-        int msDelay = 10;
+    /**
+     * The public tracking function which calls internal track() method for actual detection and object tracking.
+     * @param videoPath String path to file
+     * @param cropDimensions array of four ints, of the form:  [center_x, center_y, width, height]
+     * @param canvasFrame the main CanvasFrame object to update graphics with
+     * @throws InterruptedException
+     * @throws IOException
+     */
+    public void trackVideo(String videoPath, int[] cropDimensions, CanvasFrame canvasFrame) throws FrameGrabber.Exception {
 
         // todo should this be in the constructor, or in a different class?
         setup(cropDimensions[2], cropDimensions[3]);
 
-        List<BoundingBox> boundingBoxes;
-        List<DetectedObject> detectedObjects;
-
-
-        //TODO      use Range instead of Rect?
+        // use Range instead of Rect?       eg new Range(300,600), new Range(200,400));
         Rect cropRect = new Rect(cropDimensions[0], cropDimensions[1], cropDimensions[2], cropDimensions[3]);
-        //  new Range(300,600), new Range(200,400)); //
 
-        grabber = new FFmpegFrameGrabber(videoPath);        // OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(videoPath);
+        grabber = new FFmpegFrameGrabber(videoPath);        // use OpenCVFrameGrabber to automatically require OpenCV as a dependency
         grabber.start();    // open video file
 
-        INPUT_FRAME_WIDTH = grabber.getImageWidth();        // todo are these necessary?
+        INPUT_FRAME_WIDTH = grabber.getImageWidth();        // todo     use em or lose em
         INPUT_FRAME_HEIGHT = grabber.getImageHeight();
+
+        try {
+            track(cropRect, canvasFrame);
+        } catch (InterruptedException | IOException e) {
+            logger.error(e);
+        } finally {
+            grabber.release();
+        }
+
+    }
+
+    private void track(Rect cropRect, CanvasFrame canvasFrame) throws InterruptedException, IOException {
+
+        int msDelay = 10;
+        List<BoundingBox> boundingBoxes;
+        List<DetectedObject> detectedObjects;
 
 //        opencv_highgui.namedWindow(windowPointer);
 //        opencv_highgui.namedWindow(CANVAS_NAME);   //, int i?
 //        opencv_highgui.resizeWindow(windowPointer, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 
-
-
-        /**         TODO    SWITCH BACK TO CANVASFRAME???        look at all its methods!!!
-
+        /**         TODO    Move these graphic functions to separate class
 
 
         canvasFrame.setContentPane(new Container());
@@ -178,14 +188,20 @@ public class Tracker {
             )
             );*/
 
-//            Thread.sleep(10L);
+            Thread.sleep(10L);
 
         }
         grabber.release();
         destroyAllWindows();
     }
 
-
+    /**
+     * Runs once on every frame
+     * @param boundingBoxes list of BoundingBox objects
+     * @param frameImage the current video frame
+     * @param frameNumber current frame number
+     * @param timePos current time stamp in milliseconds
+     */
     private void updateObjectTracking(List<BoundingBox> boundingBoxes, Mat frameImage, int frameNumber, long timePos) {
 
         double min_prox, prox;
@@ -247,73 +263,39 @@ public class Tracker {
         }
     }
 
-
+    /**
+     * Note that these drawing functions change the Mat object by changing color values to draw the shapes.
+     * @param videoFrameMat
+     * @param animal
+     */
     private void drawShapesOnImageFrame(Mat videoFrameMat, Animal animal) {
-
-        // TODO: 8/12/18    need to rework this to use    org.bytedeco.javacpp.opencv_highgui
-
         // info : http://bytedeco.org/javacpp-presets/opencv/apidocs/org/bytedeco/javacpp/opencv_imgproc.html#method.detail
 
-        circle(videoFrameMat, new Point(animal.x, animal.y), animal.CIRCLE_RADIUS, new Scalar(0, 255, 0, 1));
-
-        int thickness;
-
-        Iterator<int[]> linePointsIterator = animal.getLinePointsIterator();
-
-        if (!linePointsIterator.hasNext()) {
-            logger.warn("Line points iterator is empty");
-            return;
-        }
-
+        Scalar circleColor = animal.color; //new Scalar(0,255,0,1);
+        circle(videoFrameMat, new Point(animal.x, animal.y), animal.CIRCLE_RADIUS, circleColor);
 
         // draw trailing trajectory line behind current animal
-        int[] pt1 = linePointsIterator.next();
-        int[] pt2;
+        int lineThickness = animal.LINE_THICKNESS;
+        Iterator<int[]> linePointsIterator = animal.getLinePointsIterator();
 
-        while (linePointsIterator.hasNext()) {
+        if (linePointsIterator.hasNext()) {
 
-            pt2 = linePointsIterator.next();
+            int[] pt1 = linePointsIterator.next();
+            int[] pt2;
 
-            thickness = (int) animal.LINE_THICKNESS;
+            while (linePointsIterator.hasNext()) {
 
-            line(videoFrameMat,
-                    new Point(pt1[0], pt1[1]),
-                    new Point(pt2[0], pt2[1]),
-                    animal.color, thickness, LINE_AA, 0); // thickness, line type, shift  -->   //line type is LINE_4, LINE_8, or LINE_AA
+                pt2 = linePointsIterator.next();
+                // lineThickness = Math.round(Math.sqrt(animal.LINE_THICKNESS / (animal.linePointsSize - i)) * 2);
 
-            pt1 = pt2;
+                line(videoFrameMat,
+                        new Point(pt1[0], pt1[1]),
+                        new Point(pt2[0], pt2[1]),
+                        animal.color, lineThickness, LINE_AA, 0); // lineThickness, line type, shift
+                pt1 = pt2;                                           // -->  line type is LINE_4, LINE_8, or LINE_AA
+            }
+        } else {
+            logger.warn("Line points iterator is empty, failed to draw trajectory paths.");
         }
-
-
-        // TODO   check if iterator is faster (for such a small array) than converting to int[][] array  and iterating through
-
-
-
-        if (1==1) return;
-
-
-
-
-
-        int[][] linePointsArr = animal.getLinePointsAsArray();
-
-        for (int i = 1; i < linePointsArr.length; i++) {
-
-            if (linePointsArr[i - 1] == null || linePointsArr[i] == null) {
-                break;
-            }   // check for null values
-
-            // todo just use one thickness value??
-//            thickness = (int) Math.round(Math.sqrt(animal.LINE_THICKNESS / (linePointsArr.length - i)) * 2);  // todo what does this do?
-            thickness = (int) animal.LINE_THICKNESS;
-
-            line(videoFrameMat,
-                    new Point(linePointsArr[i - 1][0], linePointsArr[i - 1][1]),
-                    new Point(linePointsArr[i][0], linePointsArr[i][1]),
-                    animal.color, thickness, LINE_AA, 0); // thickness, line type, shift  -->   //line type is LINE_4, LINE_8, or LINE_AA
-        }
-
-
-
     }
 }
