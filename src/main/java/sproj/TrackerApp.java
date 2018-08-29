@@ -2,9 +2,13 @@ package sproj;
 
 import org.apache.logging.log4j.Logger;
 import org.bytedeco.javacv.CanvasFrame;
+import org.bytedeco.javacv.Java2DFrameConverter;
 import sproj.tracking.Tracker;
+import sproj.util.VideoFrameComponent;
 
 import javax.swing.*;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -17,7 +21,7 @@ public class TrackerApp {
 
     private static final Logger logger = Main.logger;   //   or    LogManager.getLogger("Main");
 
-    private String canvasCaption = "Tadpole Tracker";
+    private String canvasCaption = "Tracker";
 
 
     // todo should things like IMG_WIDTH be originally set here?
@@ -41,16 +45,30 @@ public class TrackerApp {
 
     private void setUpDisplay() {
 
+        // https://www.programcreek.com/java-api-examples/?api=org.bytedeco.javacv.CanvasFrame
         // todo should this be in a different class?
+
+
+        VideoFrameComponent imageHolder = new VideoFrameComponent();
+
+        JPanel panel = new JPanel();
+        BoxLayout layout = new BoxLayout(panel, BoxLayout.PAGE_AXIS);
+        panel.setLayout(layout);
+        panel.setOpaque(true);
 
         canvas = new CanvasFrame(canvasCaption, 1.0);               // gamma: CanvasFrame.getDefaultGamma()/grabber.getGamma());
         canvas.setCanvasSize(CANVAS_WIDTH, CANVAS_HEIGHT);                    // WINDOW_WIDTH, WINDOW_HEIGHT);
 
+        canvas.setLocationRelativeTo(null);     // centers the window
         canvas.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);    // Exit application when window is closed.
         canvas.setResizable(true);
+        canvas.setLayout(layout);
 
+        canvas.setContentPane(panel);
+//        canvas.getContentPane().add(canvas);
         // add components
 //        canvas.getContentPane().add();
+//        canvas.getContentPane().add(panel);
         canvas.pack();
 
         canvas.setVisible(SHOW_DISPLAY);

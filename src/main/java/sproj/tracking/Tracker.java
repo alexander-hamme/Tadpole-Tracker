@@ -6,12 +6,14 @@ import org.bytedeco.javacpp.opencv_core.Point;
 import org.bytedeco.javacpp.opencv_highgui;
 import org.bytedeco.javacv.*;
 
+import org.bytedeco.javacv.Frame;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 
 import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
 import sproj.yolo_porting_attempts.YOLOModelContainer;
 
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -141,6 +143,13 @@ public class Tracker {
 
             detectedObjects = yoloModelContainer.detectImg(frameImg);    // TODO   pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), try with lower confidence?
 
+            Java2DFrameConverter paintConverter = new Java2DFrameConverter();
+
+            Component[] arr = canvasFrame.getComponents();
+//            canvasFrame.getComponent(0);
+//            paintConverter.getBufferedImage(frame);
+            int x=1;
+
             boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
             updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
@@ -165,7 +174,13 @@ public class Tracker {
                 }
             }
 
-            canvasFrame.showImage(frameConverter.convert(frameImg));
+
+
+
+
+            /*canvasFrame.showImage(frameConverter.convert(frameImg));*/
+
+
 
 
             /*logSimpleMessage(
