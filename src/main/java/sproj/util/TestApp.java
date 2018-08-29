@@ -3,41 +3,37 @@ package sproj.util;
 import org.bytedeco.javacv.CanvasFrame;
 
 import javax.swing.*;
+import java.awt.*;
 
 public class TestApp {
 
+    // https://www.codejava.net/java-se/swing/jpanel-basic-tutorial-and-examples
 
     public static void setUpDisplay() {
 
-
-        JPanel panel = new JPanel();
-        BoxLayout layout = new BoxLayout(panel, BoxLayout.PAGE_AXIS);
-        panel.setLayout(layout);
-        panel.setOpaque(true);
-
-        CanvasFrame canvas = new CanvasFrame("TRACKER", 1.0);               // gamma: CanvasFrame.getDefaultGamma()/grabber.getGamma());
-        canvas.setCanvasSize(700, 700);                    // WINDOW_WIDTH, WINDOW_HEIGHT);
-
-        canvas.setLocationRelativeTo(null);     // centers the window
-        canvas.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);    // Exit application when window is closed.
-        canvas.setResizable(true);
-        canvas.setLayout(layout);
-
-        canvas.setContentPane(panel);
-//        canvas.getContentPane().add(canvas);
-        // add components
-//        canvas.getContentPane().add();
-//        canvas.getContentPane().add(panel);
-        canvas.pack();
-
-        canvas.setVisible(true);
+        /** note that JPanels and other objects can be nested */
     }
 
     public static void main(String[] args) {
-        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+
+        // set look and feel to the system look and feel
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                new TrackerCanvasFrame("Tracker").setVisible(true);
+            }
+        });
+
+        /*javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 setUpDisplay();
             }
-        });
+        });*/
     }
 }
