@@ -1,9 +1,10 @@
 package sproj;
 
-import org.apache.logging.log4j.Logger;
+//import org.apache.logging.log4j.Logger;
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import sproj.tracking.Tracker;
+import sproj.util.Logger;
 import sproj.util.VideoFrameComponent;
 
 import javax.swing.*;
