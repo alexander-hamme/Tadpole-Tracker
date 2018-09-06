@@ -3,6 +3,10 @@ package sproj.util;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
 
 public class VideoFrameComponent extends JComponent {
 

@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 
 import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
+import sproj.util.Logger;
 import sproj.yolo_porting_attempts.YOLOModelContainer;
 
 import java.awt.*;
@@ -20,8 +21,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+//import org.apache.logging.log4j.LogManager;
+//import org.apache.logging.log4j.Logger;
 
 import static org.bytedeco.javacpp.opencv_highgui.destroyAllWindows;
 import static org.bytedeco.javacpp.opencv_highgui.waitKey;
@@ -37,8 +38,7 @@ import static org.opencv.imgproc.Imgproc.LINE_AA;
  */
 public class Tracker {
 
-
-    private static final Logger logger = LogManager.getLogger("Tracker");
+    private static final Logger logger = new Logger();   // LogManager.getLogger("Tracker");
 
     final double DISPL_THRESH_FRACT = 1.5;      // used for distance thresholding
     final int DISPL_THRESH = 15;
@@ -143,12 +143,10 @@ public class Tracker {
 
             detectedObjects = yoloModelContainer.detectImg(frameImg);    // TODO   pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), try with lower confidence?
 
-            Java2DFrameConverter paintConverter = new Java2DFrameConverter();
-
-            Component[] arr = canvasFrame.getComponents();
+//            Java2DFrameConverter paintConverter = new Java2DFrameConverter();
+//            Component[] arr = canvasFrame.getComponents();
 //            canvasFrame.getComponent(0);
 //            paintConverter.getBufferedImage(frame);
-            int x=1;
 
             boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
@@ -194,7 +192,7 @@ public class Tracker {
             )
             );*/
 
-            Thread.sleep(10L);
+//            Thread.sleep(10L);
 
         }
         grabber.release();

@@ -4,8 +4,11 @@ import org.bytedeco.javacv.CanvasFrame;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 
 public class TestApp {
+
 
     // https://www.codejava.net/java-se/swing/jpanel-basic-tutorial-and-examples
 
@@ -14,7 +17,7 @@ public class TestApp {
         /** note that JPanels and other objects can be nested */
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
         // set look and feel to the system look and feel
         try {
@@ -23,11 +26,27 @@ public class TestApp {
             ex.printStackTrace();
         }
 
-        SwingUtilities.invokeLater(new Runnable() {
+        SwingUtilities.invokeLater(() -> {
+            new TrackerCanvasFrame("Tracker");
+
+        });
+
+
+        EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
+                try {
+                    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException ex) {
+                    ex.printStackTrace();
+                }
 
-                new TrackerCanvasFrame("Tracker").setVisible(true);
+                JFrame frame = new JFrame("Testing");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                frame.add(new ImageJPanel());
+                frame.pack();
+                frame.setLocationRelativeTo(null);
+                frame.setVisible(true);         // this must alwasy be called last
             }
         });
 

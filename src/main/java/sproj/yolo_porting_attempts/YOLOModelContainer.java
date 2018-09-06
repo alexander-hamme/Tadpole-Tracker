@@ -1,7 +1,7 @@
 package sproj.yolo_porting_attempts;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+//import org.apache.logging.log4j.LogManager;
+//import org.apache.logging.log4j.Logger;
 import org.bytedeco.javacpp.opencv_core.Mat;
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
@@ -18,6 +18,8 @@ import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
 import sproj.util.DetectionsParser;
 
+import sproj.util.Logger;
+
 import javax.swing.*;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -33,7 +35,7 @@ import java.util.List;
 
 public class YOLOModelContainer {
 
-    private static final Logger logger = LogManager.getLogger("YOLOModelContainer");   // Todo just have one logger, the Main's?
+    private static final Logger logger = new Logger();   //  LogManager.getLogger("YOLOModelContainer");   // Todo don't create new instance, share one logger object, eg from Main
 
 
 //    Logger logger = LoggerFactory.getLogger(YOLOModelContainer.class);

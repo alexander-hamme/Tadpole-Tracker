@@ -2,7 +2,7 @@ package sproj.util;
 
 
 /**
- * Temporary class until you get org.slf4j.impl.StaticLoggerBinder to work
+ * Temporary class for logging until formal Log4J logging framework is incorporated
  */
 public class Logger {
 
@@ -11,27 +11,22 @@ public class Logger {
     }
 
     public void warn(String msg) {
-        logSimpleMessage(msg);
+        System.err.println(msg);
     }
 
     public void info(String msg) {
-        logSimpleMessage(msg);
+        System.out.println(msg);
     }
 
 
-    public void error(String msg, Exception e) throws Exception {
-        logSimpleMessage(msg);
-        throw e;
+    public void error(String msg, Exception e) {
+        info(msg);
+        System.err.println(e.getMessage());
+        e.printStackTrace();
     }
 
-    public void error(Exception e) throws Exception {
-        logSimpleMessage(e.getMessage());
-        throw e;
-    }
-
-    private void logSimpleMessage(Object message) {
-        // todo don't do this in the end?
-        // logger.info(...)
-        System.out.println(message);
+    public void error(Exception e) {
+        System.err.println(e.getMessage());
+        e.printStackTrace();
     }
 }

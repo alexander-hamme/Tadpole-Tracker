@@ -1,11 +1,13 @@
 package sproj;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+//import org.apache.logging.log4j.LogManager;
+//import org.apache.logging.log4j.Logger;
+
+import sproj.util.Logger;
 
 public class Main {
 
-    static final Logger logger = LogManager.getLogger("Main");
+    static final Logger logger = new sproj.util.Logger();   // LogManager.getLogger("Main");
 
     private Main(){/* not to be instantiated*/}
 

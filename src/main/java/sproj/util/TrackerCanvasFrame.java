@@ -1,30 +1,51 @@
 package sproj.util;
 
 import org.bytedeco.javacv.CanvasFrame;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.Java2DFrameConverter;
+//import org.bytedeco.javacv.Frame;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
+import java.io.File;
+import java.io.IOException;
 import java.text.AttributedCharacterIterator;
 
 public class TrackerCanvasFrame extends CanvasFrame {
+    
 
+    private static BufferedImage makeTestImage() throws IOException {
 
-    private class ImageDrawerGraphics extends Graphics2D {
+        if (1==1) {
 
-        @Override
-        public void draw(Shape s) {
+            return ImageIO.read(new File("src/main/resources/images/test_image.png"));
         }
-    }
 
-    @Override
-    public void paint(Graphics g) {
-        super.paint(g);
+        // test starting from video file with FFmpegGrabber
+
+        FFmpegFrameGrabber grabber = new FFmpegFrameGrabber("src/main/resources/videos/IMG_3086.MOV");
+        grabber.start();    // open video file
+
+
+        org.bytedeco.javacv.Frame frame;
+        if ((frame = grabber.grabImage()) == null) {
+            return null;
+        }
+
+
+        Java2DFrameConverter paintConverter = new Java2DFrameConverter();
+        return paintConverter.getBufferedImage(frame);
+
+
     }
 
     public TrackerCanvasFrame(String title) {
         super(title);       // todo  add Gamma / screen number / other constructor args here?
         addComponents();
+//        setVisible(true);   put this in the App class?
     }
 
     private void addComponents() {
@@ -37,10 +58,32 @@ public class TrackerCanvasFrame extends CanvasFrame {
         JButton buttonLogin = new JButton("Login");
 
 
+        ImageIcon imgIcon = new ImageIcon("src/main/resources/images/test_image.png");
+//        imgIcon.setImage();
 
-        Graphics imageDrawer = new Graphics() {
+
+        ImageJPanel imagePanel = new ImageJPanel();
+        imagePanel.setOpaque(true);
+//        imagePanel.setSize(500,500);
+
+
+        JPanel imageHolder = new JPanel();  // todo  add layout
+        BufferedImage testImg = null;
+        try {
+            testImg = makeTestImage();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
+        assert testImg != null;
+        Graphics2D g2d = testImg.createGraphics();
+//        imageHolder.add(g2d);
+
+        try {
+            imagePanel.updateImage(makeTestImage());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.anchor = GridBagConstraints.WEST;
@@ -71,19 +114,24 @@ public class TrackerCanvasFrame extends CanvasFrame {
 
         constraints.gridx = 0;
         constraints.gridy = 3;
-        constraints.gridwidth = 3;
-        constraints.gridheight = 3;
+        constraints.gridwidth = 5;
+        constraints.gridheight = 5;
         constraints.anchor = GridBagConstraints.CENTER;
-        jPanel.add(imageHolder, constraints);
-
-        imageHolder.showImage(new Image);
+        jPanel.add(imagePanel, constraints);
 
         // set border for the panel
         jPanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(), "Login Panel"));
+                BorderFactory.createEtchedBorder(), "Full Tracker"));
 
         this.add(jPanel);
         this.pack();
         this.setLocationRelativeTo(null);   // centers the canvas
+    }
+
+    public void main() {
+        setVisible(true);
+            while (true) {
+                this.repaint();
+            }
     }
 }
