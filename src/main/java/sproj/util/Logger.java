@@ -29,4 +29,8 @@ public class Logger {
         System.err.println(e.getMessage());
         e.printStackTrace();
     }
+
+    public void fatal(Exception e) throws Exception {
+        throw e;
+    }
 }

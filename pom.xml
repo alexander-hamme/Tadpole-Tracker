@@ -24,6 +24,13 @@
             </snapshots>
         </repository>
     </repositories>
+
+    <properties>
+        <nd4j.backend>nd4j-cuda-9.2-platform</nd4j.backend>
+        <dl4j.version>1.0.0-beta2</dl4j.version>
+    </properties>
+
+
     <dependencies>
         <!-- https://mvnrepository.com/artifact/org.bytedeco/javacv -->
         <dependency>
@@ -103,18 +110,23 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-cuda-9.2-platform</artifactId>
-            <version>1.0.0-beta2</version>
+            <version>${dl4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-api</artifactId>
+            <version>${dl4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <!--<artifactId>deeplearning4j-core</artifactId>-->
             <artifactId>deeplearning4j-cuda-9.2</artifactId>
-            <version>1.0.0-beta2</version>
+            <version>${dl4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-zoo</artifactId>
-            <version>1.0.0-beta2</version>
+            <version>${dl4j.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
         <dependency>

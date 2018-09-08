@@ -14,6 +14,7 @@ import sproj.util.DetectionsParser;
 import sproj.util.Logger;
 import sproj.yolo_porting_attempts.YOLOModelContainer;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
@@ -74,6 +75,13 @@ public class Tracker {
 
     }
 
+    public void tearDown() {
+        try {
+            grabber.release();
+        } catch (FrameGrabber.Exception ignored) {
+        }
+    }
+
     private void setup(int width, int height) {
         int[][] colors = {{100, 100, 100}, {90, 90, 90}, {255, 0, 255}, {0, 255, 255}, {0, 0, 255}, {47, 107, 85},
                 {113, 179, 60}, {255, 0, 0}, {255, 255, 255}, {0, 180, 0}, {255, 255, 0}, {160, 160, 160},
@@ -96,7 +104,7 @@ public class Tracker {
      * @throws InterruptedException
      * @throws IOException
      */
-    public void trackVideo(String videoPath, int[] cropDimensions, CanvasFrame canvasFrame) throws FrameGrabber.Exception {
+    public void trackVideo(String videoPath, int[] cropDimensions, CanvasFrame canvasFrame) throws FrameGrabber.Exception, InterruptedException, IOException {
 
         // todo should this be in the constructor, or in a different class?
         setup(cropDimensions[2], cropDimensions[3]);
@@ -112,9 +120,9 @@ public class Tracker {
 
         try {
             track(cropRect, canvasFrame);
-        } catch (InterruptedException | IOException e) {
-            // todo specific error handling
-            logger.error(e);
+//        } catch (InterruptedException | IOException e) {
+//            // todo specific error handling
+//            logger.error(e);
         } finally {
             grabber.release();
         }
@@ -132,8 +140,20 @@ public class Tracker {
         KeyEvent keyEvent;
         char keyChar;
 
+        /** TEMPORARY HACK JUST TO SHOW THE FRAMES*/
+
+        canvasFrame = new CanvasFrame("Tracker");
+        canvasFrame.setLocationRelativeTo(null);     // centers the window
+        canvasFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);    // Exit application when window is closed.
+        canvasFrame.setResizable(true);
+        canvasFrame.setVisible(true);
+
+        long time1;
+
         Frame frame;
         while ((frame = grabber.grabImage()) != null) {
+
+            time1 = System.currentTimeMillis();
 
 //            Mat frameImg = frameConverter.convertToMat(frame);
             Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);   // crop the frame
@@ -151,6 +171,9 @@ public class Tracker {
             boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
             updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
+
+
+            System.out.println("Loop time: " + (System.currentTimeMillis() - time1) / 1000.0 + "s");
 
 
             keyEvent = canvasFrame.waitKey(msDelay);
@@ -176,7 +199,7 @@ public class Tracker {
 
 
 
-            /*canvasFrame.showImage(frameConverter.convert(frameImg));*/
+            canvasFrame.showImage(frameConverter.convert(frameImg));
 
 
 
@@ -193,6 +216,7 @@ public class Tracker {
             );*/
 
 //            Thread.sleep(10L);
+
 
         }
         grabber.release();
@@ -251,7 +275,7 @@ public class Tracker {
                 assignedBoxes.add(closestBox);
 
             } else if (closestBox != null) {
-                System.out.println("First if-statement");
+//                System.out.println("First if-statement");
 
                 animal.updateLocation(closestBox.centerX, closestBox.centerY, timePos);
                 assignedBoxes.add(closestBox);

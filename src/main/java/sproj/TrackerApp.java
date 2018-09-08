@@ -63,7 +63,7 @@ public class TrackerApp {
         canvas.setLocationRelativeTo(null);     // centers the window
         canvas.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);    // Exit application when window is closed.
         canvas.setResizable(true);
-        canvas.setLayout(layout);
+//        canvas.setLayout(layout);
 
         canvas.setContentPane(panel);
 //        canvas.getContentPane().add(canvas);
@@ -138,6 +138,7 @@ public class TrackerApp {
 
     private void tearDown() {
         canvas.dispose();
+        tadpoleTracker.tearDown();
     }
 
     public void run() throws IOException, InterruptedException, Exception {
@@ -146,9 +147,6 @@ public class TrackerApp {
 
         try {
             runTracker();
-        } catch (IOException e) {
-            // todo    specific error handling, etc
-            logger.error(e);
         } finally {
             tearDown();
         }
