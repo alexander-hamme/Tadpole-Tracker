@@ -43,8 +43,8 @@ public class SinglePlateTracker extends Tracker {
 
 //    private int numb_of_anmls;
 
+    private Rect cropRect;
     private int[] cropDimensions;       // array of four ints, of the form:  [center_x, center_y, width, height]
-    private Rect cropRect
     private int videoFrameWidth;
     private int videoFrameHeight;
 

@@ -28,7 +28,7 @@ public class MultiPlateTracker extends Tracker {
     }
 
     @Override
-    void trackVideo(String videoPath, CanvasFrame canvasFrame) {
+    void trackVideo(String videoPath) throws Exception {
 
     }
 }
