@@ -2,14 +2,11 @@ package sproj;
 
 //import org.apache.logging.log4j.Logger;
 import org.bytedeco.javacv.CanvasFrame;
-import org.bytedeco.javacv.Java2DFrameConverter;
-import sproj.tracking.Tracker;
+import sproj.tracking.SinglePlateTracker;
 import sproj.util.Logger;
 import sproj.util.VideoFrameComponent;
 
 import javax.swing.*;
-import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -22,12 +19,12 @@ public class TrackerApp {
 
     private static final Logger logger = Main.logger;   //   or    LogManager.getLogger("Main");
 
-    private String canvasCaption = "Tracker";
+    private String canvasCaption = "SinglePlateTracker";
 
 
     // todo should things like IMG_WIDTH be originally set here?
     private CanvasFrame canvas;
-    private Tracker tadpoleTracker;
+    private SinglePlateTracker tadpoleSinglePlateTracker;
 
 
     private int[] cropDimensions;           // todo   set these to video dimensions by default
@@ -127,18 +124,18 @@ public class TrackerApp {
     }
 
     private void setUpUtilities() throws IOException {
-        tadpoleTracker = new Tracker(NUMBER_OF_OBJECTS_TO_TRACK, SHOW_DISPLAY);
+        tadpoleSinglePlateTracker = new SinglePlateTracker(NUMBER_OF_OBJECTS_TO_TRACK, SHOW_DISPLAY);
 
     }
 
 
     private void runTracker() throws IOException, InterruptedException {
-        tadpoleTracker.trackVideo(videoPath, cropDimensions, canvas);
+        tadpoleSinglePlateTracker.trackVideo(videoPath, cropDimensions, canvas);
     }
 
     private void tearDown() {
         canvas.dispose();
-        tadpoleTracker.tearDown();
+        tadpoleSinglePlateTracker.tearDown();
     }
 
     public void run() throws IOException, InterruptedException, Exception {

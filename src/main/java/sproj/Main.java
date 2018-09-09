@@ -24,7 +24,7 @@ public class Main {
             throw e;
         } finally {
             // todo
-            logger.info("Exiting Tracker App");
+            logger.info("Exiting SinglePlateTracker App");
         }
         System.exit(0);     // todo find out why the app isn't exiting even after an Exception is thrown
     }

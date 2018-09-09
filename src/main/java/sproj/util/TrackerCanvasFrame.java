@@ -121,7 +121,7 @@ public class TrackerCanvasFrame extends CanvasFrame {
 
         // set border for the panel
         jPanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(), "Full Tracker"));
+                BorderFactory.createEtchedBorder(), "Full SinglePlateTracker"));
 
         this.add(jPanel);
         this.pack();

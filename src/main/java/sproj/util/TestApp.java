@@ -27,7 +27,7 @@ public class TestApp {
         }
 
         SwingUtilities.invokeLater(() -> {
-            new TrackerCanvasFrame("Tracker");
+            new TrackerCanvasFrame("SinglePlateTracker");
 
         });
 
