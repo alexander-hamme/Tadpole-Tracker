@@ -4,6 +4,8 @@ import org.bytedeco.javacv.CanvasFrame;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
@@ -19,6 +21,19 @@ public class TestApp {
 
     public static void main(String[] args) throws IOException {
 
+
+        JFrame f = new ImageJFrame();
+
+        f.addWindowListener(new WindowAdapter(){
+            public void windowClosing(WindowEvent e) {
+                System.exit(0);
+            }
+        });
+
+//        f.add(new LoadImageApp());
+        f.pack();
+        f.setVisible(true);
+
         // set look and feel to the system look and feel
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -27,9 +42,15 @@ public class TestApp {
         }
 
         SwingUtilities.invokeLater(() -> {
-            new TrackerCanvasFrame("SinglePlateTracker");
-
+        TrackerCanvasFrame trackerFrame = new TrackerCanvasFrame("SinglePlateTracker");
+            try {
+                trackerFrame.main();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         });
+
+        /*
 
 
         EventQueue.invokeLater(new Runnable() {
@@ -48,7 +69,7 @@ public class TestApp {
                 frame.setLocationRelativeTo(null);
                 frame.setVisible(true);         // this must alwasy be called last
             }
-        });
+        });*/
 
         /*javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {

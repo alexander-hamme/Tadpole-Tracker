@@ -15,6 +15,8 @@ import java.io.IOException;
 import java.text.AttributedCharacterIterator;
 
 public class TrackerCanvasFrame extends CanvasFrame {
+
+    ImageJPanel imagePanel;
     
 
     private static BufferedImage makeTestImage() throws IOException {
@@ -44,11 +46,11 @@ public class TrackerCanvasFrame extends CanvasFrame {
 
     public TrackerCanvasFrame(String title) {
         super(title);       // todo  add Gamma / screen number / other constructor args here?
-        addComponents();
+//        addComponents();
 //        setVisible(true);   put this in the App class?
     }
 
-    private void addComponents() {
+    private void addComponents() throws IOException {
         JPanel jPanel = new JPanel(new GridBagLayout());
 
         JLabel labelUsername = new JLabel("Enter username: ");
@@ -62,12 +64,11 @@ public class TrackerCanvasFrame extends CanvasFrame {
 //        imgIcon.setImage();
 
 
-        ImageJPanel imagePanel = new ImageJPanel();
+        imagePanel = new ImageJPanel();
         imagePanel.setOpaque(true);
 //        imagePanel.setSize(500,500);
 
 
-        JPanel imageHolder = new JPanel();  // todo  add layout
         BufferedImage testImg = null;
         try {
             testImg = makeTestImage();
@@ -84,6 +85,12 @@ public class TrackerCanvasFrame extends CanvasFrame {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+
+
+
+        JLabel imageHolder = new JLabel();
+        imageHolder.imageUpdate(makeTestImage(), 0, 0, 0, 0, 0);
 
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.anchor = GridBagConstraints.WEST;
@@ -128,10 +135,12 @@ public class TrackerCanvasFrame extends CanvasFrame {
         this.setLocationRelativeTo(null);   // centers the canvas
     }
 
-    public void main() {
+    public void main() throws IOException {
         setVisible(true);
             while (true) {
+                imagePanel.updateImage(makeTestImage());
                 this.repaint();
+
             }
     }
 }
