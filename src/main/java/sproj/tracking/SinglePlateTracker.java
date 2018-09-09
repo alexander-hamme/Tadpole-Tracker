@@ -92,9 +92,6 @@ public class SinglePlateTracker extends Tracker {
         grabber = new FFmpegFrameGrabber(videoPath);
         grabber.start();    // open video file
 
-        INPUT_FRAME_WIDTH = grabber.getImageWidth();        // todo     use these for canvas frame
-        INPUT_FRAME_HEIGHT = grabber.getImageHeight();
-
         try {
             track(cropRect);
         } finally {
@@ -108,9 +105,6 @@ public class SinglePlateTracker extends Tracker {
         List<BoundingBox> boundingBoxes;
         List<DetectedObject> detectedObjects;
 
-
-        int ESCAPE = KeyEvent.VK_ESCAPE;
-        int PAUSE = KeyEvent.VK_P;
         KeyEvent keyEvent;
         char keyChar;
 
@@ -152,46 +146,22 @@ public class SinglePlateTracker extends Tracker {
 
             keyEvent = canvasFrame.waitKey(msDelay);
             if (keyEvent != null) {
+
                 keyChar = keyEvent.getKeyChar();
-                if (keyChar == ESCAPE) {   // hold escape key to quit
-                    break;
-                } else if (keyChar == PAUSE) {
 
-                    // todo stop the video stream, but not the whole app?
+                switch(keyChar) {
 
-                    /*Thread.sleep(1000);
-                    int pauseDelay = 100;
-                    do {
-                        Thread.sleep(pauseDelay);
-                        keyEvent = canvasFrame.waitKey();
-                    } while (keyEvent == null || keyEvent.getKeyChar() != PAUSE);
-                    */
+                    case KeyEvent.VK_ESCAPE: break;      // hold escape key or 'q' to quit
+                    case KeyEvent.VK_Q: break;
+
+                    case KeyEvent.VK_P: ;// pause? ;
                 }
+
             }
-
-
-
-
 
             canvasFrame.showImage(frameConverter.convert(frameImg));
 
-
-
-
-            /*logSimpleMessage(
-
-            String.format("%n---------------Time Profiles (s)-------------" +
-                            "%nFrame to Mat Conversion:\t%.7f %nResize Mat Object:\t\t\t%.7f %nYolo Detection:\t\t\t\t%.7f" +
-                            "%nParse Detections:\t\t\t%.7f %nUpdate Obj Tracking:\t\t%.7f %nDraw Graphics:\t\t\t\t%.7f%n" +
-                            "----------------------------------------------%n",
-                    (time2 - time1) / 1.0e9, (time3 - time2) / 1.0e9, (time4 - time3) / 1.0e9,
-                    (time5 - time4) / 1.0e9, (time6 - time5) / 1.0e9, (time7 - time6) / 1.0e9
-            )
-            );*/
-
-//            Thread.sleep(10L);
-
-
+            //            Thread.sleep(10L);
         }
         grabber.release();
         destroyAllWindows();
@@ -215,9 +185,6 @@ public class SinglePlateTracker extends Tracker {
 
         ArrayList<BoundingBox> assignedBoxes = new ArrayList<>(boundingBoxes.size());
         BoundingBox closestBox;
-
-
-        // TODO: 8/13/18 opencv_highgui.startWindowThread() ???    what is this used for
 
         for (Animal animal : animals) {
 
@@ -262,42 +229,6 @@ public class SinglePlateTracker extends Tracker {
             if (DRAW_SHAPES) {
                 drawShapesOnImageFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
             }
-        }
-    }
-
-    /**
-     * Note that these drawing functions change the Mat object by changing color values to draw the shapes.
-     * @param videoFrameMat
-     * @param animal
-     */
-    private void drawShapesOnImageFrame(Mat videoFrameMat, Animal animal) {
-        // info : http://bytedeco.org/javacpp-presets/opencv/apidocs/org/bytedeco/javacpp/opencv_imgproc.html#method.detail
-
-        Scalar circleColor = animal.color; //new Scalar(0,255,0,1);
-        circle(videoFrameMat, new Point(animal.x, animal.y), animal.CIRCLE_RADIUS, circleColor);
-
-        // draw trailing trajectory line behind current animal
-        int lineThickness = animal.LINE_THICKNESS;
-        Iterator<int[]> linePointsIterator = animal.getLinePointsIterator();
-
-        if (linePointsIterator.hasNext()) {
-
-            int[] pt1 = linePointsIterator.next();
-            int[] pt2;
-
-            while (linePointsIterator.hasNext()) {
-
-                pt2 = linePointsIterator.next();
-                // lineThickness = Math.round(Math.sqrt(animal.LINE_THICKNESS / (animal.linePointsSize - i)) * 2);
-
-                line(videoFrameMat,
-                        new Point(pt1[0], pt1[1]),
-                        new Point(pt2[0], pt2[1]),
-                        animal.color, lineThickness, LINE_AA, 0); // lineThickness, line type, shift
-                pt1 = pt2;                                           // -->  line type is LINE_4, LINE_8, or LINE_AA
-            }
-        } else {
-            logger.warn("Line points iterator is empty, failed to draw trajectory paths.");
         }
     }
 }

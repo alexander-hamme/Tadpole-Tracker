@@ -1,5 +1,6 @@
 package sproj.tracking;
 
+import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.FrameGrabber;
@@ -10,6 +11,11 @@ import sproj.yolo_porting_attempts.YOLOModelContainer;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
+
+import static org.bytedeco.javacpp.opencv_imgproc.circle;
+import static org.bytedeco.javacpp.opencv_imgproc.line;
+import static org.opencv.imgproc.Imgproc.LINE_AA;
 
 abstract class Tracker {          //  TODO make this an interface?
 
@@ -47,6 +53,8 @@ abstract class Tracker {          //  TODO make this an interface?
 
     abstract void createAnimalObjects();
 
+    public abstract void trackVideo(String videoPath) throws Exception;
+
 
     public void tearDown() {
         try {
@@ -56,5 +64,39 @@ abstract class Tracker {          //  TODO make this an interface?
     }
 
 
-    abstract void trackVideo(String videoPath) throws Exception;
+    /**
+     * Note that these drawing functions change the Mat object by changing color values to draw the shapes.
+     * @param videoFrameMat Mat object
+     * @param animal Animal object
+     */
+    void drawShapesOnImageFrame(opencv_core.Mat videoFrameMat, Animal animal) {
+        // info : http://bytedeco.org/javacpp-presets/opencv/apidocs/org/bytedeco/javacpp/opencv_imgproc.html#method.detail
+
+        opencv_core.Scalar circleColor = animal.color; //new Scalar(0,255,0,1);
+        circle(videoFrameMat, new opencv_core.Point(animal.x, animal.y), animal.CIRCLE_RADIUS, circleColor);
+
+        // draw trailing trajectory line behind current animal
+        int lineThickness = animal.LINE_THICKNESS;
+        Iterator<int[]> linePointsIterator = animal.getLinePointsIterator();
+
+        if (linePointsIterator.hasNext()) {
+
+            int[] pt1 = linePointsIterator.next();
+            int[] pt2;
+
+            while (linePointsIterator.hasNext()) {
+
+                pt2 = linePointsIterator.next();
+                // lineThickness = Math.round(Math.sqrt(animal.LINE_THICKNESS / (animal.linePointsSize - i)) * 2);
+
+                line(videoFrameMat,
+                        new opencv_core.Point(pt1[0], pt1[1]),
+                        new opencv_core.Point(pt2[0], pt2[1]),
+                        animal.color, lineThickness, LINE_AA, 0); // lineThickness, line type, shift
+                pt1 = pt2;                                           // -->  line type is LINE_4, LINE_8, or LINE_AA
+            }
+        } else {
+            logger.warn("Line points iterator is empty, failed to draw trajectory paths.");
+        }
+    }
 }
