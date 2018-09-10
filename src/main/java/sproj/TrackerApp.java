@@ -127,13 +127,13 @@ public class TrackerApp {
     }
 
     private void setUpUtilities() throws IOException {
-        tadpoleTracker = new Tracker(NUMBER_OF_OBJECTS_TO_TRACK, SHOW_DISPLAY);
+//        tadpoleTracker = new Tracker(NUMBER_OF_OBJECTS_TO_TRACK, SHOW_DISPLAY);
 
     }
 
 
     private void runTracker() throws IOException, InterruptedException {
-        tadpoleTracker.trackVideo(videoPath, cropDimensions, canvas);
+//        tadpoleTracker.trackVideo(videoPath, cropDimensions, canvas);
     }
 
     private void tearDown() {

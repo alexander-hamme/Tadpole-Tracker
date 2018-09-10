@@ -1,0 +1,106 @@
+
+    /*************************************************************************************************************
+     * This previous approach handles all the tracking of video stream within these two methods,
+     * without passing information to the outside.
+     *
+     * In order to integrate Tracking (and frame passing) into a JavaFX application, I need to take a different approach:
+     *
+     * the application will call the above timeStep() function which will process a single frame at a time, and then pass the
+     * frame (with shapes drawn on to it) back out to the application for displaying in the GUI.
+     *
+     *
+     *
+     *
+     * These functions could eventually be put into a Standalone tracker class that
+     * only runs on the command line / doesnt use a GUI?
+     *
+     * */
+
+
+
+    /**
+     * The public tracking function which calls internal track() method for actual detection and object tracking.
+     * @param videoPath String path to file
+     * @throws InterruptedException
+     * @throws IOException
+     */
+    @Override
+    public void trackVideo(String videoPath) throws IOException, InterruptedException {
+
+        grabber = new FFmpegFrameGrabber(videoPath);
+        grabber.start();    // open video file
+
+        try {
+            track(cropRect);
+        } finally {
+            tearDown();
+        }
+    }
+
+    private void track(Rect cropRect) throws InterruptedException, IOException {
+
+        int msDelay = 10;
+        List<BoundingBox> boundingBoxes;
+        List<DetectedObject> detectedObjects;
+
+        KeyEvent keyEvent;
+        char keyChar;
+
+        /** TEMPORARY HACK JUST TO SHOW THE FRAMES*/
+
+        /*canvasFrame = new CanvasFrame("SinglePlateTracker");
+        canvasFrame.setLocationRelativeTo(null);     // centers the window
+        canvasFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);    // Exit application when window is closed.
+        canvasFrame.setResizable(true);
+        canvasFrame.setVisible(true);*/
+
+        long time1;
+
+        Frame frame;
+        while ((frame = grabber.grabImage()) != null) {
+
+            time1 = System.currentTimeMillis();
+
+//            Mat frameImg = frameConverter.convertToMat(frame);
+            Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);   // crop the frame
+
+            // clone this, so you can show the original scaled up image in the display window???
+            resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
+
+            detectedObjects = yoloModelContainer.detectImg(frameImg);    // TODO   pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), try with lower confidence?
+
+//            Java2DFrameConverter paintConverter = new Java2DFrameConverter();
+//            Component[] arr = canvasFrame.getComponents();
+//            canvasFrame.getComponent(0);
+//            paintConverter.getBufferedImage(frame);
+
+            boundingBoxes = detectionsParser.parseDetections(detectedObjects);
+
+            updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
+
+
+            System.out.println("Loop time: " + (System.currentTimeMillis() - time1) / 1000.0 + "s");
+
+
+            keyEvent = canvasFrame.waitKey(msDelay);
+            if (keyEvent != null) {
+
+                keyChar = keyEvent.getKeyChar();
+
+                switch(keyChar) {
+
+                    case KeyEvent.VK_ESCAPE: break;      // hold escape key or 'q' to quit
+                    case KeyEvent.VK_Q: break;
+
+                    case KeyEvent.VK_P: ;// pause? ;
+                }
+
+            }
+
+            canvasFrame.showImage(frameConverter.convert(frameImg));
+
+            //            Thread.sleep(10L);
+        }
+        grabber.release();
+        destroyAllWindows();
+    }

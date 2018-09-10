@@ -3,6 +3,8 @@ package sproj;
 //import org.apache.logging.log4j.LogManager;
 //import org.apache.logging.log4j.Logger;
 
+import javafx.application.Application;
+
 import sproj.util.Logger;
 
 public class Main {
