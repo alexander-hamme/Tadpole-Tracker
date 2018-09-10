@@ -2,6 +2,10 @@ package sproj.tracking;
 
 
 import org.bytedeco.javacv.CanvasFrame;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.FrameGrabber;
+
+import java.io.IOException;
 
 /**
  * Similar to SinglePlateTracker class, this class iterates through the input video feed (from a file or a camera device),
@@ -23,12 +27,22 @@ public class MultiPlateTracker extends Tracker {
 
 
     @Override
+    public Frame timeStep() throws IOException {
+        return null;
+    }
+
+    @Override
     void createAnimalObjects() {
         // for dish in dishes... assign one animal to the center of the dish
     }
 
     @Override
-    public void trackVideo(String videoPath) throws Exception {
+    void initializeFrameGrabber(String videoPath) throws FrameGrabber.Exception {
+
+    }
+
+    @Override
+    public void tearDown() {
 
     }
 }

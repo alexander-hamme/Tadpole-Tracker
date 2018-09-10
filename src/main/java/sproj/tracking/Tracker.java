@@ -1,10 +1,7 @@
 package sproj.tracking;
 
 import org.bytedeco.javacpp.opencv_core;
-import org.bytedeco.javacv.CanvasFrame;
-import org.bytedeco.javacv.FFmpegFrameGrabber;
-import org.bytedeco.javacv.FrameGrabber;
-import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.bytedeco.javacv.*;
 import sproj.util.DetectionsParser;
 import sproj.util.Logger;
 import sproj.yolo_porting_attempts.YOLOModelContainer;
@@ -54,14 +51,14 @@ public abstract class Tracker {          //  TODO make this an interface?
 //    abstract void initializeFrameGrabber(String videoPath) throws FrameGrabber.Exception;
 
 
-    public abstract opencv_core.Mat timeStep() throws IOException;
+    public abstract Frame timeStep() throws IOException;
 
 
     abstract void createAnimalObjects();
 
     abstract void initializeFrameGrabber(String videoPath) throws FrameGrabber.Exception;
 
-    abstract void tearDown();
+    public abstract void tearDown();
 
 
     /**

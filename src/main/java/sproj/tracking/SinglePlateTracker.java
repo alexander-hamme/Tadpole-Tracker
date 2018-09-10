@@ -49,10 +49,8 @@ public class SinglePlateTracker extends Tracker {
     private int videoFrameWidth;
     private int videoFrameHeight;
 
-
-    private List<BoundingBox> boundingBoxes;
-    private List<DetectedObject> detectedObjects;
-
+//    private List<BoundingBox> boundingBoxes;
+//    private List<DetectedObject> detectedObjects;
 
 
     public SinglePlateTracker(int n_objs, boolean drawShapes, int[] crop, CanvasFrame canvasFrame, String videoPath) throws IOException {
@@ -83,7 +81,7 @@ public class SinglePlateTracker extends Tracker {
      * Note that if the grabber reaches the end of the video, it will return null, not raise this exception.
      */
     @Override
-    public opencv_core.Mat timeStep() throws IOException {
+    public Frame timeStep() throws IOException {
 
         Frame frame  = grabber.grabImage();
         if (frame == null) {
@@ -93,12 +91,12 @@ public class SinglePlateTracker extends Tracker {
         Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);   // crop the frame    // TODO: 9/10/18  clone this frame, and rescale the shapes on to the cloned image, so you can pass the original resolution image to the display window
         resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
 
-        detectedObjects = yoloModelContainer.detectImg(frameImg);                   // TODO: 9/10/18  pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), run again with lower confidence?
-        boundingBoxes = detectionsParser.parseDetections(detectedObjects);
+        List<DetectedObject> detectedObjects = yoloModelContainer.detectImg(frameImg);                   // TODO: 9/10/18  pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), run again with lower confidence?
+        List<BoundingBox> boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
         updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
 
-        return frameImg;
+        return frameConverter.convert(frameImg);
 
     }
 
@@ -111,7 +109,7 @@ public class SinglePlateTracker extends Tracker {
 
 
     @Override
-    protected void tearDown() {
+    public void tearDown() {
         try {
             grabber.release();
         } catch (FrameGrabber.Exception ignored) {

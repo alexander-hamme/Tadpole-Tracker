@@ -28,7 +28,7 @@ public class TrackerApp {
 
 
     private int[] cropDimensions;           // todo   set these to video dimensions by default
-    private String videoPath;       // this will get passed in?
+    private String videoPath = "src/main/resources/videos/IMG_3086.MOV";       // this will get passed in
     private int NUMBER_OF_OBJECTS_TO_TRACK;
 
     public TrackerApp(){
@@ -101,8 +101,6 @@ public class TrackerApp {
         // etc etc, choose file from file window
         // OR select the check box for webcam  -->  can Java autodetect camera devices?
 
-        videoPath = "src/main/resources/videos/IMG_3086.MOV";
-
         try {
             assert (new File(videoPath).exists() && new File(videoPath).isFile());
         } catch (AssertionError e) {
@@ -124,18 +122,18 @@ public class TrackerApp {
     }
 
     private void setUpUtilities() throws IOException {
-        tadpoleSinglePlateTracker = new SinglePlateTracker(NUMBER_OF_OBJECTS_TO_TRACK, SHOW_DISPLAY, cropDimensions, canvas);
+        tadpoleSinglePlateTracker = new SinglePlateTracker(NUMBER_OF_OBJECTS_TO_TRACK, SHOW_DISPLAY, cropDimensions, canvas, videoPath);
 
     }
 
 
     private void runTracker() throws IOException, InterruptedException {
-        tadpoleSinglePlateTracker.trackVideo(videoPath);
+//        tadpoleSinglePlateTracker.trackVideo(videoPath);
     }
 
     private void tearDown() {
         canvas.dispose();
-        tadpoleSinglePlateTracker.tearDown();
+//        tadpoleSinglePlateTracker.tearDown();
     }
 
     public void run() throws IOException, InterruptedException, Exception {
