@@ -17,7 +17,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.circle;
 import static org.bytedeco.javacpp.opencv_imgproc.line;
 import static org.opencv.imgproc.Imgproc.LINE_AA;
 
-abstract class Tracker {          //  TODO make this an interface?
+public abstract class Tracker {          //  TODO make this an interface?
 
     static final Logger logger = new Logger();   // LogManager.getLogger("SinglePlateTracker");
 
@@ -39,29 +39,29 @@ abstract class Tracker {          //  TODO make this an interface?
     int WINDOW_WIDTH = 720;     // ask user for size
     int WINDOW_HEIGHT = 720;     // ask user for size
 
+//    FFmpegFrameGrabber grabber;
+
+
 //    protected YOLOModelContainer yoloModelContainer = new YOLOModelContainer();
 //    protected ArrayList<Animal> animals = new ArrayList<>();
 //
 //    private DetectionsParser detectionsParser = new DetectionsParser();
 //    private OpenCVFrameConverter frameConverter = new OpenCVFrameConverter.ToMat();
 
-    protected int numb_of_anmls;     // TODO remove this, since it would number of 'dishes' in MultiPlate??
+    int numb_of_anmls;     // TODO remove this, since it would number of 'dishes' in MultiPlate??
 
-    FFmpegFrameGrabber grabber;
-    CanvasFrame canvasFrame;        // the main CanvasFrame object to update graphics with.
-                                    // Not to be instantiated by tracker. A CanvasFrame instance will be passed from outside App class.
+
+//    abstract void initializeFrameGrabber(String videoPath) throws FrameGrabber.Exception;
+
+
+    public abstract opencv_core.Mat timeStep() throws IOException;
+
 
     abstract void createAnimalObjects();
 
-    public abstract void trackVideo(String videoPath) throws Exception;
+    abstract void initializeFrameGrabber(String videoPath) throws FrameGrabber.Exception;
 
-
-    public void tearDown() {
-        try {
-            grabber.release();
-        } catch (FrameGrabber.Exception ignored) {
-        }
-    }
+    abstract void tearDown();
 
 
     /**
@@ -69,7 +69,7 @@ abstract class Tracker {          //  TODO make this an interface?
      * @param videoFrameMat Mat object
      * @param animal Animal object
      */
-    void drawShapesOnImageFrame(opencv_core.Mat videoFrameMat, Animal animal) {
+    void traceAnimalOnFrame(opencv_core.Mat videoFrameMat, Animal animal) {
         // info : http://bytedeco.org/javacpp-presets/opencv/apidocs/org/bytedeco/javacpp/opencv_imgproc.html#method.detail
 
         opencv_core.Scalar circleColor = animal.color; //new Scalar(0,255,0,1);

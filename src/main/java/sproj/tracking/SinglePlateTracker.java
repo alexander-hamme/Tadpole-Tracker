@@ -1,5 +1,6 @@
 package sproj.tracking;
 
+import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacpp.opencv_core.Point;
 import org.bytedeco.javacv.*;
@@ -11,11 +12,9 @@ import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
 import sproj.yolo_porting_attempts.YOLOModelContainer;
 
-import javax.swing.*;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 //import org.apache.logging.log4j.LogManager;
@@ -24,7 +23,6 @@ import java.util.List;
 import static org.bytedeco.javacpp.opencv_highgui.destroyAllWindows;
 import static org.bytedeco.javacpp.opencv_highgui.waitKey;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
-import static org.opencv.imgproc.Imgproc.LINE_AA;
 
 
 /**
@@ -37,8 +35,11 @@ public class SinglePlateTracker extends Tracker {
 
     private ArrayList<Animal> animals = new ArrayList<>();
     private DetectionsParser detectionsParser = new DetectionsParser();
-    private YOLOModelContainer yoloModelContainer = new YOLOModelContainer();
     private OpenCVFrameConverter frameConverter = new OpenCVFrameConverter.ToMat();
+    private YOLOModelContainer yoloModelContainer;
+    private FFmpegFrameGrabber grabber;
+    private CanvasFrame canvasFrame;        // the main CanvasFrame object to update graphics with.
+    // Not to be instantiated by tracker. A CanvasFrame instance will be passed from outside App class.
 //    private FFmpegFrameGrabber grabber;
 
 //    private int numb_of_anmls;
@@ -49,21 +50,79 @@ public class SinglePlateTracker extends Tracker {
     private int videoFrameHeight;
 
 
-    public SinglePlateTracker(int n_objs, boolean drawShapes, int[] crop, CanvasFrame canvasFrame) throws IOException {
+    private List<BoundingBox> boundingBoxes;
+    private List<DetectedObject> detectedObjects;
+
+
+
+    public SinglePlateTracker(int n_objs, boolean drawShapes, int[] crop, CanvasFrame canvasFrame, String videoPath) throws IOException {
 
         this.numb_of_anmls = n_objs;
         this.DRAW_SHAPES = drawShapes;
         this.CANVAS_NAME = "Tadpole SinglePlateTracker";
-        this.canvasFrame = canvasFrame;
+        this.canvasFrame = canvasFrame;   // todo get rid of this
 
         this.cropDimensions = crop;
         this.videoFrameWidth = cropDimensions[2];
         this.videoFrameHeight = cropDimensions[3];
         this.cropRect = new Rect(cropDimensions[0], cropDimensions[1], cropDimensions[2], cropDimensions[3]);  // use Range instead of Rect?
 
+        initializeFrameGrabber(videoPath);      // test if video file is valid and readable first
         createAnimalObjects();
+        yoloModelContainer = new YOLOModelContainer();  // load model
     }
 
+
+
+
+    /**
+     * To be called from the JavaFX application, ...
+     *
+     * @return the current video frame Mat Object with all animal trajectories and shape traces drawn on it
+     * @throws IOException FrameGrabber.Exception if the grabber cannot read the next Frame for some reason.
+     * Note that if the grabber reaches the end of the video, it will return null, not raise this exception.
+     */
+    @Override
+    public opencv_core.Mat timeStep() throws IOException {
+
+        Frame frame  = grabber.grabImage();
+        if (frame == null) {
+            return null;
+        }
+
+        Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);   // crop the frame    // TODO: 9/10/18  clone this frame, and rescale the shapes on to the cloned image, so you can pass the original resolution image to the display window
+        resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
+
+        detectedObjects = yoloModelContainer.detectImg(frameImg);                   // TODO: 9/10/18  pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), run again with lower confidence?
+        boundingBoxes = detectionsParser.parseDetections(detectedObjects);
+
+        updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
+
+        return frameImg;
+
+    }
+
+    @Override
+    protected void initializeFrameGrabber(String videoPath) throws FrameGrabber.Exception {
+        grabber = new FFmpegFrameGrabber(videoPath);
+        grabber.start();    // open video file
+    }
+
+
+
+    @Override
+    protected void tearDown() {
+        try {
+            grabber.release();
+        } catch (FrameGrabber.Exception ignored) {
+        }
+    }
+
+
+    /**
+     * Create new Animal objects and distribute them diagonally across screen, so they attach themselves
+     * to the real subject animals more quickly and with fewer conflicts
+     */
     @Override
     void createAnimalObjects() {
 
@@ -71,7 +130,7 @@ public class SinglePlateTracker extends Tracker {
                 {113, 179, 60}, {255, 0, 0}, {255, 255, 255}, {0, 180, 0}, {255, 255, 0}, {160, 160, 160},
                 {160, 160, 0}, {0, 0, 0}, {202, 204, 249}, {0, 255, 127}, {40, 46, 78}};
 
-        // distribute animal objects diagonally across screen, so they attach themselves to the real animals quickly and with fewer conflicts
+        // distribute
         int x, y;
         for (int i = 0; i < numb_of_anmls; i++) {
             x = (int) ((i + 1) / ((double) numb_of_anmls * videoFrameWidth));
@@ -80,95 +139,9 @@ public class SinglePlateTracker extends Tracker {
         }
     }
 
-    /**
-     * The public tracking function which calls internal track() method for actual detection and object tracking.
-     * @param videoPath String path to file
-     * @throws InterruptedException
-     * @throws IOException
-     */
-    @Override
-    public void trackVideo(String videoPath) throws IOException, InterruptedException {
-
-        grabber = new FFmpegFrameGrabber(videoPath);
-        grabber.start();    // open video file
-
-        try {
-            track(cropRect);
-        } finally {
-            tearDown();
-        }
-    }
-
-    private void track(Rect cropRect) throws InterruptedException, IOException {
-
-        int msDelay = 10;
-        List<BoundingBox> boundingBoxes;
-        List<DetectedObject> detectedObjects;
-
-        KeyEvent keyEvent;
-        char keyChar;
-
-        /** TEMPORARY HACK JUST TO SHOW THE FRAMES*/
-
-        canvasFrame = new CanvasFrame("SinglePlateTracker");
-        canvasFrame.setLocationRelativeTo(null);     // centers the window
-        canvasFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);    // Exit application when window is closed.
-        canvasFrame.setResizable(true);
-        canvasFrame.setVisible(true);
-
-        long time1;
-
-        Frame frame;
-        while ((frame = grabber.grabImage()) != null) {
-
-            time1 = System.currentTimeMillis();
-
-//            Mat frameImg = frameConverter.convertToMat(frame);
-            Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);   // crop the frame
-
-            // clone this, so you can show the original scaled up image in the display window???
-            resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
-
-            detectedObjects = yoloModelContainer.detectImg(frameImg);    // TODO   pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), try with lower confidence?
-
-//            Java2DFrameConverter paintConverter = new Java2DFrameConverter();
-//            Component[] arr = canvasFrame.getComponents();
-//            canvasFrame.getComponent(0);
-//            paintConverter.getBufferedImage(frame);
-
-            boundingBoxes = detectionsParser.parseDetections(detectedObjects);
-
-            updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
-
-
-            System.out.println("Loop time: " + (System.currentTimeMillis() - time1) / 1000.0 + "s");
-
-
-            keyEvent = canvasFrame.waitKey(msDelay);
-            if (keyEvent != null) {
-
-                keyChar = keyEvent.getKeyChar();
-
-                switch(keyChar) {
-
-                    case KeyEvent.VK_ESCAPE: break;      // hold escape key or 'q' to quit
-                    case KeyEvent.VK_Q: break;
-
-                    case KeyEvent.VK_P: ;// pause? ;
-                }
-
-            }
-
-            canvasFrame.showImage(frameConverter.convert(frameImg));
-
-            //            Thread.sleep(10L);
-        }
-        grabber.release();
-        destroyAllWindows();
-    }
 
     /**
-     * Runs once on every frame
+     * Runs once with each frame
      * @param boundingBoxes list of BoundingBox objects
      * @param frameImage the current video frame
      * @param frameNumber current frame number
@@ -227,7 +200,7 @@ public class SinglePlateTracker extends Tracker {
             }
 
             if (DRAW_SHAPES) {
-                drawShapesOnImageFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
+                traceAnimalOnFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
             }
         }
     }

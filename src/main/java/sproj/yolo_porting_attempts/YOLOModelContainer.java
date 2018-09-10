@@ -1,5 +1,10 @@
 package sproj.yolo_porting_attempts;
 
+
+
+import sproj.util.Logger;
+
+
 //import org.apache.logging.log4j.LogManager;
 //import org.apache.logging.log4j.Logger;
 import org.bytedeco.javacpp.opencv_core.Mat;
@@ -18,7 +23,6 @@ import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
 import sproj.util.DetectionsParser;
 
-import sproj.util.Logger;
 
 import javax.swing.*;
 import java.io.File;
