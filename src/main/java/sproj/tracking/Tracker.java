@@ -2,12 +2,12 @@ package sproj.tracking;
 
 import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.*;
-import sproj.util.DetectionsParser;
+
+
 import sproj.util.Logger;
 import sproj.yolo_porting_attempts.YOLOModelContainer;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
 
 import static org.bytedeco.javacpp.opencv_imgproc.circle;
@@ -36,7 +36,7 @@ public abstract class Tracker {          //  TODO make this an interface?
     int WINDOW_WIDTH = 720;     // ask user for size
     int WINDOW_HEIGHT = 720;     // ask user for size
 
-//    FFmpegFrameGrabber grabber;
+    FFmpegFrameGrabber grabber;
 
 
 //    protected YOLOModelContainer yoloModelContainer = new YOLOModelContainer();
@@ -54,19 +54,26 @@ public abstract class Tracker {          //  TODO make this an interface?
     public abstract Frame timeStep() throws IOException;
 
 
+    public void tearDown() {
+        try {
+            grabber.release();
+        } catch (FrameGrabber.Exception ignored) {
+        }
+    }
+
     abstract void createAnimalObjects();
 
-    abstract void initializeFrameGrabber(String videoPath) throws FrameGrabber.Exception;
-
-    public abstract void tearDown();
-
+    protected void initializeFrameGrabber(String videoPath) throws FrameGrabber.Exception {
+        grabber = new FFmpegFrameGrabber(videoPath);
+        grabber.start();    // open video file
+    }
 
     /**
      * Note that these drawing functions change the Mat object by changing color values to draw the shapes.
      * @param videoFrameMat Mat object
      * @param animal Animal object
      */
-    void traceAnimalOnFrame(opencv_core.Mat videoFrameMat, Animal animal) {
+    protected void traceAnimalOnFrame(opencv_core.Mat videoFrameMat, Animal animal) {
         // info : http://bytedeco.org/javacpp-presets/opencv/apidocs/org/bytedeco/javacpp/opencv_imgproc.html#method.detail
 
         opencv_core.Scalar circleColor = animal.color; //new Scalar(0,255,0,1);

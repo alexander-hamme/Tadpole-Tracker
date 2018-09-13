@@ -2,8 +2,10 @@ package sproj.tracking;
 
 
 import org.bytedeco.javacv.CanvasFrame;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameGrabber;
+import sproj.yolo_porting_attempts.YOLOModelContainer;
 
 import java.io.IOException;
 
@@ -18,11 +20,17 @@ import java.io.IOException;
  */
 public class MultiPlateTracker extends Tracker {
 
-    public MultiPlateTracker(int n_objs, boolean drawShapes) {
+    private YOLOModelContainer yoloModelContainer;
+
+    public MultiPlateTracker(int n_objs, boolean drawShapes, String videoPath) throws IOException {
 
         this.numb_of_anmls = n_objs;
         this.DRAW_SHAPES = drawShapes;
         this.CANVAS_NAME = "Tadpole SinglePlateTracker";
+
+        initializeFrameGrabber(videoPath);      // test if video file is valid and readable first
+        createAnimalObjects();
+        yoloModelContainer = new YOLOModelContainer();  // load model
     }
 
 
@@ -34,15 +42,5 @@ public class MultiPlateTracker extends Tracker {
     @Override
     void createAnimalObjects() {
         // for dish in dishes... assign one animal to the center of the dish
-    }
-
-    @Override
-    void initializeFrameGrabber(String videoPath) throws FrameGrabber.Exception {
-
-    }
-
-    @Override
-    public void tearDown() {
-
     }
 }

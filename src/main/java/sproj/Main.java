@@ -13,10 +13,8 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        TrackerApp app = new TrackerApp();
-
         try {
-            app.run();
+            TrackerApp.launch();
         } catch (Exception e) {
             // todo    specific error handling, etc
 //            e.printStackTrace();

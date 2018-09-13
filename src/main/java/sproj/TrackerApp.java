@@ -1,149 +1,167 @@
 package sproj;
 
-//import org.apache.logging.log4j.Logger;
-import org.bytedeco.javacv.CanvasFrame;
-import sproj.tracking.SinglePlateTracker;
-import sproj.util.Logger;
-import sproj.util.VideoFrameComponent;
+import javafx.animation.AnimationTimer;
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.scene.Group;
+import javafx.scene.Scene;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCombination;
+import javafx.stage.Stage;
 
-import javax.swing.*;
-import java.io.File;
-import java.io.FileNotFoundException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import org.bytedeco.javacv.Java2DFrameConverter;
+import sproj.tracking.MultiPlateTracker;
+import sproj.tracking.SinglePlateTracker;
+import sproj.tracking.Tracker;
+
 import java.io.IOException;
 
-public class TrackerApp {
 
-    private final int CANVAS_WIDTH = 700;
-    private final int CANVAS_HEIGHT = 700;
-    private final boolean SHOW_DISPLAY = true;
+public class TrackerApp extends Application {
 
-    private static final Logger logger = Main.logger;   //   or    LogManager.getLogger("Main");
+    private static final Logger logger = LogManager.getLogger("TrackerApplication");
 
-    private String canvasCaption = "SinglePlateTracker";
+    private final String APPLICATION_TITLE = "Tracker";
+    private final boolean RESIZABLE = true;
+
+    final int INITIAL_CANVAS_WIDTH = 900;
+    final int INITIAL_CANVAS_HEIGHT = 600;
+
+    private int numb_objs_to_track;
+    private boolean drawShapes;
+    private int[] crop;
+    private String videoPath;
 
 
-    // todo should things like IMG_WIDTH be originally set here?
-    private CanvasFrame canvas;
-    private SinglePlateTracker tadpoleSinglePlateTracker;
+    private Image imageFrame;
+    private final ImageView imageView = new ImageView();
 
 
-    private int[] cropDimensions;           // todo   set these to video dimensions by default
-    private String videoPath = "src/main/resources/videos/IMG_3086.MOV";       // this will get passed in
-    private int NUMBER_OF_OBJECTS_TO_TRACK;
+    private Java2DFrameConverter paintConverter = new Java2DFrameConverter();
 
-    public TrackerApp(){
+
+    private Tracker trackerProgram;     // could be either SinglePlate or MultiPlate tracker class
+
+
+    public TrackerApp() throws IOException {
+        getValues();
+        selectTrackerProgram();
     }
 
-    private void setUp() throws IOException {
-        getInputDataFromUser();         //   this has to go first to set the value of   n_objs   for following functions
-        setUpDisplay();
-        setUpUtilities();
-        loadVideoFromFile();
+    public static Logger getLogger() {
+        return logger;
     }
 
-    private void setUpDisplay() {
 
-        // https://www.programcreek.com/java-api-examples/?api=org.bytedeco.javacv.CanvasFrame
-        // todo should this be in a different class?
-
-
-        VideoFrameComponent imageHolder = new VideoFrameComponent();
-
-        JPanel panel = new JPanel();
-        BoxLayout layout = new BoxLayout(panel, BoxLayout.PAGE_AXIS);
-        panel.setLayout(layout);
-        panel.setOpaque(true);
-
-        canvas = new CanvasFrame(canvasCaption, 1.0);               // gamma: CanvasFrame.getDefaultGamma()/grabber.getGamma());
-        canvas.setCanvasSize(CANVAS_WIDTH, CANVAS_HEIGHT);                    // WINDOW_WIDTH, WINDOW_HEIGHT);
-
-        canvas.setLocationRelativeTo(null);     // centers the window
-        canvas.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);    // Exit application when window is closed.
-        canvas.setResizable(true);
-//        canvas.setLayout(layout);
-
-        canvas.setContentPane(panel);
-//        canvas.getContentPane().add(canvas);
-        // add components
-//        canvas.getContentPane().add();
-//        canvas.getContentPane().add(panel);
-        canvas.pack();
-
-        canvas.setVisible(SHOW_DISPLAY);
-
-        /**         TODO    Move these graphic functions to separate class
-
-         canvasFrame.setContentPane(new Container());
-         canvasFrame.setIconImage(new Image());                      // convert frame to Graphics Object??
-         canvasFrame.setLayeredPane(new JLayeredPane().paint(new Graphics()););
-         canvasFrame.setGlassPane();
-
-
-         Component frameContainer = new Component() {
-        @Override
-        public boolean imageUpdate(Image img, int infoflags, int x, int y, int w, int h) {
-        return super.imageUpdate(img, infoflags, x, y, w, h);
+    private void selectTrackerProgram() throws IOException {
+        // input from user todo
+        String selected = "singleplate";
+        if (selected == "singleplate") {
+            trackerProgram = new SinglePlateTracker(numb_objs_to_track, drawShapes, crop, videoPath);
+        } else {
+            trackerProgram = new MultiPlateTracker(numb_objs_to_track, drawShapes, videoPath);
         }
+    }
+
+    private void getValues() {
+        // input from user
+        numb_objs_to_track = 5;
+        drawShapes = true;
+        crop = new int[]{60,210,500,500};
+            // video file IMG_3086  -->  {60,210,500,500}
+            // video file IMG_3085  -->  {550, 160, 500, 500}
+        videoPath = "src/main/resources/videos/IMG_3086.MOV";
+    }
+
+
+    private void setUpGraphics(Stage stage) {
+
+    }
+
+    private void listenInput(Stage stage) {
+        //tie the F key to fullscreen:
+        /*if (pressed f key){
+            stage.setFullScreen(true);
+            stage.setFullScreenExitHint("Press esc to exit full screen");
+        }*/
+    }
+
+    @Override
+    public void start(Stage stage) {
+
+        stage.setTitle(APPLICATION_TITLE);
+
+        Group root = new Group();
+        Scene scene = new Scene(root, INITIAL_CANVAS_WIDTH, INITIAL_CANVAS_HEIGHT);
+
+        root.getChildren().add(imageView);
+
+
+        stage.setResizable(RESIZABLE);
+        stage.setScene(scene);
+
+//        Canvas canvas = new Canvas(512, 512);
+//        root.getChildren().add(canvas);
+//
+//        GraphicsContext gc = canvas.getGraphicsContext2D();
+
+
+//        final long startNanoTime = System.nanoTime();
+
+
+        // todo Click Start button to call a function to do this?
+        AnimationTimer timer = new AnimationTimer() {
+
+//            Image imageFrame = new Image(new File("src/main/resources/images/test_image.png").toURI().toString());
+
+            @Override
+            public void handle(long currentNanoTime) {
+
+                try {
+                    imageFrame = convert(trackerProgram.timeStep());  // new Image(new File("src/main/resources/images/test_image.png").toURI().toString());  //
+
+                    if (imageFrame == null) {/* logger.info("Reached end of video")*/
+                        trackerProgram.tearDown();
+                        stop(); }
+                    imageView.setImage(imageFrame);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    trackerProgram.tearDown();
+                    stop();
+                }
+            }
         };
-         canvasFrame.update(new Graphics().create());
-         canvasFrame.createImage(new ImageProducer());
-         canvasFrame.add("frame", frameContainer);
-         */
 
+
+        // todo Click button to start timer
+        timer.start();
+        stage.show();
     }
 
-    /**
-     * This will be replaced by a native file selection window,
-     * which will then set the video path
-     * @throws IOException
-     */
-    private void loadVideoFromFile() throws IOException {
-        // etc etc, choose file from file window
-        // OR select the check box for webcam  -->  can Java autodetect camera devices?
 
+    private Image convert(org.bytedeco.javacv.Frame frame) {
+        if (frame == null) return null;
+        return SwingFXUtils.toFXImage(paintConverter.convert(frame), null);
+    }
+
+    public static void main(String[] args) {
         try {
-            assert (new File(videoPath).exists() && new File(videoPath).isFile());
-        } catch (AssertionError e) {
-            throw new FileNotFoundException("Could not find file: " + videoPath);
-        }
-    }
-
-    /**
-     * This will have input text fields for the user to enter information into.
-     * The user will also be able to select a region of the video to crop to,
-     * which will automatically set the values of cropDimensions.
-     */
-    private void getInputDataFromUser() {
-
-        NUMBER_OF_OBJECTS_TO_TRACK = 5;
-        // video file IMG_3086  -->  {60,210,500,500}
-        // video file IMG_3085  -->  550, 160, 500, 500
-        cropDimensions = new int[]{60,210,500,500};
-    }
-
-    private void setUpUtilities() throws IOException {
-        tadpoleSinglePlateTracker = new SinglePlateTracker(NUMBER_OF_OBJECTS_TO_TRACK, SHOW_DISPLAY, cropDimensions, canvas, videoPath);
-
-    }
-
-
-    private void runTracker() throws IOException, InterruptedException {
-//        tadpoleSinglePlateTracker.trackVideo(videoPath);
-    }
-
-    private void tearDown() {
-        canvas.dispose();
-//        tadpoleSinglePlateTracker.tearDown();
-    }
-
-    public void run() throws IOException, InterruptedException, Exception {
-
-        setUp();
-
-        try {
-            runTracker();
+            Platform.setImplicitExit(true);
+            TrackerApp.launch(args);
+        } catch (Exception e) {
+            //logger.error(e);
+            //etc etc
+            e.printStackTrace();
         } finally {
-            tearDown();
+            Platform.exit();
+//            System.exit(ERRNO);
         }
     }
 }
+
+
