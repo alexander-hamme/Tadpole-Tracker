@@ -18,8 +18,8 @@ Approaches:
 
 -----
 
-Current Progress:
+Recent Progress:
 
-This program currently runs at 25-30 frames / second on an Nvidia GTX 1070 GPU. Using Java with the ND4J and DeepLearning4J libraries has provided a significant time speedup from the Python version of this project, which runs at <20 frames / second on the same computer.
+The program now runs at 25-30 frames / second on an Nvidia GTX 1070 GPU. Using Java with the ND4J and DeepLearning4J libraries has provided a significant time speedup from the Python version of this project, which runs at <20 frames / second on the same computer.
 
 ![Uh oh, it appears the image  didn't load. Please find the proof of concept at /samples/tracking.png in this repositiory.](/sample/tracker.png?raw=true "Proof of Concept")
