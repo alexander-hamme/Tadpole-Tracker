@@ -1,6 +1,8 @@
 package sproj.tracking;
 
 import org.bytedeco.javacpp.opencv_core.*;
+import org.bytedeco.javacv.CanvasFrame;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
@@ -8,6 +10,7 @@ import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
 import sproj.yolo_porting_attempts.YOLOModelContainer;
 
+import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,7 +69,7 @@ public class SinglePlateTracker extends Tracker {
 
 
     /**
-     * To be called from the JavaFX application, ...
+     * Called from the main JavaFX application with each call to the Animation Timer's update() function
      *
      * @return the current video frame Mat Object with all animal trajectories and shape traces drawn on it
      * @throws IOException FrameGrabber.Exception if the grabber cannot read the next Frame for some reason.
@@ -96,7 +99,7 @@ public class SinglePlateTracker extends Tracker {
      * to the real subject animals more quickly and with fewer conflicts
      */
     @Override
-    void createAnimalObjects() {
+    protected void createAnimalObjects() {
 
         int[][] colors = {{100, 100, 100}, {90, 90, 90}, {255, 0, 255}, {0, 255, 255}, {0, 0, 255}, {47, 107, 85},
                 {113, 179, 60}, {255, 0, 0}, {255, 255, 255}, {0, 180, 0}, {255, 255, 0}, {160, 160, 160},
@@ -169,5 +172,116 @@ public class SinglePlateTracker extends Tracker {
                 traceAnimalOnFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
             }
         }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * OLD CODE    for quick testing purposes only
+     *
+     * @param videoPath
+     * @throws IOException
+     * @throws InterruptedException
+     */
+
+
+
+    public void trackVideo(String videoPath) throws IOException, InterruptedException {
+
+        grabber = new FFmpegFrameGrabber(videoPath);
+        grabber.start();    // open video file
+
+        try {
+            track(cropRect);
+        } finally {
+            tearDown();
+        }
+    }
+
+    private void track(Rect cropRect) throws InterruptedException, IOException {
+
+        CanvasFrame canvasFrame = new CanvasFrame("Test");
+
+        int msDelay = 10;
+        List<BoundingBox> boundingBoxes;
+        List<DetectedObject> detectedObjects;
+
+        KeyEvent keyEvent;
+        char keyChar;
+
+        /** TEMPORARY HACK JUST TO SHOW THE FRAMES*/
+
+        /*canvasFrame = new CanvasFrame("SinglePlateTracker");
+        canvasFrame.setLocationRelativeTo(null);     // centers the window
+        canvasFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);    // Exit application when window is closed.
+        canvasFrame.setResizable(true);
+        canvasFrame.setVisible(true);*/
+
+        long time1;
+
+        Frame frame;
+        while ((frame = grabber.grabImage()) != null) {
+
+            time1 = System.currentTimeMillis();
+
+//            Mat frameImg = frameConverter.convertToMat(frame);
+            Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);   // crop the frame
+
+            // clone this, so you can show the original scaled up image in the display window???
+            resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
+
+            detectedObjects = yoloModelContainer.runInference(frameImg);    // TODO   pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), try with lower confidence?
+
+//            Java2DFrameConverter paintConverter = new Java2DFrameConverter();
+//            Component[] arr = canvasFrame.getComponents();
+//            canvasFrame.getComponent(0);
+//            paintConverter.getBufferedImage(frame);
+
+            boundingBoxes = detectionsParser.parseDetections(detectedObjects);
+
+            updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
+
+
+            System.out.println("Loop time: " + (System.currentTimeMillis() - time1) / 1000.0 + "s");
+
+
+            keyEvent = canvasFrame.waitKey(msDelay);
+            if (keyEvent != null) {
+
+                keyChar = keyEvent.getKeyChar();
+
+                switch(keyChar) {
+
+                    case KeyEvent.VK_ESCAPE: break;      // hold escape key or 'q' to quit
+                    case KeyEvent.VK_Q: break;
+
+                    case KeyEvent.VK_P: ;// pause? ;
+                }
+
+            }
+
+            canvasFrame.showImage(frameConverter.convert(frameImg));
+
+            //            Thread.sleep(10L);
+        }
+        grabber.release();
+    }
+
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+        SinglePlateTracker tracker = new SinglePlateTracker(1, true, new int[]{150,30,600,600}, "src/main/resources/videos/IMG_4881.MOV");
+        tracker.trackVideo("src/main/resources/videos/IMG_4881.MOV");
     }
 }

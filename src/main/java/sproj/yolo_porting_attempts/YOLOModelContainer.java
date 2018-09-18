@@ -10,7 +10,7 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
-//import sproj.util.Logger;
+import sproj.util.Logger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -21,8 +21,8 @@ import java.util.List;
 //import org.apache.logging.log4j.Logger;
 
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+//import org.apache.logging.log4j.LogManager;
+//import org.apache.logging.log4j.Logger;
 import sproj.TrackerApp;
 
 
@@ -62,6 +62,23 @@ public class YOLOModelContainer {
 //    private int numClasses = 1;
 //    private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
 //    private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+
+
+    /**
+     * Passing a Frame object to the asMatrix() function results in it being converted to a Mat object anyway,
+     * so it is more efficient to have only one Frame to Mat conversion happening in each iteration of the main program loop.
+     * That is the reasoning behind having this function take the converted Mat object instead of the original Frame.
+     *
+     * @param image
+     * @return
+     * @throws IOException
+     */
+    public List<DetectedObject> runInference(Mat image) throws IOException {
+        INDArray imgArr = imageLoader.asMatrix(image);
+        normalizingScaler.transform(imgArr);
+        INDArray output = yoloModel.outputSingle(imgArr);
+        return outputLayer.getPredictedObjects(output, CONF_THRESHOLD);
+    }
 
     public YOLOModelContainer() throws IOException {
 
@@ -110,21 +127,5 @@ public class YOLOModelContainer {
         for (int i = 0; i < iterations; i++) {
             yoloModel.outputSingle(warmupArray);
         }
-    }
-
-    /**
-     * Passing a Frame object to the asMatrix() function results in it being converted to a Mat object anyway,
-     * so it is more efficient to have only one Frame to Mat conversion happening in each iteration of the main program loop.
-     * That is the reasoning behind having this function take the converted Mat object instead of the original Frame.
-     *
-     * @param image
-     * @return
-     * @throws IOException
-     */
-    public List<DetectedObject> runInference(Mat image) throws IOException {
-        INDArray imgArr = imageLoader.asMatrix(image);
-        normalizingScaler.transform(imgArr);
-        INDArray output = yoloModel.outputSingle(imgArr);
-        return outputLayer.getPredictedObjects(output, CONF_THRESHOLD);
     }
 }

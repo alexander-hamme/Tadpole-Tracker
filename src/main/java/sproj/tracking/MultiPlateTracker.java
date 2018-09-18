@@ -40,7 +40,7 @@ public class MultiPlateTracker extends Tracker {
     }
 
     @Override
-    void createAnimalObjects() {
+    protected void createAnimalObjects() {
         // for dish in dishes... assign one animal to the center of the dish
     }
 }

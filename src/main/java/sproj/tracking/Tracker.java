@@ -36,7 +36,7 @@ public abstract class Tracker {          //  TODO make this an interface?
     int WINDOW_WIDTH = 720;     // ask user for size
     int WINDOW_HEIGHT = 720;     // ask user for size
 
-    FFmpegFrameGrabber grabber;
+    protected FFmpegFrameGrabber grabber;
 
 
 //    protected YOLOModelContainer yoloModelContainer = new YOLOModelContainer();
@@ -61,7 +61,7 @@ public abstract class Tracker {          //  TODO make this an interface?
         }
     }
 
-    abstract void createAnimalObjects();
+    protected abstract void createAnimalObjects();
 
     protected void initializeFrameGrabber(String videoPath) throws FrameGrabber.Exception {
         grabber = new FFmpegFrameGrabber(videoPath);
@@ -91,7 +91,7 @@ public abstract class Tracker {          //  TODO make this an interface?
             while (linePointsIterator.hasNext()) {
 
                 pt2 = linePointsIterator.next();
-                // lineThickness = Math.round(Math.sqrt(animal.LINE_THICKNESS / (animal.linePointsSize - i)) * 2);
+                // lineThickness = Math.round(Math.sqrt(animal.LINE_THICKNESS / (animal.LINE_POINTS_SIZE - i)) * 2);
 
                 line(videoFrameMat,
                         new opencv_core.Point(pt1[0], pt1[1]),

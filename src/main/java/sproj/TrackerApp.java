@@ -11,8 +11,9 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCombination;
 import javafx.stage.Stage;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+//import org.apache.logging.log4j.LogManager;
+//import org.apache.logging.log4j.Logger;
+import sproj.util.Logger;
 
 import org.bytedeco.javacv.Java2DFrameConverter;
 import sproj.tracking.MultiPlateTracker;
@@ -24,7 +25,7 @@ import java.io.IOException;
 
 public class TrackerApp extends Application {
 
-    private static final Logger logger = LogManager.getLogger("TrackerApplication");
+    private static final Logger logger = new Logger(); //LogManager.getLogger("TrackerApplication");
 
     private final String APPLICATION_TITLE = "Tracker";
     private final boolean RESIZABLE = true;
@@ -75,7 +76,7 @@ public class TrackerApp extends Application {
         crop = new int[]{60,210,500,500};
             // video file IMG_3086  -->  {60,210,500,500}
             // video file IMG_3085  -->  {550, 160, 500, 500}
-        videoPath = "src/main/resources/videos/IMG_3086.MOV";
+        videoPath = "src/main/resources/videos/IMG_3085.MOV";
     }
 
 

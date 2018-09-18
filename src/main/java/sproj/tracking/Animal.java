@@ -7,26 +7,26 @@ import java.util.Iterator;
 
 public class Animal {
 
-    public int x, y;
     public final Scalar color;
     public final int LINE_THICKNESS = 2;
     public final int CIRCLE_RADIUS = 15;
-    public static int BUFF_INDEX = 60;
-    public final int linePointsSize = 16;
+    public final int LINE_POINTS_SIZE = 16;
+    public final static int DATA_BUFFER_ARRAY_SIZE = 60;
+
     private ArrayList<double[]> dataPoints;
     private CircularFifoQueue<int[]> linePoints;
 
-    private int[][] linePointsArray;
-    private Iterator pointsIterator;
+    public int x, y;
+    public double currentHeading;
+    public MovementState movementState;
 
     public Animal(int x, int y, int[] clr) {
         this.x = x;
         this.y = y;
+        this.currentHeading = 0;
         this.color = new Scalar(clr[0], clr[1], clr[2], 1.0);
-        this.linePoints = new CircularFifoQueue<>(linePointsSize);
-        this.dataPoints = new ArrayList<>(BUFF_INDEX);
-
-        linePointsArray = new int[linePointsSize][];
+        this.linePoints = new CircularFifoQueue<>(LINE_POINTS_SIZE);
+        this.dataPoints = new ArrayList<>(DATA_BUFFER_ARRAY_SIZE);
     }
 
     public void updateLocation(int x, int y, long timePos) {
@@ -35,11 +35,20 @@ public class Animal {
         this.x = x; this.y = y;
     }
 
+    private enum MovementState {
+        INMOTION, STATIONARY, STARTLED
+    }
+
     public Iterator<int[]> getLinePointsIterator() {      // TODO  figure out how to use this instead?   -->   use linePoints.size() to know when to stop
         return linePoints.iterator();
     }
 
-    public int[][] getLinePointsAsArray() {      // TODO  don't do this, just pass an Iterator of the Queue!!!
+    public Iterator<double[]> getDataPointsIterator() {      // TODO  figure out how to use this instead?   -->   use linePoints.size() to know when to stop
+        return dataPoints.iterator();
+    }
+
+
+/*    public int[][] getLinePointsAsArray() {
 
         pointsIterator = linePoints.iterator();
 
@@ -48,14 +57,8 @@ public class Animal {
         }
         return linePointsArray;
     }
-
-    public Iterator<double[]> getDataPointsIterator() {      // TODO  figure out how to use this instead?   -->   use linePoints.size() to know when to stop
-        return dataPoints.iterator();
-    }
-
-
     public double[][] getDataPoints() {
         return (double[][]) dataPoints.toArray();
-    }
+    }*/
 
 }
