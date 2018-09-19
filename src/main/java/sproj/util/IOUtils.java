@@ -57,6 +57,49 @@ public final class IOUtils {
         }
     }
 
+
+
+    static void writeData(String fileName, ArrayList<Animal> anmls, String header, int sigFigs) throws IOException {
+
+        BufferedWriter bw = Files.newBufferedWriter(Paths.get(fileName));
+
+        if (fileName.contains(".csv")) {
+            CSVPrinter out = new CSVPrinter(bw, CSVFormat.DEFAULT);
+            out.printRecord(header);
+
+            int startIdx, endIdx;
+
+            for (Animal anml : anmls) {
+
+//                double[][] dataPoints = anml.getDataPointsIterator();
+
+                double[][] dataPoints = null;
+
+
+                Iterator<double[]> dataPointsIterator = anml.getDataPointsIterator();
+
+//                out.printRecord(Arrays.toString(anml.color));
+                startIdx = dataPoints.length - Animal.DATA_BUFFER_ARRAY_SIZE;
+                endIdx = dataPoints.length;
+
+                if (startIdx < 0) { continue; }
+
+                for (int i=startIdx; i<endIdx; i++) {
+                    out.printRecord(
+                            (double[]) dataPoints[i]
+                    );
+                }
+                out.println();  // two blank lines
+                out.println();
+            }
+            out.close();
+        } else {
+
+        }
+
+        bw.close();
+    }
+
     public static String getFileName(final String path) {
         return path.substring(path.lastIndexOf("/") + 1, path.length());
     }
@@ -108,47 +151,9 @@ public final class IOUtils {
         ModelSerializer.writeModel(model, saveName, false);
     }
 
-    static void writeData(String fileName, ArrayList<Animal> anmls, String header, int sigFigs) throws IOException {
-
-        BufferedWriter bw = Files.newBufferedWriter(Paths.get(fileName));
-
-        if (fileName.contains(".csv")) {
-            CSVPrinter out = new CSVPrinter(bw, CSVFormat.DEFAULT);
-            out.printRecord(header);
-
-            int startIdx, endIdx;
-
-            for (Animal anml : anmls) {
-
-                double[][] dataPoints = anml.getDataPoints();
 
 
-                Iterator<double[]> dataPointsIterator = anml.getDataPointsIterator();
-
-//                out.printRecord(Arrays.toString(anml.color));
-                startIdx = dataPoints.length - Animal.BUFF_INDEX;
-                endIdx = dataPoints.length;
-
-                if (startIdx < 0) { continue; }
-
-                for (int i=startIdx; i<endIdx; i++) {
-                    out.printRecord(
-                            (double[]) dataPoints[i]
-                    );
-                }
-                out.println();  // two blank lines
-                out.println();
-            }
-            out.close();
-        } else {
-
-        }
-
-        bw.close();
-    }
-
-
-    private void saveNewYoloModelOrSomething(String modelFilePath) throws IOException {
+    private void saveNewYoloModel(String modelFilePath) throws IOException {
         try {
 
             File modelFile = new File(modelFilePath);
