@@ -20,6 +20,6 @@ Approaches:
 
 Current Progress:
 
-This program runs at ~0.9 seconds / frame on a laptop CPU. While still far too slow for real-time analysis, using Java and the DeepLearning4J library has provided a significant time speedup from the Python version of this project, which runs at ~5 seconds a frame. Implementing GPU acceleration with CUDA will help it reach at least 20-25 frames per second.
+This program runs at ~30 frames/second on a GTX 1070 GPU, which is plenty fast enough for real-time analysis. Using Java with the DeepLearning4J library has provided a significant time speedup from the Python version of this project, which runs at ~19 seconds a frame on the same GPU.
 
 ![Uh oh, it appears the image  didn't load. Please find the proof of concept at /samples/tracking.png in this repositiory.](/sample/tracker.png?raw=true "Proof of Concept")
