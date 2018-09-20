@@ -1,5 +1,6 @@
 package sproj.tracking;
 
+import org.bytedeco.javacpp.avutil;
 import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.*;
 
@@ -64,6 +65,7 @@ public abstract class Tracker {          //  TODO make this an interface?
     protected abstract void createAnimalObjects();
 
     protected void initializeFrameGrabber(String videoPath) throws FrameGrabber.Exception {
+        avutil.av_log_set_level(avutil.AV_LOG_QUIET);       // Suppress verbose FFMPEG metadata output to console
         grabber = new FFmpegFrameGrabber(videoPath);
         grabber.start();    // open video file
     }

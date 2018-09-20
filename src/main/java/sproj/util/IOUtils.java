@@ -32,7 +32,9 @@ import sproj.tracking.Animal;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -170,6 +172,16 @@ public final class IOUtils {
 
         } catch (IOException e) {
             throw new IOException("Not able to init the model", e);
+        }
+    }
+
+
+    public static void writeDataToFile(List<Double> dataPoints, String fileName) throws IOException {
+
+        try (FileWriter writer = new FileWriter(fileName)) {
+            for(Double point: dataPoints) {
+                writer.write(point.toString() + ",");
+            }
         }
     }
 

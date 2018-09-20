@@ -8,7 +8,10 @@ import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameGrabber;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
+import sproj.util.IOUtils;
 import sproj.yolo_porting_attempts.YOLOModelContainer;
+
+import org.bytedeco.javacpp.avutil;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +37,7 @@ public class ModelAccuracyEvaluator {
 
 
     private void initializeGrabber(File videoFile) throws FrameGrabber.Exception {
+        avutil.av_log_set_level(avutil.AV_LOG_QUIET);           // Suppress verbose FFMPEG metadata output to console
         grabber = new FFmpegFrameGrabber(videoFile);
         grabber.start();        // open video file
     }
@@ -63,8 +67,12 @@ public class ModelAccuracyEvaluator {
      */
     private List<Double> evaluateOnVideo(double numbAnimals, Rect cropRect) throws IOException {
 
+        int frameNo;
+        int totalFrames = grabber.getLengthInVideoFrames();
+
         List<DetectedObject> detectedObjects;
-        List<Double> detectionAccuracies = new ArrayList<>(grabber.getLengthInVideoFrames());   // store one detection accuracy record per frame
+        List<Double> detectionAccuracies = new ArrayList<>(totalFrames);   // store one detection accuracy record per frame
+
 
         Frame frame;
         while ((frame = grabber.grabImage()) != null) {
@@ -74,6 +82,9 @@ public class ModelAccuracyEvaluator {
             detectionAccuracies.add(
                     accuracy <= 1.0 ? accuracy : 1 - Math.abs(1 - accuracy)     // count each extra detection as one negative detection from the score
             );
+
+            frameNo = grabber.getFrameNumber();
+            System.out.print("\r" + (frameNo + 1) + " of " + totalFrames + " frames processed");
         }
         return detectionAccuracies;
     }
@@ -102,13 +113,7 @@ public class ModelAccuracyEvaluator {
     public static void main(String[] args) throws IOException, NumberFormatException {
 
 
-
-
-
-
-        System.out.print(Arrays.toString(args));
-
-        if (args.length < 2) {
+        if (args.length < 1) {
             System.out.println(
                 "Required: text file with list of video files to evaluate on.\n" +
                 "Syntax for this file is comma separated values, in this format:\n" +
@@ -121,7 +126,7 @@ public class ModelAccuracyEvaluator {
 
         ModelAccuracyEvaluator evaluator = new ModelAccuracyEvaluator();
 
-        List<String> textLines = evaluator.readTextFiles(args[1]);        // video files to evaluate on
+        List<String> textLines = evaluator.readTextFiles(args[0]);        // video files to evaluate on
 
         List<List<Double>> detectionAccuracies = new ArrayList<>(textLines.size());
 
@@ -166,7 +171,15 @@ public class ModelAccuracyEvaluator {
                 continue;
             }
 
-            detectionAccuracies.add(evaluator.evaluateModelOnVideo(videoFile, numbAnimals, cropRect));
+            System.out.println(String.format("\nRunning evaluator on video %d of %d", textLines.indexOf(line)+1, textLines.size()));
+
+            List<Double> dataPoints = evaluator.evaluateModelOnVideo(videoFile, numbAnimals, cropRect);
+
+            IOUtils.writeDataToFile(
+                    dataPoints, videoFile.toPath().getParent() + "/" + videoFile.getName().substring(0, videoFile.getName().length()-4) + ".dat"
+            );
+
+//            detectionAccuracies.add(dataPoints);
         }
 
         detectionAccuracies.forEach(lst ->
