@@ -12,9 +12,9 @@ There are two major components of this tracker program: **Detection** and **Trac
 
 Approaches:
 
-  * Detection: Convolutional neural networks will be the building block for the tadpole detection system. I trained deep neural networks for xenopus tadpole detection and localization using the [YOLOv2](https://pjreddie.com/darknet/yolov2/) architecture.
+  * Detection: Convolutional neural networks form the tadpole detection component of the overall system. I trained deep neural networks for xenopus tadpole detection and localization using the [YOLOv2](https://pjreddie.com/darknet/yolov2/) architecture.
 
-  * Tracking (specifically, trajectory prediction): I will train a Long Short-Term Memory (LSTM) recurrent neural network on recorded tadpole movement data.
+  * Tracking (specifically, trajectory prediction): I am currently looking at Kalman filters for trajectory estimation, and the Munkres implementation of the Hungarian optimal assignment algorithms for maintaining unique identities across frames.
 
 -----
 
