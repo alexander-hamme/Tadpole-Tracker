@@ -79,6 +79,15 @@ public class TrackerApp extends Application {
         videoPath = "src/main/resources/videos/IMG_3085.MOV";
     }
 
+    private void getValues() {
+        // input from user
+        numb_objs_to_track = 5;
+        drawShapes = true;
+        crop = new int[]{60,210,500,500};
+            // video file IMG_3086  -->  {60,210,500,500}
+            // video file IMG_3085  -->  {550, 160, 500, 500}
+        videoPath = "src/main/resources/videos/IMG_3085.MOV";
+    }
 
     private void setUpGraphics(Stage stage) {
 
@@ -102,7 +111,6 @@ public class TrackerApp extends Application {
 
         root.getChildren().add(imageView);
 
-
         stage.setResizable(RESIZABLE);
         stage.setScene(scene);
 
@@ -125,7 +133,6 @@ public class TrackerApp extends Application {
 
                 try {
                     imageFrame = convert(trackerProgram.timeStep());  // new Image(new File("src/main/resources/images/test_image.png").toURI().toString());  //
-
                     if (imageFrame == null) {/* logger.info("Reached end of video")*/
                         trackerProgram.tearDown();
                         stop(); }
@@ -137,8 +144,6 @@ public class TrackerApp extends Application {
                 }
             }
         };
-
-
         // todo Click button to start timer
         timer.start();
         stage.show();
@@ -164,5 +169,4 @@ public class TrackerApp extends Application {
         }
     }
 }
-
 
