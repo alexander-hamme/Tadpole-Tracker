@@ -3,6 +3,8 @@ package sproj.util;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
 import org.datavec.image.loader.NativeImageLoader;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -30,10 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sproj.tracking.Animal;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -41,7 +40,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public final class IOUtils {
+public abstract class IOUtils {
+
     private final static Logger LOGGER = LoggerFactory.getLogger(IOUtils.class);
     private IOUtils() {}
 
@@ -183,6 +183,22 @@ public final class IOUtils {
                 writer.write(point.toString() + ",");
             }
         }
+    }
+
+
+    public static List<String> readLinesFromFile(String fileName) throws IOException {
+
+        List<String> lines = new ArrayList<>();
+
+        LineIterator it = FileUtils.lineIterator(new File(fileName), "UTF-8");
+        try {
+            while (it.hasNext()) {
+                lines.add(it.nextLine());
+            }
+        } finally {
+            LineIterator.closeQuietly(it);
+        }
+        return lines;
     }
 
 

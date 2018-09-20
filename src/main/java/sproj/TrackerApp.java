@@ -73,16 +73,9 @@ public class TrackerApp extends Application {
         // input from user
         numb_objs_to_track = 5;
         drawShapes = true;
-        crop = new int[]{60,210,500,500};
-            // video file IMG_3086  -->  {60,210,500,500}
-            // video file IMG_3085  -->  {550, 160, 500, 500}
-        videoPath = "src/main/resources/videos/IMG_3085.MOV";
-    }
 
-    private void getValues() {
-        // input from user
-        numb_objs_to_track = 5;
-        drawShapes = true;
+
+        //***** Note that x + width must be <= original image width, and y + height must be <= original image height**//
         crop = new int[]{60,210,500,500};
             // video file IMG_3086  -->  {60,210,500,500}
             // video file IMG_3085  -->  {550, 160, 500, 500}

@@ -175,6 +175,8 @@ public class ModelAccuracyEvaluator {
 
             List<Double> dataPoints = evaluator.evaluateModelOnVideo(videoFile, numbAnimals, cropRect);
 
+            System.out.println(String.format("\nAverage accuracy: %.5f", dataPoints.stream().reduce(0.0, Double::sum) / dataPoints.size()));
+
             IOUtils.writeDataToFile(
                     dataPoints, videoFile.toPath().getParent() + "/" + videoFile.getName().substring(0, videoFile.getName().length()-4) + ".dat"
             );
@@ -186,5 +188,7 @@ public class ModelAccuracyEvaluator {
 
                 System.out.println("Average accuracy: " + lst.stream().reduce(0.0, Double::sum) / lst.size())
         );
+
+        evaluator.tearDown();
     }
 }
