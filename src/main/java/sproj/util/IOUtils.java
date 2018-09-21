@@ -39,6 +39,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class IOUtils {
 
@@ -59,6 +60,11 @@ public abstract class IOUtils {
         }
     }
 
+
+    public static List<Double> stringsToDoubles(List<String> lst) {
+        // return Lists.transform(lst, input -> Double.valueOf(input));
+        return lst.stream().map(Double::valueOf).collect(Collectors.toList());
+    }
 
 
     static void writeData(String fileName, ArrayList<Animal> anmls, String header, int sigFigs) throws IOException {
@@ -176,11 +182,33 @@ public abstract class IOUtils {
     }
 
 
-    public static void writeDataToFile(List<Double> dataPoints, String fileName) throws IOException {
+    public static void writeAnimalPointsToFile
+            (List<Animal> animals, String fileName, boolean appendIfFileExists) throws IOException  {
+
+        try (FileWriter writer = new FileWriter(fileName, appendIfFileExists)) {
+
+            for (Animal animal : animals) {
+
+                Iterator<double[]> pointsIterator = animal.getDataPointsIterator();
+
+                writer.write(String.format("Animal Number %d, RGBA color label: %s\n", animals.indexOf(animal)+1, animal.color.toString()));
+                while (pointsIterator.hasNext()) {
+                    double[] point = pointsIterator.next();
+                    writer.write(point[0] + "," + point[1] + "\n");
+                }
+                if (animals.indexOf(animal) < animals.size()-1) {    // add newline after all but the last animal
+                    writer.write("\n");
+                }
+            }
+        }
+    }
+
+
+    public static void writeDataToFile(List<Double> dataPoints, String fileName, String separator) throws IOException {
 
         try (FileWriter writer = new FileWriter(fileName)) {
             for(Double point: dataPoints) {
-                writer.write(point.toString() + ",");
+                writer.write(point.toString() + separator);
             }
         }
     }

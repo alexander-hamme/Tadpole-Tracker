@@ -177,9 +177,10 @@ public class ModelAccuracyEvaluator {
 
             System.out.println(String.format("\nAverage accuracy: %.5f", dataPoints.stream().reduce(0.0, Double::sum) / dataPoints.size()));
 
-            IOUtils.writeDataToFile(
-                    dataPoints, videoFile.toPath().getParent() + "/" + videoFile.getName().substring(0, videoFile.getName().length()-4) + ".dat"
-            );
+
+            String saveName = videoFile.toPath().getParent() + "/" + videoFile.getName().substring(0, videoFile.getName().length()-4) + ".dat";
+
+            IOUtils.writeDataToFile(dataPoints, saveName, "\n");
 
 //            detectionAccuracies.add(dataPoints);
         }

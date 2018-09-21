@@ -50,12 +50,6 @@
             <artifactId>commons-collections4</artifactId>
             <version>4.2</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.tensorflow/tensorflow -->
-        <dependency>
-            <groupId>org.tensorflow</groupId>
-            <artifactId>tensorflow</artifactId>
-            <version>1.9.0</version>
-        </dependency>
         <!-- http://logging.apache.org/log4j/2.x/maven-artifacts.html -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -106,7 +100,12 @@
         </dependency>
         -->
         <!-- https://mvnrepository.com/artifact/org.deeplearning4j/deeplearning4j-core -->
-
+        <!-- https://mvnrepository.com/artifact/org.openpnp/opencv -->
+        <dependency>
+            <groupId>org.openpnp</groupId>
+            <artifactId>opencv</artifactId>
+            <version>3.2.0-0</version>
+        </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-cuda-9.2-platform</artifactId>

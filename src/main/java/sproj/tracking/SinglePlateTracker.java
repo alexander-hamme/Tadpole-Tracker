@@ -10,11 +10,13 @@ import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
 import sproj.yolo_porting_attempts.YOLOModelContainer;
 
+import javax.swing.*;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static sproj.util.IOUtils.writeAnimalPointsToFile;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 //import org.apache.logging.log4j.LogManager;
@@ -164,7 +166,7 @@ public class SinglePlateTracker extends Tracker {
                 animal.updateLocation(closestBox.centerX, closestBox.centerY, timePos);
                 assignedBoxes.add(closestBox);
             } else {
-                System.out.println("Predicting trajectory goes here?");
+                System.out.println("Missed detection in frame.     (trajectory estimation will happen here)");
                 animal.updateLocation(animal.x, animal.y, timePos);
             }
 
@@ -212,7 +214,11 @@ public class SinglePlateTracker extends Tracker {
 
     private void track(Rect cropRect) throws InterruptedException, IOException {
 
-        CanvasFrame canvasFrame = new CanvasFrame("Test");
+        CanvasFrame canvasFrame = new CanvasFrame("Tracker");
+        canvasFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
+        CanvasFrame originalShower = new CanvasFrame("Original");
+        originalShower.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         int msDelay = 10;
         List<BoundingBox> boundingBoxes;
@@ -230,6 +236,8 @@ public class SinglePlateTracker extends Tracker {
         canvasFrame.setVisible(true);*/
 
         long time1;
+        int frameNo;
+        int totalFrames = grabber.getLengthInVideoFrames();
 
         Frame frame;
         while ((frame = grabber.grabImage()) != null) {
@@ -241,6 +249,12 @@ public class SinglePlateTracker extends Tracker {
 
             // clone this, so you can show the original scaled up image in the display window???
             resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
+
+
+
+            Mat original = frameImg.clone();
+
+
 
             detectedObjects = yoloModelContainer.runInference(frameImg);    // TODO   pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), try with lower confidence?
 
@@ -254,7 +268,7 @@ public class SinglePlateTracker extends Tracker {
             updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
 
 
-            System.out.println("Loop time: " + (System.currentTimeMillis() - time1) / 1000.0 + "s");
+//            System.out.println("Loop time: " + (System.currentTimeMillis() - time1) / 1000.0 + "s");
 
 
             keyEvent = canvasFrame.waitKey(msDelay);
@@ -273,9 +287,13 @@ public class SinglePlateTracker extends Tracker {
             }
 
             canvasFrame.showImage(frameConverter.convert(frameImg));
+            originalShower.showImage(frameConverter.convert(original));
 
-            //            Thread.sleep(10L);
+            frameNo = grabber.getFrameNumber();
+            System.out.print("\r" + (frameNo + 1) + " of " + totalFrames + " frames processed");
+
         }
+
         grabber.release();
     }
 
@@ -286,5 +304,7 @@ public class SinglePlateTracker extends Tracker {
         int[] cropDims = new int[]{130,10,670,670};   // {230,10,700,700};//
         SinglePlateTracker tracker = new SinglePlateTracker(n_objs, true,  cropDims, testVideo);
         tracker.trackVideo(testVideo);
+
+        writeAnimalPointsToFile(tracker.animals, "/home/ah2166/Documents/sproj/tracking_data/motionData/testData1.dat", false);
     }
 }
