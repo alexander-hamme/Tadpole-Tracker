@@ -119,6 +119,9 @@ public class TestKalmanFilter {
         }
 
 
+        // Todo   currently it is not adapting quickly enough to the changes in data, what do you need to change to fix this?
+
+
 
 //        for (double[] point: dataPoints) {
         for (int i=1; i<dataPoints.size(); i++) {
@@ -150,7 +153,7 @@ public class TestKalmanFilter {
             System.out.println(String.format(
 //                    "Current estimated values are: {x: %.3f, y: %.3f, vx: %.3f, vy: %.3f",
                     "Estimated values: \t%.3f\t%.3f\t%.3f\t%.3f",
-                    stateEstimate[1], stateEstimate[1], stateEstimate[0], stateEstimate[1]
+                    stateEstimate[0], stateEstimate[1], stateEstimate[2], stateEstimate[3]
             ));
             /*
             if no detection for a given frame, pass in the previous estimate in to the filter for estimation?
