@@ -2,19 +2,105 @@ package sproj.prediction;
 
 
 import org.apache.commons.math3.filter.*;
-import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.ArrayRealVector;
-import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.linear.RealVector;
-import org.bytedeco.javacpp.opencv_core;
-import org.bytedeco.javacpp.opencv_video;
+import org.apache.commons.math3.linear.*;
 import sproj.util.IOUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TestKalmanFilter {
+public class KalmanFilterBuilder {
+
+    public KalmanFilterBuilder() {
+        // take parameters?
+    }
+
+    public KalmanFilter getNewKalmanFilter(double x0, double y0, double vx0, double vy0) {
+
+        RealVector initialStateEstimate_xHat  = new ArrayRealVector(
+                new double[]{x0,y0,vx0,vy0}                 // initial position and velocity values
+        );
+
+        ProcessModel pM = getProcessModel(initialStateEstimate_xHat);
+        MeasurementModel mM = getMeasurementModel();
+        return new KalmanFilter(pM, mM);
+
+    }
+
+    private ProcessModel getProcessModel(RealVector initialStateEstimate_xHat) {
+        return new DefaultProcessModel(
+                stateTransition_mA, inputControl_mB, actionUncertainty_mQ,
+                initialStateEstimate_xHat, initialStateCovariance_mP);
+    }
+
+    private MeasurementModel getMeasurementModel() {
+        return new DefaultMeasurementModel(measurementMatrix_mH, sensorNoise_mR);
+    }
+
+
+
+    private final double stv = 0.6;  // state transition value.  --> the closer to 1.0 this is, the faster the filter adjusts to changes in data
+
+    private final RealMatrix stateTransition_mA = new Array2DRowRealMatrix(
+            new double[][]{
+                    {1, 0, stv, 0},
+                    {0, 1, 0, stv},
+                    {0, 0, 1, 0},
+                    {0, 0, 0, 1}
+            });
+
+    private final RealMatrix inputControl_mB = new Array2DRowRealMatrix(                     // identity matrix
+            new double[][]{
+                    {1, 0, 0, 0},
+                    {0, 1, 0, 0},
+                    {0, 0, 1, 0},
+                    {0, 0, 0, 1}
+            });
+
+    // influences kalman gain
+    private final RealMatrix measurementMatrix_mH = new Array2DRowRealMatrix(
+            new double[][]{
+                    {1, 0, 1, 0},      // todo explain this configuration of numbers
+                    {0, 1, 0, 1},
+                    {0, 0, 0, 0},
+                    {0, 0, 0, 0}
+            });
+
+    private final RealMatrix actionUncertainty_mQ = new Array2DRowRealMatrix(
+            new double[][]{
+                    {0, 0, 0,   0},
+                    {0, 0, 0,   0},
+                    {0, 0, 0.1, 0},
+                    {0, 0, 0,   0.1}
+            });
+
+    private final RealMatrix sensorNoise_mR = new Array2DRowRealMatrix(
+            new double[][]{
+                    {0, 0, 0,  0},
+                    {0, 0, 0,  0},
+                    {0, 0,0.1, 0},
+                    {0, 0, 0, 0.1}
+            });
+
+    private final RealMatrix initialStateCovariance_mP =  new Array2DRowRealMatrix(       // zeros matrix
+            new double[][]{
+                    {0, 0, 0, 0},
+                    {0, 0, 0, 0},
+                    {0, 0, 0, 0},
+                    {0, 0, 0, 0}
+            });
+
+    private final RealVector controlVector = new ArrayRealVector(                        // not used
+            new double[]{0,0,0,0}
+    );
+
+
+
+
+
+
+
+
 
     public static void main(String[] args) throws IOException {
 
@@ -26,15 +112,17 @@ public class TestKalmanFilter {
         double initialYVel = 0.0;
 
 
-        RealMatrix stateTransition_mA = new Array2DRowRealMatrix(                        // not used
+        double stv = 0.6;  // state transition value.  --> the closer to 1.0 this is, the faster the filter adjusts to changes in data
+
+        RealMatrix stateTransition_mA = new Array2DRowRealMatrix(
                 new double[][]{
-                        {1, 0, dt, 0},
-                        {0, 1, 0, dt},
+                        {1, 0, stv, 0},
+                        {0, 1, 0, stv},
                         {0, 0, 1, 0},
                         {0, 0, 0, 1}
         });
 
-        RealMatrix inputControl_mB = new Array2DRowRealMatrix(                        // just an identity matrix
+        RealMatrix inputControl_mB = new Array2DRowRealMatrix(                     // just an identity matrix
                 new double[][]{
                         {1, 0, 0, 0},
                         {0, 1, 0, 0},
@@ -45,9 +133,9 @@ public class TestKalmanFilter {
 
 
         // influences kalman gain
-        RealMatrix measurementMatrix_mH = new Array2DRowRealMatrix(  //new double[]{initialX, initialY, initialXVel, initialYVel}); // measurement vector
+        RealMatrix measurementMatrix_mH = new Array2DRowRealMatrix(
                 new double[][]{
-                        {1, 0, 1, 0},      // todo figure out why these numbers?
+                        {1, 0, 1, 0},      // todo figure out why this configuration of numbers
                         {0, 1, 0, 1},
                         {0, 0, 0, 0},
                         {0, 0, 0, 0}
@@ -77,7 +165,7 @@ public class TestKalmanFilter {
         );
 
 
-        RealVector initialStateEstimate_xHat = new ArrayRealVector(                        // not used
+        RealVector initialStateEstimate_xHat = new ArrayRealVector(
                 new double[]{initialX,initialY,initialXVel,initialYVel}
         );
 
@@ -122,14 +210,13 @@ public class TestKalmanFilter {
         // Todo   currently it is not adapting quickly enough to the changes in data, what do you need to change to fix this?
 
 
-
 //        for (double[] point: dataPoints) {
         for (int i=1; i<dataPoints.size(); i++) {
 
             double[] point = dataPoints.get(i);
             double[] lastPoint = dataPoints.get(i-1);
             double[] velocity = new double[] {
-                    (point[0]-lastPoint[0]) / dt, (point[1]-lastPoint[1]) / dt
+                    (point[0]-lastPoint[0]) / 1, (point[1]-lastPoint[1]) / 1        // don't use dt as a divider?
             };
 
 
@@ -139,8 +226,10 @@ public class TestKalmanFilter {
             // optionally provide some control input
             filter.predict();
 
-            filter.correct(nextRealMeasurement);
 
+            if (i<100) {
+                filter.correct(nextRealMeasurement);
+            }
             double[] stateEstimate = filter.getStateEstimation();    // x hat
 
 
