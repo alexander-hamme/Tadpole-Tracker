@@ -52,14 +52,12 @@ public class AnimalWithFilter {
         double vx = predictedState[2];
         double vy = predictedState[3];
 
+        // todo incorporate velocity into better prediction somehow
+
         int newx = (int) Math.round(predictedState[0]);
         int newy = (int) Math.round(predictedState[1]);
-//        int newx = (int) Math.round((predictedState[0] + (this.x + vx / dt)) / 2);
-//        int newy = (int) Math.round((predictedState[1] + (this.y + vy / dt)) / 2);
-//        int newx = (int) Math.round(this.x + (vx));// * dt));
-//        int newy = (int) Math.round(this.y + (vy));// * dt));
-
-        // todo factor velocity into the calculation of predicted position??    (is velocity accurate?)
+//        int newx = (int) Math.round((predictedState[0] + (this.x + (vx))) / 2);
+//        int newy = (int) Math.round((predictedState[1] + (this.y + (vy))) / 2);
 
 //                animal.updateLocation((int)Math.round(predictedState[0]), (int)Math.round(predictedState[1]), timePos);
         updateLocation(newx, newy, dt, timePos);

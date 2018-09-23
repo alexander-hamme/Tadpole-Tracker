@@ -167,7 +167,7 @@ public class SinglePlateTracker extends Tracker {
                 }
             }
             /*if (boundingBoxes.size() == animals.size() && closestBox != null) {   // This means min_proximity < displacement_thresh?*/
-            if (closestBox != null) {// && min_proximity < prox_start_val / 4.0) {   // && RNN probability, etc etc
+            if (closestBox != null && min_proximity < prox_start_val / 4.0) {   // && RNN probability, etc etc
                 animal.updateLocation(closestBox.centerX, closestBox.centerY, 1000.0 / videoFrameRate, timePos);
                 assignedBoxes.add(closestBox);
             } else {
@@ -305,8 +305,10 @@ public class SinglePlateTracker extends Tracker {
 
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        String testVideo = "/home/ah2166/Videos/tad_test_vids/1_tad_3.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
-        int n_objs = 1;
+//        String testVideo = "/home/ah2166/Videos/tad_test_vids/1_tad_3.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
+//        int n_objs = 1;
+        String testVideo = "/home/ah2166/Videos/tad_test_vids/2_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
+        int n_objs = 2;
         int[] cropDims = new int[]{130,10,670,670};   // {230,10,700,700};//
         SinglePlateTracker tracker = new SinglePlateTracker(n_objs, true,  cropDims, testVideo);
         tracker.trackVideo(testVideo);
