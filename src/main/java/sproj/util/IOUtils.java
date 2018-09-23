@@ -31,6 +31,7 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sproj.tracking.Animal;
+import sproj.tracking.AnimalWithFilter;
 
 import java.io.*;
 import java.lang.reflect.Array;
@@ -183,11 +184,11 @@ public abstract class IOUtils {
 
 
     public static void writeAnimalPointsToFile
-            (List<Animal> animals, String fileName, boolean appendIfFileExists) throws IOException  {
+            (List<AnimalWithFilter> animals, String fileName, boolean appendIfFileExists) throws IOException  {
 
         try (FileWriter writer = new FileWriter(fileName, appendIfFileExists)) {
 
-            for (Animal animal : animals) {
+            for (AnimalWithFilter animal : animals) {
 
                 Iterator<double[]> pointsIterator = animal.getDataPointsIterator();
 
@@ -224,7 +225,7 @@ public abstract class IOUtils {
                 lines.add(it.nextLine());
             }
         } finally {
-            LineIterator.closeQuietly(it);
+            it.close();
         }
         return lines;
     }

@@ -11,6 +11,9 @@ import java.util.List;
 
 public class KalmanFilterBuilder {
 
+    private final double stv = 1.0;         // sensitivity value for state transition matrix.  --> the closer to 1.0 this is, <--todo ????
+                                            // the faster the filter adjusts to changes in data, which affects estimation accuracy
+                                             // todo explain & justify value
     public KalmanFilterBuilder() {
         // take parameters?
     }
@@ -36,10 +39,6 @@ public class KalmanFilterBuilder {
     private MeasurementModel getMeasurementModel() {
         return new DefaultMeasurementModel(measurementMatrix_mH, sensorNoise_mR);
     }
-
-
-
-    private final double stv = 0.6;  // state transition value.  --> the closer to 1.0 this is, the faster the filter adjusts to changes in data
 
     private final RealMatrix stateTransition_mA = new Array2DRowRealMatrix(
             new double[][]{
@@ -101,8 +100,8 @@ public class KalmanFilterBuilder {
 
 
 
-
-    public static void main(String[] args) throws IOException {
+    /*
+    public static void testData(String[] args) throws IOException {
 
         double dt = 1.0/30;    // 30 frames per second
 
@@ -112,7 +111,8 @@ public class KalmanFilterBuilder {
         double initialYVel = 0.0;
 
 
-        double stv = 0.6;  // state transition value.  --> the closer to 1.0 this is, the faster the filter adjusts to changes in data
+        double stv = 0.9;   // state transition value.  --> the closer to 1.0 this is, the faster the filter adjusts to changes in data,
+                            // which affects estimation accuracy
 
         RealMatrix stateTransition_mA = new Array2DRowRealMatrix(
                 new double[][]{
@@ -226,17 +226,18 @@ public class KalmanFilterBuilder {
             // optionally provide some control input
             filter.predict();
 
-
-            if (i<100) {
+            if (i%25 == 0) {
+                System.out.println("\nNo real measurement update this time");
+            } else {
                 filter.correct(nextRealMeasurement);
+
+                System.out.println(String.format(
+                        "\nReal values: \t\t%.3f\t%.3f\t%.3f\t%.3f",
+                        point[0], point[1], velocity[0], velocity[1]
+                ));
             }
+
             double[] stateEstimate = filter.getStateEstimation();    // x hat
-
-
-            System.out.println(String.format(
-                    "\nReal values: \t\t%.3f\t%.3f\t%.3f\t%.3f",
-                    point[0], point[1], velocity[0], velocity[1]
-            ));
 
 
             System.out.println(String.format(
@@ -251,7 +252,8 @@ public class KalmanFilterBuilder {
             predX = (A * predX) + (B * c)
 
             and the new estimation is in the x vector
-             */
+
         }
-    }
+
+    }*/
 }

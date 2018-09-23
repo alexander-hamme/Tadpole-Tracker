@@ -33,6 +33,7 @@ public abstract class Tracker {          //  TODO make this an interface?
     final int IMG_HEIGHT = YOLOModelContainer.IMG_HEIGHT;
     int INPUT_FRAME_WIDTH;
     int INPUT_FRAME_HEIGHT;
+    protected int videoFrameRate;
 
     int WINDOW_WIDTH = 720;     // ask user for size
     int WINDOW_HEIGHT = 720;     // ask user for size
@@ -68,6 +69,7 @@ public abstract class Tracker {          //  TODO make this an interface?
         avutil.av_log_set_level(avutil.AV_LOG_QUIET);       // Suppress verbose FFMPEG metadata output to console
         grabber = new FFmpegFrameGrabber(videoPath);
         grabber.start();    // open video file
+        videoFrameRate = (int) grabber.getVideoFrameRate();
     }
 
     /**
@@ -75,7 +77,7 @@ public abstract class Tracker {          //  TODO make this an interface?
      * @param videoFrameMat Mat object
      * @param animal Animal object
      */
-    protected void traceAnimalOnFrame(opencv_core.Mat videoFrameMat, Animal animal) {
+    protected void traceAnimalOnFrame(opencv_core.Mat videoFrameMat, AnimalWithFilter animal) {
         // info : http://bytedeco.org/javacpp-presets/opencv/apidocs/org/bytedeco/javacpp/opencv_imgproc.html#method.detail
 
         opencv_core.Scalar circleColor = animal.color; //new Scalar(0,255,0,1);
@@ -101,6 +103,20 @@ public abstract class Tracker {          //  TODO make this an interface?
                         animal.color, lineThickness, LINE_AA, 0); // lineThickness, line type, shift
                 pt1 = pt2;                                           // -->  line type is LINE_4, LINE_8, or LINE_AA
             }
+
+            /*test prediction
+            int x = animal.x;
+            int y = animal.y;
+            for (int i=0; i<10; i++) {
+                double[] prediction = animal.getPredictedState();
+                line(videoFrameMat,
+                        new opencv_core.Point(x, y),
+                        new opencv_core.Point((int) prediction[0], (int) prediction[1]),
+                        opencv_core.Scalar.RED, lineThickness, LINE_AA, 0); // lineThickness, line type, shift
+                x = (int) prediction[0];
+                y = (int) prediction[1];
+                animal.trackingFilter.correct(prediction);
+            }//*/
         } else {
             logger.warn("Line points iterator is empty, failed to draw trajectory paths.");
         }

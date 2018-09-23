@@ -6,6 +6,7 @@ import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
+import sproj.prediction.KalmanFilterBuilder;
 import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
 import sproj.yolo_porting_attempts.YOLOModelContainer;
@@ -14,6 +15,7 @@ import javax.swing.*;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static sproj.util.IOUtils.writeAnimalPointsToFile;
@@ -31,7 +33,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  */
 public class SinglePlateTracker extends Tracker {
 
-    private ArrayList<Animal> animals = new ArrayList<>();
+    private ArrayList<AnimalWithFilter> animals = new ArrayList<>();
     private DetectionsParser detectionsParser = new DetectionsParser();
     private OpenCVFrameConverter frameConverter = new OpenCVFrameConverter.ToMat();
     private YOLOModelContainer yoloModelContainer;
@@ -103,6 +105,8 @@ public class SinglePlateTracker extends Tracker {
     @Override
     protected void createAnimalObjects() {
 
+        KalmanFilterBuilder filterBuilder = new KalmanFilterBuilder();
+
         int[][] colors = {{100, 100, 100}, {90, 90, 90}, {255, 0, 255}, {0, 255, 255}, {0, 0, 255}, {47, 107, 85},
                 {113, 179, 60}, {255, 0, 0}, {255, 255, 255}, {0, 180, 0}, {255, 255, 0}, {160, 160, 160},
                 {160, 160, 0}, {0, 0, 0}, {202, 204, 249}, {0, 255, 127}, {40, 46, 78}};
@@ -112,7 +116,9 @@ public class SinglePlateTracker extends Tracker {
         for (int i = 0; i < numb_of_anmls; i++) {
             x = (int) ((i + 1) / ((double) numb_of_anmls * videoFrameWidth));
             y = (int) ((i + 1) / ((double) numb_of_anmls * videoFrameHeight));
-            this.animals.add(new Animal(x, y, colors[i]));
+            this.animals.add(
+                    new AnimalWithFilter(x, y, colors[i], filterBuilder.getNewKalmanFilter(x, y, 0.0, 0.0))
+            );
         }
     }
 
@@ -136,7 +142,7 @@ public class SinglePlateTracker extends Tracker {
         ArrayList<BoundingBox> assignedBoxes = new ArrayList<>(boundingBoxes.size());
         BoundingBox closestBox;
 
-        for (Animal animal : animals) {
+        for (AnimalWithFilter animal : animals) {
 
             min_proximity = displThresh;     // start at max allowed value and then favor smaller values
             closestBox = null;
@@ -161,13 +167,12 @@ public class SinglePlateTracker extends Tracker {
                 }
             }
             /*if (boundingBoxes.size() == animals.size() && closestBox != null) {   // This means min_proximity < displacement_thresh?*/
-            if (closestBox != null && min_proximity < prox_start_val / 4.0) {   // && RNN probability, etc etc todo
-                // todo: instead of min_proximity --> use (Decision tree? / Markov? / SVM? / ???) to determine if the next point is reasonable
-                animal.updateLocation(closestBox.centerX, closestBox.centerY, timePos);
+            if (closestBox != null) {// && min_proximity < prox_start_val / 4.0) {   // && RNN probability, etc etc
+                animal.updateLocation(closestBox.centerX, closestBox.centerY, 1000.0 / videoFrameRate, timePos);
                 assignedBoxes.add(closestBox);
             } else {
-                System.out.println("Missed detection in frame.     (trajectory estimation will happen here)");
-                animal.updateLocation(animal.x, animal.y, timePos);
+                // todo: instead of min_proximity --> use (Decision tree? / Markov? / SVM? / ???) to determine if the next point is reasonable
+                animal.predictTrajectory(1000.0 / videoFrameRate, timePos);
             }
 
             if (DRAW_SHAPES) {
@@ -287,10 +292,11 @@ public class SinglePlateTracker extends Tracker {
             }
 
             canvasFrame.showImage(frameConverter.convert(frameImg));
-            originalShower.showImage(frameConverter.convert(original));
+//            originalShower.showImage(frameConverter.convert(original));
 
             frameNo = grabber.getFrameNumber();
-            System.out.print("\r" + (frameNo + 1) + " of " + totalFrames + " frames processed");
+
+            // todo System.out.print("\r" + (frameNo + 1) + " of " + totalFrames + " frames processed");
 
         }
 
