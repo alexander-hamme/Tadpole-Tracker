@@ -70,13 +70,13 @@ public class KalmanFilterBuilder {
                     {0, 0, 0,   0},
                     {0, 0, 0,   0},
                     {0, 0, 0.1, 0},
-                    {0, 0, 0,   0.1}
+                    {0, 0, 0, 0.1}
             });
 
     private final RealMatrix sensorNoise_mR = new Array2DRowRealMatrix(
             new double[][]{
-                    {0, 0, 0,  0},
-                    {0, 0, 0,  0},
+                    {0.1, 0, 0,  0},
+                    {0, 0.1, 0,  0},
                     {0, 0,0.1, 0},
                     {0, 0, 0, 0.1}
             });
