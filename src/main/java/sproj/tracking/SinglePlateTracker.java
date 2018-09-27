@@ -70,8 +70,6 @@ public class SinglePlateTracker extends Tracker {
     }
 
 
-
-
     /**
      * Called from the main JavaFX application with each call to the Animation Timer's update() function
      *
@@ -98,6 +96,8 @@ public class SinglePlateTracker extends Tracker {
         return frameConverter.convert(frameImg);
 
     }
+
+
     /**
      * Create new Animal objects and distribute them diagonally across screen, so they attach themselves
      * to the real subject animals more quickly and with fewer conflicts

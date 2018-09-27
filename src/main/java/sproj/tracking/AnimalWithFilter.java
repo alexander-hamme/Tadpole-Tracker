@@ -55,16 +55,15 @@ public class AnimalWithFilter {
         double vx = predictedState[2];
         double vy = predictedState[3];
 
-        /* Simplest method
-        int newx = (int) Math.round(predictedState[0]);
-        int newy = (int) Math.round(predictedState[1]);
-        */
+        // Simplest method
+         int newx = (int) Math.round(predictedState[0]);
+         int newy = (int) Math.round(predictedState[1]);
+
 
         // d = rt    -->     x - x0 = vx*dt   -->    x =  x0 + vx*dt
 
-
-        int newx = (int) Math.round(this.x + (vx * dt));
-        int newy = (int) Math.round(this.y - (vy * dt));
+//        int newx = (int) Math.round(this.x + (vx * dt));
+//        int newy = (int) Math.round(this.y - (vy * dt));
 //        int newx = (int) Math.round(predX + (vx * dt));    // or    average with this.x?
 //        int newy = (int) Math.round(predY + (vy * dt));
 
@@ -87,8 +86,8 @@ public class AnimalWithFilter {
         if (linePoints.size() < subtractionIdx + 1) {
             this.vx = 0;
             this.vy = 0;
-        } else {
 
+        } else {
 
             // todo double dt = timePos - timePosPrev
 
@@ -100,15 +99,23 @@ public class AnimalWithFilter {
             // Have to flip the subtraction because y axis in graphics increases by going down instead of up
              this.vy = ((prevPoint[1] - this.y) / (subtractionIdx * dt));
 //            this.vy = -1 * ((this.y - prevPoint[1]) / (subtractionIdx * dt));
+
+            /*
             System.out.println(String.format("Current (%d, %d) from %sdx: %d dy: %d,   Velocity: %.4f %.4f",
                     this.x, this.y, Arrays.toString(prevPoint), this.x - prevPoint[0], this.y - prevPoint[1], this.vx, this.vy)
             );
+            */
+
+//            this.vx *= 1000;
+//            this.vy *= 1000;
         }
     }
 
     private void updateKFilter() {
         this.trackingFilter.predict();      // this needs to be called before calling correct()
+        System.out.println(String.format("\nUpdating filter: %d %d %.4f %.4f", this.x, this.y, this.vx, this.vy));
         this.trackingFilter.correct(new double[]{this.x, this.y, this.vx, this.vy});
+        System.out.println(String.format("Prediction: %s", Arrays.toString(this.trackingFilter.getStateEstimation())));
     }
 
     private double[] getPredictedState() {

@@ -11,9 +11,19 @@ import java.util.List;
 
 public class KalmanFilterBuilder {
 
-    private final double stv = 0.9;         // sensitivity value for state transition matrix.  --> the closer to 1.0 this is, <--todo ????
+    /**
+     *
+     * todo     for some reason the second 2 values are not being predicted accurately,
+     * todo     but whichever values are in the first 2 spaces of the array are
+     *
+     * todo    just make an extra filter for the velocity?
+     *
+     *
+     */
+
+    private final double stv = 0.4;         // sensitivity value for state transition matrix.  --> the closer to 1.0 this is, <--todo ????
                                             // the faster the filter adjusts to changes in data, which affects estimation accuracy
-                                             // todo explain & justify value
+                                            // todo explain & justify value
     public KalmanFilterBuilder() {
         // take parameters?
     }
@@ -59,18 +69,18 @@ public class KalmanFilterBuilder {
     // influences kalman gain
     private final RealMatrix measurementMatrix_mH = new Array2DRowRealMatrix(
             new double[][]{
-                    {1, 0, 1, 0},      // todo explain this configuration of numbers
-                    {0, 1, 0, 1},
-                    {0, 0, 0, 0},
-                    {0, 0, 0, 0}
+                    {1, 0, 1, 0},   // 1,0,1,0    // todo explain this configuration of numbers
+                    {0, 1, 0, 1},   // 0,1,0,1
+                    {0, 0, 1, 0},
+                    {0, 0, 0, 1}
             });
 
     private final RealMatrix actionUncertainty_mQ = new Array2DRowRealMatrix(
             new double[][]{
-                    {0, 0, 0,   0},
-                    {0, 0, 0,   0},
-                    {0, 0, 0.1, 0},
-                    {0, 0, 0, 0.1}
+                    {0.1, 0, 0, 0},    // 0,0,0,0?  todo
+                    {0, 0.1, 0, 0},    // 0,0,0,0
+                    {0, 0, 0.1, 0},       // 0,0,0.1,0
+                    {0, 0, 0, 0.1}        // 0,0,0,0.1
             });
 
     private final RealMatrix sensorNoise_mR = new Array2DRowRealMatrix(
