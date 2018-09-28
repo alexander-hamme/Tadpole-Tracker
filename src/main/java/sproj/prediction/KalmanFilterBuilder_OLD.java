@@ -2,19 +2,14 @@ package sproj.prediction;
 
 
 import org.apache.commons.math3.filter.*;
-import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.ArrayRealVector;
-import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.linear.*;
 import sproj.util.IOUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class KalmanFilterBuilder {
-
-    double placeHolder = 0.0;
+public class KalmanFilterBuilder_OLD {
 
     /**
      *
@@ -26,17 +21,17 @@ public class KalmanFilterBuilder {
      *
      */
 
-    private final double stv = 0.9;         // sensitivity value for state transition matrix.  --> the closer to 1.0 this is, <--todo ????
+    private final double stv = 0.4;         // sensitivity value for state transition matrix.  --> the closer to 1.0 this is, <--todo ????
                                             // the faster the filter adjusts to changes in data, which affects estimation accuracy
                                             // todo explain & justify value
-    public KalmanFilterBuilder() {
+    public KalmanFilterBuilder_OLD() {
         // take parameters?
     }
 
     public KalmanFilter getNewKalmanFilter(double x0, double y0, double vx0, double vy0) {
 
         RealVector initialStateEstimate_xHat  = new ArrayRealVector(
-                new double[]{x0,y0,vx0,vy0,placeHolder,placeHolder}                 // initial position and velocity values
+                new double[]{x0,y0,vx0,vy0}                 // initial position and velocity values
         );
 
         ProcessModel pM = getProcessModel(initialStateEstimate_xHat);
@@ -57,79 +52,67 @@ public class KalmanFilterBuilder {
 
     private final RealMatrix stateTransition_mA = new Array2DRowRealMatrix(
             new double[][]{
-                    {1, 0, 0, 0, stv, 0},
-                    {0, 1, 0, 0, 0, stv},
-                    {0, 0, 1, 0, 0, 0},
-                    {0, 0, 0, 1, 0, 0},
-                    {0, 0, 0, 0, 1, 0},
-                    {0, 0, 0, 0, 0, 1}
+                    {1, 0, stv, 0},
+                    {0, 1, 0, stv},
+                    {0, 0, 1, 0},
+                    {0, 0, 0, 1}
             });
 
     private final RealMatrix inputControl_mB = new Array2DRowRealMatrix(                     // identity matrix
             new double[][]{
-                    {1, 0, 0, 0, 0, 0},
-                    {0, 1, 0, 0, 0, 0},
-                    {0, 0, 1, 0, 0, 0},
-                    {0, 0, 0, 1, 0, 0},
-                    {0, 0, 0, 0, 1, 0},
-                    {0, 0, 0, 0, 0, 1},
+                    {1, 0, 0, 0},
+                    {0, 1, 0, 0},
+                    {0, 0, 1, 0},
+                    {0, 0, 0, 1}
             });
 
     // influences kalman gain
     private final RealMatrix measurementMatrix_mH = new Array2DRowRealMatrix(
             new double[][]{
-                    {1, 0, 0, 0, 1, 0},   // 1,0,1,0    // todo explain this configuration of numbers
-                    {0, 1, 0, 0, 0, 1},   // 0,1,0,1
-                    {0, 0, 1, 0, 0, 0},
-                    {0, 0, 0, 1, 0, 0},
-                    {0, 0, 0, 0, 1, 0},
-                    {0, 0, 0, 0, 0, 1}
+                    {1, 0, 1, 0},   // 1,0,1,0    // todo explain this configuration of numbers
+                    {0, 1, 0, 1},   // 0,1,0,1
+                    {0, 0, 1, 0},
+                    {0, 0, 0, 1}
             });
 
     private final RealMatrix actionUncertainty_mQ = new Array2DRowRealMatrix(
             new double[][]{
-                    {0.1, 0, 0, 0, 0, 0},
-                    {0, 0.1, 0, 0, 0, 0},
-                    {0, 0, 0.1, 0, 0, 0},
-                    {0, 0, 0, 0.1, 0, 0},
-                    {0, 0, 0, 0, 0.1, 0},
-                    {0, 0, 0, 0, 0, 0.1}
+                    {0, 0, 0, 0},    // 0.1,0,0,0?  todo
+                    {0, 0, 0, 0},    // 0,0.1,0,0
+                    {0, 0, 0.1, 0},       // 0,0,0.1,0
+                    {0, 0, 0, 0.1}        // 0,0,0,0.1
             });
 
     private final RealMatrix sensorNoise_mR = new Array2DRowRealMatrix(
             new double[][]{
-                    {0.1, 0, 0, 0, 0, 0},
-                    {0, 0.1, 0, 0, 0, 0},
-                    {0, 0, 0.1, 0, 0, 0},
-                    {0, 0, 0, 0.1, 0, 0},
-                    {0, 0, 0, 0, 0.1, 0},
-                    {0, 0, 0, 0, 0, 0.1}
+                    {0, 0, 0,  0},    // 0.1,0,0,0
+                    {0, 0, 0,  0},    // 0,0.1,0,0
+                    {0, 0,0.1, 0},
+                    {0, 0, 0, 0.1}
             });
 
     private final RealMatrix initialStateCovariance_mP =  new Array2DRowRealMatrix(       // zeros matrix
             new double[][]{
-                    {0, 0, 0, 0, 0, 0},
-                    {0, 0, 0, 0, 0, 0},
-                    {0, 0, 0, 0, 0, 0},
-                    {0, 0, 0, 0, 0, 0},
-                    {0, 0, 0, 0, 0, 0},
-                    {0, 0, 0, 0, 0, 0}
+                    {0, 0, 0, 0},
+                    {0, 0, 0, 0},
+                    {0, 0, 0, 0},
+                    {0, 0, 0, 0}
             });
 
     private final RealVector controlVector = new ArrayRealVector(                        // not used
             new double[]{0,0,0,0}
     );
 
-    /*
+
     public static void main(String[] args) throws IOException {
         testData();
     }
-    */
 
-    ///*
+
+
     public static void testData() throws IOException {
 
-        /*double dt = 1.0/30;    // 30 frames per second
+        double dt = 1.0/30;    // 30 frames per second
 
         double initialX = 0.0;  // animal.x
         double initialY = 0.0;  // animal.y
@@ -178,7 +161,7 @@ public class KalmanFilterBuilder {
 
 
         RealMatrix sensorNoise_mR = new Array2DRowRealMatrix(           // todo dont use this??
-                new double[][]{KalmanFilter filter = new KalmanFilter(pm, mm);
+                new double[][]{
                         {0, 0, 0,  0},
                         {0, 0, 0,  0},
                         {0, 0,0.1, 0},
@@ -213,10 +196,10 @@ public class KalmanFilterBuilder {
 
         // parameters:  measurementMatrix,  measurementNoise
         MeasurementModel mm = new DefaultMeasurementModel(measurementMatrix_mH, sensorNoise_mR);
-        KalmanFilter filter = new KalmanFilter(pm, mm);*/
+        KalmanFilter filter = new KalmanFilter(pm, mm);
 
 
-        KalmanFilter filter = new KalmanFilterBuilder().getNewKalmanFilter(0.0,0.0,0.0, 0.0);
+
 
         List<String> lines = IOUtils.readLinesFromFile("/home/ah2166/Documents/sproj/tracking_data/motionData/testData1.dat");
         List<double[]> dataPoints = new ArrayList<>(lines.size());
@@ -246,8 +229,7 @@ public class KalmanFilterBuilder {
             };
 
 
-            RealVector nextRealMeasurement = new ArrayRealVector(new double[]{
-                    point[0], point[1], velocity[0], velocity[1], 0.0, 0.0}); // x, y, velx, vely
+            RealVector nextRealMeasurement = new ArrayRealVector(new double[]{point[0], point[1], velocity[0], velocity[1]}); // x, y, velx, vely
 
             // predict the state estimate one time-step ahead
             // optionally provide some control input
@@ -269,8 +251,8 @@ public class KalmanFilterBuilder {
 
             System.out.println(String.format(
 //                    "Current estimated values are: {x: %.3f, y: %.3f, vx: %.3f, vy: %.3f",
-                    "Estimated values: \t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f",
-                    stateEstimate[0], stateEstimate[1], stateEstimate[2], stateEstimate[3], stateEstimate[4], stateEstimate[5]
+                    "Estimated values: \t%.3f\t%.3f\t%.3f\t%.3f",
+                    stateEstimate[0], stateEstimate[1], stateEstimate[2], stateEstimate[3]
             ));
             /*
             if no detection for a given frame, pass in the previous estimate in to the filter for estimation?

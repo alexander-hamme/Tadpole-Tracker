@@ -15,7 +15,6 @@ import javax.swing.*;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static sproj.util.IOUtils.writeAnimalPointsToFile;

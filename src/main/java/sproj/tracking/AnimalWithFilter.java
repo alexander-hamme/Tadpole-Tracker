@@ -112,9 +112,11 @@ public class AnimalWithFilter {
     }
 
     private void updateKFilter() {
+        double placeHolder = 0.0;
+        double[] stateCorrection = new double[]{this.x, this.y, this.vx, this.vy, placeHolder, placeHolder};
         this.trackingFilter.predict();      // this needs to be called before calling correct()
         System.out.println(String.format("\nUpdating filter: %d %d %.4f %.4f", this.x, this.y, this.vx, this.vy));
-        this.trackingFilter.correct(new double[]{this.x, this.y, this.vx, this.vy});
+        this.trackingFilter.correct(stateCorrection);
         System.out.println(String.format("Prediction: %s", Arrays.toString(this.trackingFilter.getStateEstimation())));
     }
 
