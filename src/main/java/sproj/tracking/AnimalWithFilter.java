@@ -3,6 +3,7 @@ package sproj.tracking;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.math3.filter.KalmanFilter;
 import org.bytedeco.javacpp.opencv_core.Scalar;
+import sproj.util.BoundingBox;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +36,7 @@ public class AnimalWithFilter {
         trackingFilter = kFilter;
     }
 
+
     public void updateLocation(int x, int y, double dt, long timePos) {
         dataPoints.add(new double[]{x, y, timePos});
         linePoints.add(new int[]{x, y});   // calls the addFirst() method, adds to front of Deque
@@ -57,16 +59,17 @@ public class AnimalWithFilter {
         double vy = predictedState[3];
 
         // Simplest method
-         int newx = (int) Math.round(predictedState[0]);
-         int newy = (int) Math.round(predictedState[1]);
+//         int newx = (int) Math.round(predictedState[0]);
+//         int newy = (int) Math.round(predictedState[1]);
 
 
         // d = rt    -->     x - x0 = vx*dt   -->    x =  x0 + vx*dt
 
-//        int newx = (int) Math.round(this.x + (vx * dt));
-//        int newy = (int) Math.round(this.y - (vy * dt));
-//        int newx = (int) Math.round(predX + (vx * dt));    // or    average with this.x?
-//        int newy = (int) Math.round(predY + (vy * dt));
+        int newx = (int) Math.round(this.x + (vx * dt));
+        int newy = (int) Math.round(this.y - (vy * dt));
+//        int newx = (int) Math.round((predX + (this.x + (vx * dt))) / 2);    // average the predicted position with calculated position from predicted velocity
+//        int newy = (int) Math.round((predY + (this.y + (vy * dt))) / 2);
+
 
         System.out.println(String.format("new coordinates: (%d, %d)", newx, newy));
 

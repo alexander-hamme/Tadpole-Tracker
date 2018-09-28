@@ -26,7 +26,7 @@ public class KalmanFilterBuilder {
      *
      */
 
-    private final double stv = 0.9;         // sensitivity value for state transition matrix.  --> the closer to 1.0 this is, <--todo ????
+    private final double stv = 0.8;         // sensitivity value for state transition matrix.  --> the closer to 1.0 this is, <--todo ????
                                             // the faster the filter adjusts to changes in data, which affects estimation accuracy
                                             // todo explain & justify value
     public KalmanFilterBuilder() {
@@ -59,10 +59,10 @@ public class KalmanFilterBuilder {
             new double[][]{
                     {1, 0, 0, 0, stv, 0},
                     {0, 1, 0, 0, 0, stv},
-                    {0, 0, 1, 0, 0, 0},
-                    {0, 0, 0, 1, 0, 0},
-                    {0, 0, 0, 0, 1, 0},
-                    {0, 0, 0, 0, 0, 1}
+                    {0, 0, 1, 0, 0,  0},
+                    {0, 0, 0, 1, 0,  0},
+                    {0, 0, 0, 0, 1,  0},
+                    {0, 0, 0, 0, 0,  1}
             });
 
     private final RealMatrix inputControl_mB = new Array2DRowRealMatrix(                     // identity matrix
@@ -117,16 +117,19 @@ public class KalmanFilterBuilder {
             });
 
     private final RealVector controlVector = new ArrayRealVector(                        // not used
-            new double[]{0,0,0,0}
+            new double[]{0,0,0,0,0,0}
     );
+}
 
-    /*
+
+
+/*
     public static void main(String[] args) throws IOException {
         testData();
     }
     */
 
-    ///*
+    /*
     public static void testData() throws IOException {
 
         /*double dt = 1.0/30;    // 30 frames per second
@@ -213,7 +216,7 @@ public class KalmanFilterBuilder {
 
         // parameters:  measurementMatrix,  measurementNoise
         MeasurementModel mm = new DefaultMeasurementModel(measurementMatrix_mH, sensorNoise_mR);
-        KalmanFilter filter = new KalmanFilter(pm, mm);*/
+        KalmanFilter filter = new KalmanFilter(pm, mm);
 
 
         KalmanFilter filter = new KalmanFilterBuilder().getNewKalmanFilter(0.0,0.0,0.0, 0.0);
@@ -279,8 +282,7 @@ public class KalmanFilterBuilder {
             predX = (A * predX) + (B * c)
 
             and the new estimation is in the x vector
-            */
         }
 
     }
-}
+*/
