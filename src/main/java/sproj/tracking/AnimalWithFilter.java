@@ -21,6 +21,7 @@ public class AnimalWithFilter {
 
     public int x, y;
     public double vx, vy;
+    public double ax, ay;   // acceleration
     public double currentHeading;
     public MovementState movementState;
     public KalmanFilter trackingFilter;
@@ -112,8 +113,7 @@ public class AnimalWithFilter {
     }
 
     private void updateKFilter() {
-        double placeHolder = 0.0;
-        double[] stateCorrection = new double[]{this.x, this.y, this.vx, this.vy, placeHolder, placeHolder};
+        double[] stateCorrection = new double[]{this.x, this.y, this.vx, this.vy, this.ax, this.ay};
         this.trackingFilter.predict();      // this needs to be called before calling correct()
         System.out.println(String.format("\nUpdating filter: %d %d %.4f %.4f", this.x, this.y, this.vx, this.vy));
         this.trackingFilter.correct(stateCorrection);
