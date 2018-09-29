@@ -26,7 +26,7 @@ public class KalmanFilterBuilder {
      *
      */
 
-    private final double stv = 0.8;         // sensitivity value for state transition matrix.  --> the closer to 1.0 this is, <--todo ????
+    private final double stv = 0.9;         // sensitivity value for state transition matrix.  --> the closer to 1.0 this is, <--todo ????
                                             // the faster the filter adjusts to changes in data, which affects estimation accuracy
                                             // todo explain & justify value
     public KalmanFilterBuilder() {
