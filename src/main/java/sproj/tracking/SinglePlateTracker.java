@@ -437,8 +437,10 @@ public class SinglePlateTracker extends Tracker {
     public static void main(String[] args) throws IOException, InterruptedException {
 //        String testVideo = "/home/ah2166/Videos/tad_test_vids/1_tad_3.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
 //        int n_objs = 1;
-        String testVideo = "/home/ah2166/Videos/tad_test_vids/2_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
-        int n_objs = 2;
+//        String testVideo = "/home/ah2166/Videos/tad_test_vids/2_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
+//        int n_objs = 2;
+        String testVideo = "/home/ah2166/Videos/tad_test_vids/3_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
+        int n_objs = 3;
         int[] cropDims = new int[]{130,10,670,670};   // {230,10,700,700};//
         SinglePlateTracker tracker = new SinglePlateTracker(n_objs, true,  cropDims, testVideo);
         tracker.trackVideo(testVideo);
