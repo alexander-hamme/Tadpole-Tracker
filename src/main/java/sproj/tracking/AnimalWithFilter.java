@@ -26,9 +26,11 @@ public class AnimalWithFilter {
     public double currentHeading;
     public MovementState movementState;
     public KalmanFilter trackingFilter;
+    private int[] positionBounds = new int[4];
 
-    public AnimalWithFilter(int x, int y, int[] clr, KalmanFilter kFilter) {
+    public AnimalWithFilter(int x, int y, int[] positionBounds, int[] clr, KalmanFilter kFilter) {
         this.x = x; this.y = y;
+        this.positionBounds = positionBounds;
         currentHeading = 0;
         color = new Scalar(clr[0], clr[1], clr[2], 1.0);
         linePoints = new CircularFifoQueue<>(LINE_POINTS_SIZE);
@@ -38,13 +40,21 @@ public class AnimalWithFilter {
 
 
     public void updateLocation(int x, int y, double dt, long timePos) {
-        dataPoints.add(new double[]{x, y, timePos});
-        linePoints.add(new int[]{x, y});   // calls the addFirst() method, adds to front of Deque
         this.x = x; this.y = y;
+        applyBoundsConstraints();
+        dataPoints.add(new double[]{this.x, this.y, timePos});
+        linePoints.add(new int[]{this.x, this.y});   // calls the addFirst() method, adds to front of Deque
         updateVelocity(dt);
         updateKFilter();
     }
 
+
+    private void applyBoundsConstraints() {
+        x = (x>positionBounds[0]) ? x : positionBounds[0];
+        x = (x<positionBounds[1]) ? x : positionBounds[1];
+        y = (y>positionBounds[2]) ? y : positionBounds[2];
+        y = (y<positionBounds[3]) ? y : positionBounds[3];
+    }
 
     public void predictTrajectory(double dt, long timePos) {
 
