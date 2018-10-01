@@ -5,14 +5,16 @@ import sproj.util.BoundingBox;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 public class OptimalAssigner {
 
+    private final int UNCOVERED = 0;
     private final int COVERED = 1;
     private final int STARRED = 1;
+    private final int UNSTARRED = 0;
     private final int PRIMED = 2;
+    private final int UNPRIMED = 0;
 
     private boolean foundOptimalSolution;
 
@@ -20,6 +22,7 @@ public class OptimalAssigner {
 
     private double[][] costMatrix;
     private int[][] maskMatrix;
+    private int[][] pathMatrix;                 // todo what is this for??
     private int[] rowCover;
     private int[] colCover;
     private int rows, cols;
@@ -58,6 +61,8 @@ public class OptimalAssigner {
 
         costMatrix = new double[dimension][dimension];
         maskMatrix = new int[dimension][dimension];
+        pathMatrix = new int[dimension*2 + 1][2];   // todo:     why????
+
         rowCover = new int[rows];
         colCover = new int[cols];
 
@@ -93,18 +98,35 @@ public class OptimalAssigner {
         int cols = costMatrix[0].length;    // but I use separate 'rows' and 'cols' variables for clarity and readability
         int[][] maskMatrix;
         int[] rowCover = new int[rows];
-        int[] colCover = new int[cols];*/
+        int[] colCover = new int[cols];
 
-//        costMatrix = reduceBySmallest(costMatrix, rows, cols);
-//        maskMatrix = starZeroes(costMatrix, rowCover, colCover);
-//        colCover = coverColumns(maskMatrix, rowCover, colCover);
-        reduceBySmallest();  //costMatrix, rows, cols);
-        starZeroes();  //costMatrix, rowCover, colCover);
-        coverColumns(); //maskMatrix, rowCover, colCover);
+        costMatrix = reduceBySmallest(costMatrix, rows, cols);
+        maskMatrix = starZeroes(costMatrix, rowCover, colCover);
+        colCover = coverColumns(maskMatrix, rowCover, colCover);*/
 
-        if (! this.foundOptimalSolution) {
+        reduceBySmallest();         // step 1               //costMatrix, rows, cols);
+        starZeroes();               // step 2               //costMatrix, rowCover, colCover);
+
+        while(true) {
+
+            coverColumns();             // step 3               this is what changes the value of foundOptimalSolution
+
+            if (this.foundOptimalSolution) {
+                break;
+            }
+
+            int[] position = primeZeros();      // step 4
+
+            if (position == null) {  // go to step 6
+                stepSix();   // todo this needs to go to step 4, not 3
+            } else {        // go to step 5
+                stepFive(position[0], position[1]);
+            }
+
 
         }
+
+        // step 7
 
         return assignments;
     }
@@ -189,6 +211,138 @@ public class OptimalAssigner {
     }
 
 
+    /** Step four
+     *
+     * @return
+     */
+    private int[] primeZeros() {
+
+        int row;
+        int col;
+
+        while (true) {
+
+            int[] position = findaZero();
+
+            if (position == null) { // go to step 6
+                return null;
+
+            } else {
+
+                row = position[0];
+                col = position[1];
+
+                maskMatrix[row][col] = PRIMED;
+
+                col = locateStarInRow(row);
+
+                if (col != -1) {
+
+                    rowCover[row] = COVERED;
+                    colCover[col] = UNCOVERED;
+
+                } else {  // go to step 5
+                    return new int[]{row, col};
+                }
+            }
+        }
+    }
+
+
+    /** Step Five
+     *
+     *
+     * returns to step 3
+     * @return
+     */
+    private void stepFive(int pathRow, int pathCol) {
+
+        int pathCount = 1;  // todo what does this value mean
+        pathMatrix[0][0] = pathRow;
+        pathMatrix[0][1] = pathCol;
+
+        while (true) {
+
+            int row = locateStarInCol(pathMatrix[pathCount-1][1]);
+
+            if (row == -1) {
+                break;
+            }
+
+            pathCount++;
+            pathMatrix[pathCount-1][0] = row;
+            pathMatrix[pathCount-1][1] = pathMatrix[pathCount-2][1];
+
+            int col = locatePrimeInRow(pathMatrix[pathCount-1][0]);
+            pathCount ++;
+            pathMatrix[pathCount-1][0] = pathMatrix[pathCount-2][0];
+            pathMatrix[pathCount-1][1] = col;
+
+        }
+
+        flipPathValues(pathCount);
+        clearCoverMatrices();
+        erasePrimes();
+    }
+
+    /**Step 6
+     *
+     * Returns to step 4
+     */
+    private void stepSix() {
+
+        double minVal = findSmallest();
+
+        for (int r = 0; r < rows; r++) {
+
+            for (int c = 0; c < cols; c++) {
+
+                if (rowCover[r] == COVERED)
+                    costMatrix[r][ c] += minVal;
+
+                if (colCover[c] == 0)
+                    costMatrix[r][c] -= minVal;
+            }
+        }
+    }
+    private double findSmallest() {
+
+        double minVal = Double.MAX_VALUE;
+
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (rowCover[r] == 0 && colCover[c] == 0) {
+                    minVal = Math.min(minVal, costMatrix[r][c]);
+                }
+            }
+        }
+        return minVal;
+    }
+
+    private void clearCoverMatrices() {
+        Arrays.fill(rowCover, 0);
+        Arrays.fill(colCover, 0);
+    }
+
+
+    private void flipPathValues(int pathCount) {
+        for (int p=0; p<pathCount; p++) {
+            int val = maskMatrix [pathMatrix[p][0]]  [pathMatrix[p][1]];
+            maskMatrix [pathMatrix[p][0]]  [pathMatrix[p][1]] = (val == STARRED) ? UNSTARRED : STARRED;
+
+        }
+    }
+
+    private void erasePrimes() {
+
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (maskMatrix[r][c] == PRIMED) {
+                    maskMatrix[r][c] = UNPRIMED;
+                }
+            }
+        }
+    }
 
 
 
@@ -213,6 +367,24 @@ public class OptimalAssigner {
     private int locateStarInRow(int row) {
         for (int col=0; col<cols; col++) {
             if (maskMatrix[row][col] == STARRED) {
+                return col;
+            }
+        }
+        return -1;
+    }
+
+    private int locateStarInCol(int col) {
+        for (int row=0; row<cols; row++) {
+            if (maskMatrix[row][col] == STARRED) {
+                return row;
+            }
+        }
+        return -1;
+    }
+
+    private int locatePrimeInRow(int row) {
+        for (int col=0; col<cols; col++) {
+            if (maskMatrix[row][col] == PRIMED) {
                 return col;
             }
         }
