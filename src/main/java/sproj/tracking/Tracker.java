@@ -24,8 +24,10 @@ public abstract class Tracker {          //  TODO make this an interface?
     final int ARRAY_MAX_SIZE = 60;              // buffer size of array to accumulate data
     final int frame_resize_width = 720;
     boolean DRAW_SHAPES = true;
-    boolean DRAW_RECTANGLES = false;
+    boolean DRAW_RECTANGLES = true; //false;    // uwef
     int circleRadius = 5;
+
+    protected final int NUMB_FRAMES_FOR_INIT = 10;    // allow tracking system to find and attach Animal objects to detections
 
     String CANVAS_NAME;
 
