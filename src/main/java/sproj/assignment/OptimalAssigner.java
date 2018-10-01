@@ -17,12 +17,15 @@ public class OptimalAssigner {
     private boolean foundOptimalSolution;
 
     private final double COST_OF_NON_ASSIGNMENT = 10.0;
-//    private double[][] costMatrix;
-//    private int[][] maskMatrix;
 
+    private double[][] costMatrix;
+    private int[][] maskMatrix;
+    private int[] rowCover;
+    private int[] colCover;
+    private int rows, cols;
 
     public OptimalAssigner() {
-        this.foundOptimalSolution = false;
+
     }
 
 
@@ -46,13 +49,17 @@ public class OptimalAssigner {
 
     public List<Assignment> getOptimalAssignments(final List<AnimalWithFilter> animals, final List<BoundingBox> boundingBoxes) {
 
+        this.foundOptimalSolution = false;
 //        List<Assignment> assignments = new ArrayList<>(animals.size());
 
-        int rows = animals.size();
-        int cols = boundingBoxes.size();
+        rows = animals.size();          // these dimensions will always be equal, even if they are not completely filled,
+        cols = boundingBoxes.size();    // but I use separate 'rows' and 'cols' variables for clarity and readability
         int dimension = Math.max(rows, cols);
 
-        double[][] costMatrix = new double[dimension][dimension];
+        costMatrix = new double[dimension][dimension];
+        maskMatrix = new int[dimension][dimension];
+        rowCover = new int[rows];
+        colCover = new int[cols];
 
         // todo: this is not putting the values in the right place?
         for (int i=0; i<rows; i++) {
@@ -63,7 +70,8 @@ public class OptimalAssigner {
 
 //        List<Assignment> assignments = munkresSolve(costMatrix);
 
-        return munkresSolve(costMatrix);
+//        return munkresSolve(costMatrix);
+        return munkresSolve();
 
 //        System.out.println("Matrix: ");
 //        for (int l=0; l<costMatrix.length; l++) {
@@ -77,29 +85,35 @@ public class OptimalAssigner {
      * Munkres Assignment Algorithm. Guarantees optimal assignment, with a worst-case runtime complexity of O(n^3)
      * @return
      */
-    public List<Assignment> munkresSolve(double[][] costMatrix) {
+    public List<Assignment> munkresSolve() { //double[][] costMatrix) {
 
         List<Assignment> assignments = new ArrayList<>();
 
-        int rows = costMatrix.length;       // these dimensions will always be equal, even if they are not completely filled,
+        /*int rows = costMatrix.length;       // these dimensions will always be equal, even if they are not completely filled,
         int cols = costMatrix[0].length;    // but I use separate 'rows' and 'cols' variables for clarity and readability
         int[][] maskMatrix;
         int[] rowCover = new int[rows];
-        int[] colCover = new int[cols];
+        int[] colCover = new int[cols];*/
 
-        costMatrix = reduceBySmallest(costMatrix, rows, cols);
-        maskMatrix = starZeroes(costMatrix, rowCover, colCover);
-        colCover = coverColumns(maskMatrix, rowCover, colCover);
+//        costMatrix = reduceBySmallest(costMatrix, rows, cols);
+//        maskMatrix = starZeroes(costMatrix, rowCover, colCover);
+//        colCover = coverColumns(maskMatrix, rowCover, colCover);
+        reduceBySmallest();  //costMatrix, rows, cols);
+        starZeroes();  //costMatrix, rowCover, colCover);
+        coverColumns(); //maskMatrix, rowCover, colCover);
+
+        if (! this.foundOptimalSolution) {
+
+        }
 
         return assignments;
     }
 
     /** Step 1
      *
-     * @param costMatrix
      * @return
      */
-    private double[][] reduceBySmallest(double[][] costMatrix, int rows, int cols) {
+    private void reduceBySmallest() { //double[][] costMatrix, int rows, int cols) {
 
         double minVal = costMatrix[0][0];
 
@@ -113,17 +127,18 @@ public class OptimalAssigner {
                 costMatrix[r][c] -= minVal;
             }
         }
-        return costMatrix;
     }
 
-    private int[][] starZeroes(double[][] costMatrix, int[] rowCover, int[] colCover) {
+    /**Step 2
+     *
+     * @return
+     */
+    private void starZeroes() { //double[][] costMatrix, int[] rowCover, int[] colCover) {
 
-        int rows = rowCover.length;
-        int cols = colCover.length;
+//        int rows = rowCover.length;
+//        int cols = colCover.length;
 
-
-
-        int[][] maskMatrix = new int[rows][cols];
+//        int[][] maskMatrix = new int[rows][cols];
 
         for (int r=0; r<rows; r++) {
 
@@ -137,21 +152,19 @@ public class OptimalAssigner {
             }
         }
 
-        /* clearing the rowCover and colCover arrays is unnecessary unless they are turned into class variables
+        /* clearing these rowCover and colCover arrays is unnecessary because they are function-local.
+        If they are turned into class variables, this is necessary.
+        */
         Arrays.fill(rowCover, 0);
         Arrays.fill(colCover, 0);
-        */
-
-        return maskMatrix;
     }
 
-    /*
-    does not change maskMatrix
+    /** Step 3
+     *
+     * note: does not change maskMatrix
+     * @return
      */
-    private int[] coverColumns(int[][] maskMatrix, int[] rowCover, int[] colCover) {
-
-        int rows = rowCover.length;
-        int cols = colCover.length;
+    private void coverColumns() {
 
         for (int r=0; r<rows; r++) {
 
@@ -173,13 +186,38 @@ public class OptimalAssigner {
         if (starredZeroesCount >= cols || starredZeroesCount >= rows) {
             this.foundOptimalSolution = true;
         }
-
-        return colCover;   // todo       and rowCover?
     }
 
 
 
 
+
+
+
+    private int[] findaZero() {
+
+        for (int r = 0; r < rows; r++) {
+
+            for (int c = 0; c < cols; c++) {
+
+                if (costMatrix[r][c] == 0 && rowCover[r] == 0 && colCover[c] == 0) {
+                    return new int[]{r, c};
+                }
+            }
+
+        }
+        return null;
+    }
+
+
+    private int locateStarInRow(int row) {
+        for (int col=0; col<cols; col++) {
+            if (maskMatrix[row][col] == STARRED) {
+                return col;
+            }
+        }
+        return -1;
+    }
 
 
     /**
