@@ -49,6 +49,29 @@ public class OptimalAssigner {
         return  Math.pow(Math.pow(anml.x - box.centerX, 2) + Math.pow(anml.y - box.centerY, 2), 0.5);
     }
 
+    private List<Assignment> parseSolvedMatrix(double[][] matrix) {
+        List<Assignment> assignments = new ArrayList<>();
+        return assignments;
+    }
+
+    public void testSolveMatrix(double[][] testMatrix) {
+        rows = testMatrix.length;
+        cols = testMatrix[0].length;
+        int dimension = Math.max(rows, cols);
+
+        costMatrix = new double[dimension][dimension];
+        maskMatrix = new int[dimension][dimension];
+        pathMatrix = new int[dimension*2 + 1][2];
+
+        rowCover = new int[rows];
+        colCover = new int[cols];
+
+        for (int i=0; i<rows; i++) {
+            if (cols >= 0) System.arraycopy(testMatrix[i], 0, costMatrix[i], 0, cols);
+        }
+        munkresSolve();
+    }
+
 
     public List<Assignment> getOptimalAssignments(final List<AnimalWithFilter> animals, final List<BoundingBox> boundingBoxes) {
 
@@ -76,7 +99,7 @@ public class OptimalAssigner {
 //        List<Assignment> assignments = munkresSolve(costMatrix);
 
 //        return munkresSolve(costMatrix);
-        return munkresSolve();
+        return parseSolvedMatrix(munkresSolve());
 
 //        System.out.println("Matrix: ");
 //        for (int l=0; l<costMatrix.length; l++) {
@@ -90,7 +113,7 @@ public class OptimalAssigner {
      * Munkres Assignment Algorithm. Guarantees optimal assignment, with a worst-case runtime complexity of O(n^3)
      * @return
      */
-    public List<Assignment> munkresSolve() { //double[][] costMatrix) {
+    public double[][] munkresSolve() { //double[][] costMatrix) {
 
         List<Assignment> assignments = new ArrayList<>();
 
@@ -107,28 +130,63 @@ public class OptimalAssigner {
         reduceBySmallest();         // step 1               //costMatrix, rows, cols);
         starZeroes();               // step 2               //costMatrix, rowCover, colCover);
 
+        int nextStep = 3;
+
         while(true) {
 
-            coverColumns();             // step 3               this is what changes the value of foundOptimalSolution
-
-            if (this.foundOptimalSolution) {
+            if (nextStep == 7) {
                 break;
             }
 
-            int[] position = primeZeros();      // step 4
+            switch (nextStep) {
 
-            if (position == null) {  // go to step 6
-                stepSix();   // todo this needs to go to step 4, not 3
-            } else {        // go to step 5
-                stepFive(position[0], position[1]);
+
+                case 3:
+
+                    coverColumns();             // Step 3
+
+                    if (this.foundOptimalSolution) {
+                        nextStep = 7;
+                    } else {
+                        nextStep = 4;
+                    }
+                    break;
+
+                case 4:
+
+                    int[] position = primeZeros();    // Step 4
+
+                    if (position == null) {
+                        nextStep = 6;
+
+                    } else {                    // Step 5 happens right after 4
+                        stepFive(position[0], position[1]);
+                        nextStep = 3;
+                    }
+                    break;
+
+                case 6:
+                    stepSix();
+                    nextStep = 4;
+                    break;
+
+
             }
+        }
 
+        System.out.println("Solved. Final Matrix:");
 
+        for (int r=0; r<rows; r++) {
+            System.out.println(Arrays.toString(costMatrix[r]));
+        }
+
+        for (int r=0; r<rows; r++) {
+            System.out.println(Arrays.toString(maskMatrix[r]));
         }
 
         // step 7
 
-        return assignments;
+        return costMatrix;
     }
 
     /** Step 1
@@ -234,12 +292,12 @@ public class OptimalAssigner {
 
                 maskMatrix[row][col] = PRIMED;
 
-                col = locateStarInRow(row);
+                int newCol = locateStarInRow(row);
 
-                if (col != -1) {
+                if (newCol != -1) {
 
                     rowCover[row] = COVERED;
-                    colCover[col] = UNCOVERED;
+                    colCover[newCol] = UNCOVERED;
 
                 } else {  // go to step 5
                     return new int[]{row, col};
@@ -261,6 +319,8 @@ public class OptimalAssigner {
         pathMatrix[0][0] = pathRow;
         pathMatrix[0][1] = pathCol;
 
+//        assert pathRow >= 0 && pathCol >= 0;
+
         while (true) {
 
             int row = locateStarInCol(pathMatrix[pathCount-1][1]);
@@ -277,7 +337,6 @@ public class OptimalAssigner {
             pathCount ++;
             pathMatrix[pathCount-1][0] = pathMatrix[pathCount-2][0];
             pathMatrix[pathCount-1][1] = col;
-
         }
 
         flipPathValues(pathCount);
@@ -389,6 +448,23 @@ public class OptimalAssigner {
             }
         }
         return -1;
+    }
+
+
+
+    public static void main(String[] args) {
+
+        OptimalAssigner assigner = new OptimalAssigner();
+
+        double[][] testMatrix = new double[][]{
+                {1, 2, 3},
+                {2, 4, 6},
+                {3, 6, 0}
+        };
+
+        assigner.testSolveMatrix(testMatrix);
+
+
     }
 
 
