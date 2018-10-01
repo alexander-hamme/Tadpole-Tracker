@@ -6,6 +6,7 @@ import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
+import sproj.assignment.OptimalAssigner;
 import sproj.prediction.KalmanFilterBuilder;
 import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
@@ -15,7 +16,7 @@ import javax.swing.*;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import static sproj.util.IOUtils.writeAnimalPointsToFile;
@@ -35,16 +36,20 @@ public class SinglePlateTracker extends Tracker {
 
     private ArrayList<AnimalWithFilter> animals = new ArrayList<>();
     private DetectionsParser detectionsParser = new DetectionsParser();
+    private OptimalAssigner optimalAssigner = new OptimalAssigner();
     private OpenCVFrameConverter frameConverter = new OpenCVFrameConverter.ToMat();
     private YOLOModelContainer yoloModelContainer;
 //    private FFmpegFrameGrabber grabber;
 
 //    private int numb_of_anmls;
 
+
+
     private Rect cropRect;
     private int[] cropDimensions;       // array of four ints, of the form:  [center_x, center_y, width, height]
     private int videoFrameWidth;
     private int videoFrameHeight;
+    private int[] positionBounds;
 
 //    private List<BoundingBox> boundingBoxes;
 //    private List<DetectedObject> detectedObjects;
@@ -61,6 +66,8 @@ public class SinglePlateTracker extends Tracker {
         this.videoFrameHeight = cropDimensions[3];
         this.cropRect = new Rect(cropDimensions[0], cropDimensions[1], cropDimensions[2], cropDimensions[3]);  // use Range instead of Rect?
 
+        this.positionBounds = new int[]{0, videoFrameWidth, 0, videoFrameHeight};
+
         logger.info("initializing");
         initializeFrameGrabber(videoPath);      // test if video file is valid and readable first
         logger.info("creating animals");
@@ -68,8 +75,6 @@ public class SinglePlateTracker extends Tracker {
         logger.info("warming up");
         yoloModelContainer = new YOLOModelContainer();  // load model
     }
-
-
 
 
     /**
@@ -98,6 +103,8 @@ public class SinglePlateTracker extends Tracker {
         return frameConverter.convert(frameImg);
 
     }
+
+
     /**
      * Create new Animal objects and distribute them diagonally across screen, so they attach themselves
      * to the real subject animals more quickly and with fewer conflicts
@@ -117,9 +124,45 @@ public class SinglePlateTracker extends Tracker {
             x = (int) ((i + 1) / ((double) numb_of_anmls * videoFrameWidth));
             y = (int) ((i + 1) / ((double) numb_of_anmls * videoFrameHeight));
             this.animals.add(
-                    new AnimalWithFilter(x, y, colors[i], filterBuilder.getNewKalmanFilter(x, y, 0.0, 0.0))
+                    new AnimalWithFilter(x, y, positionBounds, colors[i], filterBuilder.getNewKalmanFilter(x, y, 0.0, 0.0))
             );
         }
+    }
+
+    private boolean assignmentIsReasonable(AnimalWithFilter anml, BoundingBox box, int frameNumber) {
+        // todo hungarian optimal assignment algorithms might go here?
+
+        if (frameNumber <= NUMB_FRAMES_FOR_INIT) { return true; }
+
+        double displacementThreshMultiplier = 5.0;
+        double dt = 1.0 / videoFrameRate;
+        // todo use predicted position / velocity values?
+
+        double proximity = Math.pow(Math.pow((anml.x - box.centerX),2) + Math.pow((anml.y - box.centerY), 2), 0.5);
+
+
+
+        // is this is across the 416 x 416 image or the full image?
+        double minDispl = 5.0;      // use average velocity
+
+        double maxDispl = 25.0;     // todo use actual data for these...  e.g. calculate using mean/the max of displacement values over time
+
+        double reasonableDisplacement = displacementThreshMultiplier * Math.pow(Math.pow(anml.vx * dt, 2) + Math.pow(anml.vy * dt, 2), 0.5);
+
+
+        reasonableDisplacement = (reasonableDisplacement >= minDispl) ? reasonableDisplacement : minDispl;
+        reasonableDisplacement = (reasonableDisplacement <= maxDispl) ? reasonableDisplacement : minDispl;
+
+        System.out.println("reasonable displacement = " + reasonableDisplacement + "For reference, max prox is " +
+                (int) Math.round(Math.sqrt(Math.pow(416, 2) + Math.pow(416, 2))));
+
+        // todo also check the animal's heading & the angle to the assignment & if it seems reasonable
+
+        if (proximity >= maxDispl) System.out.println("NOPE: " + proximity);
+
+//        return proximity <= reasonableDisplacement;
+        return proximity <= maxDispl;
+
     }
 
 
@@ -137,8 +180,92 @@ public class SinglePlateTracker extends Tracker {
         // the length of the diagonal across the frame--> the largest possible displacement distance for an object in the image   todo move this elsewhere
         int prox_start_val = (int) Math.round(Math.sqrt(Math.pow(frameImage.rows(), 2) + Math.pow(frameImage.cols(), 2)));
 
-        double displThresh = (frameNumber > 10) ? DISPL_THRESH : prox_start_val;   // start out with large proximity threshold to quickly snap to objects
+        double displThresh = (frameNumber > NUMB_FRAMES_FOR_INIT) ? DISPL_THRESH : prox_start_val;   // start out with large proximity threshold to quickly snap to objects
 
+        double dt = 1.0 / videoFrameRate;
+
+
+        // TODO:   instead of looping through either the bounding boxes or Animals, you need to loop through them together & minimize the total
+        // todo    cost of assignments.  this may require polynomial time, but for such a small number of objects it shouldn't make much difference.
+
+        /*
+        double numberOfComputations = this.animals.size() * boundingBoxes.size();
+
+        HashMap<AnimalWithFilter, BoundingBox> optimalAssignments = new HashMap<>(this.animals.size());
+
+
+
+        double[] costMatrix = new double[] {
+
+        }
+
+
+        double maxCostStartValue = prox_start_val * this.animals.size();
+        double minimumCost = maxCostStartValue;
+        double currentCost;
+        for (int i=0; i<numberOfComputations; i++) {
+
+            // cost is defined as the Euclidean distance between the Animal and the BoundingBox
+
+
+        }
+        */
+
+
+        optimalAssigner.getOptimalAssignments(animals, boundingBoxes);
+
+
+        // todo loop through BoundingBoxes & assign first, then do a separate loop through animals to check which dont have boxes
+        ArrayList<AnimalWithFilter> assignedAnimals = new ArrayList<>(this.animals.size());
+        AnimalWithFilter closestAnimal;
+
+        for (BoundingBox box : boundingBoxes) {
+
+//            min_proximity = displThresh;     // start at max allowed value and then favor smaller values
+            min_proximity = prox_start_val;     // start at max allowed value and then favor smaller values.
+            // Illogical assignments will be discarded by assignmentIsReasonable() function
+
+            closestAnimal = null;
+
+            for (AnimalWithFilter animal : animals) {
+
+                if (!assignedAnimals.contains(animal)) {  // skip already assigned boxes
+                    // circleRadius = Math.round(box[2] + box[3] / 2);  // approximate circle from rectangle dimensions
+
+                    current_proximity = Math.pow(Math.pow(animal.x - box.centerX, 2) + Math.pow(animal.y - box.centerY, 2), 0.5);
+
+                    if (current_proximity < min_proximity) {
+                        min_proximity = current_proximity;
+                        closestAnimal = animal;
+                    }
+                }
+            }
+
+            if (closestAnimal != null && assignmentIsReasonable(closestAnimal, box, frameNumber)) {   // && RNN probability, etc etc
+                closestAnimal.updateLocation(box.centerX, box.centerY, dt, timePos);
+                assignedAnimals.add(closestAnimal);
+            }
+            if (DRAW_RECTANGLES) {
+                // this rectangle drawing will be removed later  (?)
+                rectangle(frameImage, new Point(box.topleftX, box.topleftY),
+                        new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
+            }
+        }
+
+
+        for (AnimalWithFilter animal : animals) {
+
+            if (! assignedAnimals.contains(animal)) {
+                animal.predictTrajectory(dt, timePos);
+            }
+            if (DRAW_SHAPES) {
+                traceAnimalOnFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
+            }
+        }
+
+
+        /**********************************************************************************************/
+        /*
         ArrayList<BoundingBox> assignedBoxes = new ArrayList<>(boundingBoxes.size());
         BoundingBox closestBox;
 
@@ -152,7 +279,7 @@ public class SinglePlateTracker extends Tracker {
                 if (!assignedBoxes.contains(box)) {  // skip already assigned boxes
                     // circleRadius = Math.round(box[2] + box[3] / 2);  // approximate circle from rectangle dimensions
 
-                    current_proximity = Math.pow(Math.abs(animal.x - box.centerX) ^ 2 + Math.abs(animal.y - box.centerY) ^ 2, 0.5);
+                    current_proximity = Math.pow(Math.pow(animal.x - box.centerX), 2 + Math.pow(animal.y - box.centerY), 2, 0.5);
 
                     if (current_proximity < min_proximity) {
                         min_proximity = current_proximity;
@@ -166,19 +293,20 @@ public class SinglePlateTracker extends Tracker {
                             new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
                 }
             }
-            /*if (boundingBoxes.size() == animals.size() && closestBox != null) {   // This means min_proximity < displacement_thresh?*/
-            if (closestBox != null && min_proximity < prox_start_val / 4.0) {   // && RNN probability, etc etc
-                animal.updateLocation(closestBox.centerX, closestBox.centerY, 1000.0 / videoFrameRate, timePos);
+            //if (boundingBoxes.size() == animals.size() && closestBox != null) {   // This means min_proximity < displacement_thresh?
+            if (closestBox != null && assignmentIsReasonable(animal, closestBox, frameNumber)) {   // && RNN probability, etc etc
+                animal.updateLocation(closestBox.centerX, closestBox.centerY, dt, timePos);
                 assignedBoxes.add(closestBox);
             } else {
                 // todo: instead of min_proximity --> use (Decision tree? / Markov? / SVM? / ???) to determine if the next point is reasonable
-                animal.predictTrajectory(1000.0 / videoFrameRate, timePos);
+                animal.predictTrajectory(dt, timePos);
             }
 
             if (DRAW_SHAPES) {
                 traceAnimalOnFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
             }
         }
+        */
     }
 
 
@@ -222,8 +350,10 @@ public class SinglePlateTracker extends Tracker {
         CanvasFrame canvasFrame = new CanvasFrame("Tracker");
         canvasFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-        CanvasFrame originalShower = new CanvasFrame("Original");
-        originalShower.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+//        CanvasFrame originalShower = new CanvasFrame("Original");
+//        originalShower.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
+
 
         int msDelay = 10;
         List<BoundingBox> boundingBoxes;
@@ -307,8 +437,10 @@ public class SinglePlateTracker extends Tracker {
     public static void main(String[] args) throws IOException, InterruptedException {
 //        String testVideo = "/home/ah2166/Videos/tad_test_vids/1_tad_3.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
 //        int n_objs = 1;
-        String testVideo = "/home/ah2166/Videos/tad_test_vids/2_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
-        int n_objs = 2;
+//        String testVideo = "/home/ah2166/Videos/tad_test_vids/2_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
+//        int n_objs = 2;
+        String testVideo = "/home/ah2166/Videos/tad_test_vids/3_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
+        int n_objs = 3;
         int[] cropDims = new int[]{130,10,670,670};   // {230,10,700,700};//
         SinglePlateTracker tracker = new SinglePlateTracker(n_objs, true,  cropDims, testVideo);
         tracker.trackVideo(testVideo);

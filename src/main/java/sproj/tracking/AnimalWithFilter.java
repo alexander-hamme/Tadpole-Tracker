@@ -3,6 +3,7 @@ package sproj.tracking;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.math3.filter.KalmanFilter;
 import org.bytedeco.javacpp.opencv_core.Scalar;
+import sproj.util.BoundingBox;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,12 +22,15 @@ public class AnimalWithFilter {
 
     public int x, y;
     public double vx, vy;
+    public double ax, ay;   // acceleration
     public double currentHeading;
     public MovementState movementState;
     public KalmanFilter trackingFilter;
+    private int[] positionBounds = new int[4];
 
-    public AnimalWithFilter(int x, int y, int[] clr, KalmanFilter kFilter) {
+    public AnimalWithFilter(int x, int y, int[] positionBounds, int[] clr, KalmanFilter kFilter) {
         this.x = x; this.y = y;
+        this.positionBounds = positionBounds;
         currentHeading = 0;
         color = new Scalar(clr[0], clr[1], clr[2], 1.0);
         linePoints = new CircularFifoQueue<>(LINE_POINTS_SIZE);
@@ -34,63 +38,106 @@ public class AnimalWithFilter {
         trackingFilter = kFilter;
     }
 
+
     public void updateLocation(int x, int y, double dt, long timePos) {
-        dataPoints.add(new double[]{x, y, timePos});
-        linePoints.add(new int[]{x, y});   // calls the addFirst() method, adds to front of Deque
         this.x = x; this.y = y;
+        applyBoundsConstraints();
+        dataPoints.add(new double[]{this.x, this.y, timePos});
+        linePoints.add(new int[]{this.x, this.y});   // calls the addFirst() method, adds to front of Deque
         updateVelocity(dt);
         updateKFilter();
     }
 
 
+    private void applyBoundsConstraints() {
+        x = (x>positionBounds[0]) ? x : positionBounds[0];
+        x = (x<positionBounds[1]) ? x : positionBounds[1];
+        y = (y>positionBounds[2]) ? y : positionBounds[2];
+        y = (y<positionBounds[3]) ? y : positionBounds[3];
+    }
+
     public void predictTrajectory(double dt, long timePos) {
 
         double[] predictedState = getPredictedState();
-        System.out.println("(trajectory estimation) (" + this.x + ", " + this.y + ") " + Arrays.toString(predictedState));
+        System.out.println(String.format("Current [(%d,%d)(%.3f,%.3f)], estimation: %s",
+                this.x,this.y, this.vx, this.vy, Arrays.toString(predictedState))
+        );
 
-
+        double predX = predictedState[0]; //(int) Math.round(predictedState[0]);
+        double predY = predictedState[1]; //(int) Math.round(predictedState[1]);
         double vx = predictedState[2];
         double vy = predictedState[3];
 
-        // todo incorporate velocity into better prediction somehow
+        // Simplest method
+//         int newx = (int) Math.round(predictedState[0]);
+//         int newy = (int) Math.round(predictedState[1]);
 
-        int newx = (int) Math.round(predictedState[0]);
-        int newy = (int) Math.round(predictedState[1]);
-//        int newx = (int) Math.round((predictedState[0] + (this.x + (vx))) / 2);
-//        int newy = (int) Math.round((predictedState[1] + (this.y + (vy))) / 2);
 
-//                animal.updateLocation((int)Math.round(predictedState[0]), (int)Math.round(predictedState[1]), timePos);
+        // d = rt    -->     x - x0 = vx*dt   -->    x =  x0 + vx*dt
+
+        int newx = (int) Math.round(this.x + (vx * dt));
+        int newy = (int) Math.round(this.y - (vy * dt));
+//        int newx = (int) Math.round((predX + (this.x + (vx * dt))) / 2);    // average the predicted position with calculated position from predicted velocity
+//        int newy = (int) Math.round((predY + (this.y + (vy * dt))) / 2);
+
+
+        System.out.println(String.format("new coordinates: (%d, %d)", newx, newy));
+
+
+
+        // todo method 3:  use predicted position to calculate heading, and then factor in velocity to predict position?
+
+
+
         updateLocation(newx, newy, dt, timePos);
     }
 
 
     /** Use line points because it keeps track of only the most recent points */
-    private void updateVelocity(double dt) {
+    private void updateVelocity(double dt) {        // TODO use timePos points to calculate dt!
 
         int subtractionIdx = 3;  // calculate velocity over the last N frames
-        if (linePoints.size() < subtractionIdx) {
+        if (linePoints.size() < subtractionIdx + 1) {
             this.vx = 0;
             this.vy = 0;
+
         } else {
-            // todo***  the most recent point is at the end index!!  ***
+
+            // todo double dt = timePos - timePosPrev
 
             // todo average these out so the change in values isnt so drastic
-            int[] prevPoint = linePoints.get(linePoints.size() - subtractionIdx);
-            this.vx = (this.x - prevPoint[0]) / dt;
-            this.vy = (this.y - prevPoint[1]) / dt;
+            int[] prevPoint = linePoints.get(linePoints.size() - 1 - subtractionIdx);   // the most recent point is at the end index
+            this.vx = (this.x - prevPoint[0]) / (subtractionIdx * dt);
+
+
+            // Have to flip the subtraction because y axis in graphics increases by going down instead of up
+             this.vy = ((prevPoint[1] - this.y) / (subtractionIdx * dt));
+//            this.vy = -1 * ((this.y - prevPoint[1]) / (subtractionIdx * dt));
+
+            /*
+            System.out.println(String.format("Current (%d, %d) from %sdx: %d dy: %d,   Velocity: %.4f %.4f",
+                    this.x, this.y, Arrays.toString(prevPoint), this.x - prevPoint[0], this.y - prevPoint[1], this.vx, this.vy)
+            );
+            */
+
+//            this.vx *= 1000;
+//            this.vy *= 1000;
         }
     }
 
     private void updateKFilter() {
+        double[] stateCorrection = new double[]{this.x, this.y, this.vx, this.vy, this.ax, this.ay};
         this.trackingFilter.predict();      // this needs to be called before calling correct()
-        this.trackingFilter.correct(new double[]{this.x, this.y, this.vx, this.vy});
+        System.out.println(String.format("\nUpdating filter: %d %d %.4f %.4f", this.x, this.y, this.vx, this.vy));
+        this.trackingFilter.correct(stateCorrection);
+        System.out.println(String.format("Prediction: %s", Arrays.toString(this.trackingFilter.getStateEstimation())));
     }
 
     private double[] getPredictedState() {
         this.trackingFilter.predict();
 //        return this.trackingFilter.getStateEstimation();
         double[] predictedState = this.trackingFilter.getStateEstimation();
-        this.trackingFilter.correct(predictedState);        // TODO is doing this correct?
+//        this.trackingFilter.correct(predictedState);        // this is already called when predictTrajectory() calls updateLocation
         return predictedState;
     }
 
