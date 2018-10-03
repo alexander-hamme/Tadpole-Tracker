@@ -19,6 +19,15 @@ public class BoundingBox {
         this.centerY = y1 + (int) ((y2 - y1) / 2.0);
     }
 
+    public BoundingBox(int[] centerPos, int width, int height) {
+        this.centerX = centerPos[0];
+        this.centerY = centerPos[1];
+        this.topleftX = this.centerX - (int) Math.round(width / 2.0);
+        this.topleftY = this.centerY - (int) Math.round(height / 2.0);
+        this.botRightX = this.centerX + (int) Math.round(width / 2.0);
+        this.botRightY = this.centerY + (int) Math.round(height / 2.0);
+    }
+
     public String toString() {
         return String.format(
                 "Top Left: (%d, %d), Bottom Right:(%d, %d)",

@@ -19,10 +19,11 @@ public class OptimalAssigner {
     private boolean foundOptimalSolution;
 
     private final double COST_OF_NON_ASSIGNMENT = 10.0;
+    private final double FAKE_VALUE = 1000000.0; //Double.MAX_VALUE;   //Double.POSITIVE_INFINITY
 
     private double[][] costMatrix;
     private int[][] maskMatrix;
-    private int[][] pathMatrix;                 // todo what is this for??
+    private int[][] pathMatrix;
     private int[] rowCover;
     private int[] colCover;
     private int rows, cols;
@@ -32,7 +33,7 @@ public class OptimalAssigner {
     }
 
 
-    private class Assignment {
+    public class Assignment {
 
         public AnimalWithFilter animal;
         public BoundingBox box;
@@ -49,43 +50,66 @@ public class OptimalAssigner {
         return  Math.pow(Math.pow(anml.x - box.centerX, 2) + Math.pow(anml.y - box.centerY, 2), 0.5);
     }
 
-    private List<Assignment> parseSolvedMatrix(int[][] matrix) {
+    private List<Assignment> parseSolvedMatrix(int[][] solvedMatrix, final List<AnimalWithFilter> animals, final List<BoundingBox> boundingBoxes) {
+
         List<Assignment> assignments = new ArrayList<>();
+
+        for (int r=0; r<rows; r++) {
+            for (int c=0; c<cols; c++) {
+                if (solvedMatrix[r][c] == STARRED) {
+                    assignments.add(new Assignment(animals.get(r), boundingBoxes.get(c)));
+                }
+            }
+        }
+
         return assignments;
     }
 
+    /**
+     * The length of the animals and boundingBoxes may be different at certain points in time.
+     * However, when adding fake values to make the matrix square, it should be kept in mind that
+     * the length of `animals` is always the true value.
+     *
+     * @param animals
+     * @param boundingBoxes
+     * @return
+     */
     public List<Assignment> getOptimalAssignments(final List<AnimalWithFilter> animals, final List<BoundingBox> boundingBoxes) {
+
+        // Note: Animals are on rows, Bounding Boxes are on columns.
 
         this.foundOptimalSolution = false;
 //        List<Assignment> assignments = new ArrayList<>(animals.size());
 
-        rows = animals.size();          // these dimensions will always be equal, even if they are not completely filled,
-        cols = boundingBoxes.size();    // but I use separate 'rows' and 'cols' variables for clarity and readability
+        int anmlsSize = animals.size();
+        int boxesSize = boundingBoxes.size();
+
+        rows = anmlsSize;          // the true value of how many animals there are
+        cols = boxesSize;    // will usually be less than or equal to (only in rare cases more than) animals.size()
+
         int dimension = Math.max(rows, cols);
+
+
+        // TODO     it seems that the assignment algorithm still finds optimal assignments even if the passed in matrices
+        // todo     have unbalanced dimensions... double check that this is always true
+
 
         costMatrix = new double[dimension][dimension];
         maskMatrix = new int[dimension][dimension];
-        pathMatrix = new int[dimension*2 + 1][2];   // todo:     why????
+        pathMatrix = new int[dimension*2 + 1][2];           // todo:     explain
 
         rowCover = new int[rows];
         colCover = new int[cols];
 
-        // todo: this is not putting the values in the right place?
         for (int i=0; i<rows; i++) {
             for (int j=0; j<cols; j++) {
                 costMatrix[i][j] = costOfAssignment(animals.get(i), boundingBoxes.get(j));
             }
         }
 
-//        List<Assignment> assignments = munkresSolve(costMatrix);
+        int[][] solvedMatrix = munkresSolve();
 
-//        return munkresSolve(costMatrix);
-        return parseSolvedMatrix(munkresSolve());
-
-//        System.out.println("Matrix: ");
-//        for (int l=0; l<costMatrix.length; l++) {
-//            System.out.println(Arrays.toString(costMatrix[l]));
-//        }
+        return parseSolvedMatrix(solvedMatrix, animals, boundingBoxes);
     }
 
 
@@ -150,28 +174,26 @@ public class OptimalAssigner {
                     if (position == null) {
                         nextStep = 6;
 
-                    } else {                    // Step 5 happens right after 4
-                        stepFive(position[0], position[1]);
+                    } else {                          // Step 5 happens right after 4
+                        augmentingPathAlgorithm(position[0], position[1]);
                         nextStep = 3;
                     }
                     break;
 
                 case 6:
-                    stepSix();
+                    applySmallestVal();
                     nextStep = 4;
                     break;
-
-
             }
         }
 
         System.out.println("Solved. Final Matrix:");
 
-        for (int r=0; r<rows; r++) {
+        for (int r=0; r<costMatrix.length; r++) {
             System.out.println(Arrays.toString(costMatrix[r]));
         }
 
-        for (int r=0; r<rows; r++) {
+        for (int r=0; r<maskMatrix.length; r++) {
             System.out.println(Arrays.toString(maskMatrix[r]));
         }
 
@@ -303,17 +325,16 @@ public class OptimalAssigner {
 
     /** Step Five
      *
+     * Related to the augmenting path algorithm
      *
-     * returns to step 3
+     * Returns to step 3
      * @return
      */
-    private void stepFive(int pathRow, int pathCol) {
+    private void augmentingPathAlgorithm(int pathRow, int pathCol) {
 
-        int pathCount = 1;  // todo what does this value mean
+        int pathCount = 1;
         pathMatrix[0][0] = pathRow;
         pathMatrix[0][1] = pathCol;
-
-//        assert pathRow >= 0 && pathCol >= 0;
 
         while (true) {
 
@@ -340,11 +361,15 @@ public class OptimalAssigner {
 
     /**Step 6
      *
-     * Returns to step 4
+     *
+     * For each covered row, add the smallest value to each element.
+     * For each uncovered column, subtract that value from each element.
+     *
+     * Finally, go back to Step 4 without changing any of the stars, primes, or covers
      */
-    private void stepSix() {
+    private void applySmallestVal() {
 
-        double minVal = findSmallest();
+        double minVal = findSmallestValue();
 
         for (int r = 0; r < rows; r++) {
 
@@ -353,18 +378,18 @@ public class OptimalAssigner {
                 if (rowCover[r] == COVERED)
                     costMatrix[r][ c] += minVal;
 
-                if (colCover[c] == 0)
+                if (colCover[c] == UNCOVERED)
                     costMatrix[r][c] -= minVal;
             }
         }
     }
-    private double findSmallest() {
+    private double findSmallestValue() {
 
         double minVal = Double.MAX_VALUE;
 
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
-                if (rowCover[r] == 0 && colCover[c] == 0) {
+                if (rowCover[r] == UNCOVERED && colCover[c] == UNCOVERED) {
                     minVal = Math.min(minVal, costMatrix[r][c]);
                 }
             }
@@ -373,14 +398,15 @@ public class OptimalAssigner {
     }
 
     private void clearCoverMatrices() {
-        Arrays.fill(rowCover, 0);
-        Arrays.fill(colCover, 0);
+        Arrays.fill(rowCover, UNCOVERED);
+        Arrays.fill(colCover, UNCOVERED);
     }
 
 
     private void flipPathValues(int pathCount) {
         for (int p=0; p<pathCount; p++) {
             int val = maskMatrix [pathMatrix[p][0]]  [pathMatrix[p][1]];
+            // flip all Starred values to Unstarred, and vice versa
             maskMatrix [pathMatrix[p][0]]  [pathMatrix[p][1]] = (val == STARRED) ? UNSTARRED : STARRED;
 
         }
@@ -397,17 +423,13 @@ public class OptimalAssigner {
         }
     }
 
-
-
-
-
     private int[] findaZero() {
 
         for (int r = 0; r < rows; r++) {
 
             for (int c = 0; c < cols; c++) {
 
-                if (costMatrix[r][c] == 0 && rowCover[r] == 0 && colCover[c] == 0) {
+                if (costMatrix[r][c] == UNSTARRED && rowCover[r] == UNCOVERED && colCover[c] == UNCOVERED) {
                     return new int[]{r, c};
                 }
             }
@@ -445,6 +467,15 @@ public class OptimalAssigner {
     }
 
 
+
+
+
+
+
+
+
+    /* Functions for testing purposes */
+
     private void printUpdate(int nextStep) {
         System.out.println(String.format(
                 "\n--------Step %d--------\n" +
@@ -474,8 +505,6 @@ public class OptimalAssigner {
         return stringBuilder.toString();
     }
 
-
-
     public int[][] munkresSolveMatrix(double[][] matrix) {
 
         rows = matrix.length;
@@ -492,6 +521,25 @@ public class OptimalAssigner {
         for (int r=0; r<rows; r++) {
             if (cols >= 0) System.arraycopy(matrix[r], 0, costMatrix[r], 0, cols);
         }
+
+
+        // Put fake values in the cost matrix to make up for missing data
+
+        /*if (cols < rows) {                      // rows = animals.size,   cols = boundingboxes.size
+            for (int r=0; r<rows; r++) {
+                for (int c = cols; c < rows; c++) {
+                    costMatrix[r][c] = FAKE_VALUE;
+                }
+            }
+        } else if (rows < cols) {
+            for (int r=rows; r<cols; r++) {
+                for (int c = 0; c < cols; c++) {
+                    costMatrix[r][c] = FAKE_VALUE;
+                }
+            }
+        }*/
+
+
         return munkresSolve();
     }
 
@@ -501,25 +549,23 @@ public class OptimalAssigner {
         OptimalAssigner assigner = new OptimalAssigner();
 
         double[][] testMatrix = new double[][]{
-                {1d, 2d, 3d},
-                {2d, 4d, 6d},
-                {3d, 6d, 9d}
+                {4d, 3d, 2d, 1d}, //{1d, 2d, 3d},
+                {8d, 6d, 4d, 2d},
+                {12d, 9d, 6d, 3d}
         };
 
         assigner.munkresSolveMatrix(testMatrix);
-
-
     }
 
 
     /**
      * Runtime complexity is O(n!) worst case, will always be at least exponential
      * @return
-     */
+     *//*
     public List<Assignment> bruteForceSolve(double[][] costMatrix) {
         List<Assignment> assignments = new ArrayList<>(costMatrix.length);
         double currentCost;
 
         return assignments;
-    }
+    }*/
 }
