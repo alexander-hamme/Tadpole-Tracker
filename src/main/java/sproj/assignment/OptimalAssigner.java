@@ -49,29 +49,10 @@ public class OptimalAssigner {
         return  Math.pow(Math.pow(anml.x - box.centerX, 2) + Math.pow(anml.y - box.centerY, 2), 0.5);
     }
 
-    private List<Assignment> parseSolvedMatrix(double[][] matrix) {
+    private List<Assignment> parseSolvedMatrix(int[][] matrix) {
         List<Assignment> assignments = new ArrayList<>();
         return assignments;
     }
-
-    public void testSolveMatrix(double[][] testMatrix) {
-        rows = testMatrix.length;
-        cols = testMatrix[0].length;
-        int dimension = Math.max(rows, cols);
-
-        costMatrix = new double[dimension][dimension];
-        maskMatrix = new int[dimension][dimension];
-        pathMatrix = new int[dimension*2 + 1][2];
-
-        rowCover = new int[rows];
-        colCover = new int[cols];
-
-        for (int i=0; i<rows; i++) {
-            if (cols >= 0) System.arraycopy(testMatrix[i], 0, costMatrix[i], 0, cols);
-        }
-        munkresSolve();
-    }
-
 
     public List<Assignment> getOptimalAssignments(final List<AnimalWithFilter> animals, final List<BoundingBox> boundingBoxes) {
 
@@ -113,7 +94,7 @@ public class OptimalAssigner {
      * Munkres Assignment Algorithm. Guarantees optimal assignment, with a worst-case runtime complexity of O(n^3)
      * @return
      */
-    public double[][] munkresSolve() { //double[][] costMatrix) {
+    public int[][] munkresSolve() { //double[][] costMatrix) {
 
         List<Assignment> assignments = new ArrayList<>();
 
@@ -127,12 +108,22 @@ public class OptimalAssigner {
         maskMatrix = starZeroes(costMatrix, rowCover, colCover);
         colCover = coverColumns(maskMatrix, rowCover, colCover);*/
 
+            printUpdate(0);
+
         reduceBySmallest();         // step 1               //costMatrix, rows, cols);
+
+            printUpdate(1);
+
         starZeroes();               // step 2               //costMatrix, rowCover, colCover);
+
+            printUpdate(2);
+
 
         int nextStep = 3;
 
         while(true) {
+
+            printUpdate(nextStep);
 
             if (nextStep == 7) {
                 break;
@@ -186,7 +177,8 @@ public class OptimalAssigner {
 
         // step 7
 
-        return costMatrix;
+//        return costMatrix;
+        return maskMatrix;
     }
 
     /** Step 1
@@ -195,9 +187,11 @@ public class OptimalAssigner {
      */
     private void reduceBySmallest() { //double[][] costMatrix, int rows, int cols) {
 
-        double minVal = costMatrix[0][0];
+        double minVal;
 
         for (int r=0; r<rows; r++) {
+
+            minVal = costMatrix[r][0];
 
             for (int c=0; c<cols; c++) {
                 minVal = Math.min(costMatrix[r][c], minVal);
@@ -451,18 +445,68 @@ public class OptimalAssigner {
     }
 
 
+    private void printUpdate(int nextStep) {
+        System.out.println(String.format(
+                "\n--------Step %d--------\n" +
+                        "Cost Matrix: \n%s\n" +
+                        "Mask Matrix: \n%s\n" +
+                        "Row Cover: %s\n" +
+                        "Col Cover: %s\n" +
+                "---------------------------------\n",
+                nextStep, matrix2dToString(costMatrix), matrix2dIntToString(maskMatrix),
+                Arrays.toString(rowCover), Arrays.toString(colCover)
+        ));
+    }
+
+    public String matrix2dIntToString(int[][] matrix) {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int r=0; r<matrix.length; r++) {
+            stringBuilder.append(Arrays.toString(matrix[r]) + "\n");
+        }
+        return stringBuilder.toString();
+    }
+
+    private String matrix2dToString(double[][] matrix) {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int r=0; r<matrix.length; r++) {
+            stringBuilder.append(Arrays.toString(matrix[r]) + "\n");
+        }
+        return stringBuilder.toString();
+    }
+
+
+
+    public int[][] munkresSolveMatrix(double[][] matrix) {
+
+        rows = matrix.length;
+        cols = matrix[0].length;
+        int dimension = Math.max(rows, cols);
+
+        costMatrix = new double[dimension][dimension];
+        maskMatrix = new int[dimension][dimension];
+        pathMatrix = new int[dimension*2 + 1][2];
+
+        rowCover = new int[rows];
+        colCover = new int[cols];
+
+        for (int r=0; r<rows; r++) {
+            if (cols >= 0) System.arraycopy(matrix[r], 0, costMatrix[r], 0, cols);
+        }
+        return munkresSolve();
+    }
+
 
     public static void main(String[] args) {
 
         OptimalAssigner assigner = new OptimalAssigner();
 
         double[][] testMatrix = new double[][]{
-                {1, 2, 3},
-                {2, 4, 6},
-                {3, 6, 0}
+                {1d, 2d, 3d},
+                {2d, 4d, 6d},
+                {3d, 6d, 9d}
         };
 
-        assigner.testSolveMatrix(testMatrix);
+        assigner.munkresSolveMatrix(testMatrix);
 
 
     }
