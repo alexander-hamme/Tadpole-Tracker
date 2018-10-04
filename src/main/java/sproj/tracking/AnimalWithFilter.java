@@ -28,11 +28,11 @@ public class AnimalWithFilter {
     public KalmanFilter trackingFilter;
     private int[] positionBounds = new int[4];
 
-    public AnimalWithFilter(int x, int y, int[] positionBounds, int[] clr, KalmanFilter kFilter) {
+    public AnimalWithFilter(int x, int y, int[] positionBounds, Scalar clr, KalmanFilter kFilter) {
         this.x = x; this.y = y;
         this.positionBounds = positionBounds;
         currentHeading = 0;
-        color = new Scalar(clr[0], clr[1], clr[2], 1.0);
+        color = clr; // new Scalar(clr[0], clr[1], clr[2], 1.0);
         linePoints = new CircularFifoQueue<>(LINE_POINTS_SIZE);
         dataPoints = new ArrayList<>(DATA_BUFFER_ARRAY_SIZE);
         trackingFilter = kFilter;

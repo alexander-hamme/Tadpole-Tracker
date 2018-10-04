@@ -120,11 +120,14 @@ public class SinglePlateTracker extends Tracker {
 
         // distribute
         int x, y;
+        int[] clr;
         for (int i = 0; i < numb_of_anmls; i++) {
             x = (int) ((i + 1) / ((double) numb_of_anmls * videoFrameWidth));
             y = (int) ((i + 1) / ((double) numb_of_anmls * videoFrameHeight));
+            clr = colors[i];
             this.animals.add(
-                    new AnimalWithFilter(x, y, positionBounds, colors[i], filterBuilder.getNewKalmanFilter(x, y, 0.0, 0.0))
+                    new AnimalWithFilter(x, y, positionBounds, new Scalar(clr[0],clr[1], clr[2], 1.0),  //colors[i],
+                            filterBuilder.getNewKalmanFilter(x, y, 0.0, 0.0))
             );
         }
     }

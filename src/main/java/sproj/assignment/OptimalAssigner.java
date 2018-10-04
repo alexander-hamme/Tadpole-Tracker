@@ -3,6 +3,7 @@ package sproj.assignment;
 import sproj.tracking.AnimalWithFilter;
 import sproj.util.BoundingBox;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,12 +29,14 @@ public class OptimalAssigner {
     private int[] colCover;
     private int rows, cols;
 
+    private DecimalFormat df = new DecimalFormat("#.###");
+
     public OptimalAssigner() {
 
     }
 
 
-    public class Assignment {
+    public static class Assignment {
 
         public AnimalWithFilter animal;
         public BoundingBox box;
@@ -44,7 +47,14 @@ public class OptimalAssigner {
         }
     }
 
+    public double[][] getCostMatrix() {
+        return costMatrix;
+    }
 
+
+    public int[][] getMaskMatrix() {
+        return maskMatrix;
+    }
 
     private double costOfAssignment(AnimalWithFilter anml, BoundingBox box) {
         return  Math.pow(Math.pow(anml.x - box.centerX, 2) + Math.pow(anml.y - box.centerY, 2), 0.5);
@@ -103,7 +113,7 @@ public class OptimalAssigner {
 
         for (int i=0; i<rows; i++) {
             for (int j=0; j<cols; j++) {
-                costMatrix[i][j] = costOfAssignment(animals.get(i), boundingBoxes.get(j));
+                costMatrix[i][j] = Double.parseDouble(df.format(costOfAssignment(animals.get(i), boundingBoxes.get(j))));
             }
         }
 
