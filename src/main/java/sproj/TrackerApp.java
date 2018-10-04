@@ -23,6 +23,11 @@ import sproj.tracking.Tracker;
 import java.io.IOException;
 
 
+/** TODO: Check out https://github.com/bytedeco/javacv/blob/master/samples/JavaFxPlayVideoAndAudio.java
+ *
+ *
+ */
+
 public class TrackerApp extends Application {
 
     private static final Logger logger = new Logger(); //LogManager.getLogger("TrackerApplication");
