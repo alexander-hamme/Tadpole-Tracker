@@ -3,10 +3,7 @@ package sproj.analysis;
 
 import org.bytedeco.javacpp.opencv_core.Mat;
 import org.bytedeco.javacpp.opencv_core.Rect;
-import org.bytedeco.javacv.FFmpegFrameGrabber;
-import org.bytedeco.javacv.Frame;
-import org.bytedeco.javacv.FrameGrabber;
-import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.bytedeco.javacv.*;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 import sproj.util.IOUtils;
 import sproj.yolo_porting_attempts.YOLOModelContainer;
@@ -30,6 +27,15 @@ import java.util.stream.Stream;
  * find all subjects of interest in each frame of a video feed
  */
 public class ModelAccuracyEvaluator {
+
+
+    // TODO : some kind of image thresholding / enhancement on each frame to make tadpoles darker?
+
+
+    private final boolean COUNT_EXTRA_DETECTIONS_NEGATIVELY = false;
+    private final boolean THRESHOLD_TO_100 = true;
+
+    private final boolean SHOW_LIVE_EVAL_DISPLAY = true;        // TODO
 
     private FFmpegFrameGrabber grabber;
     private YOLOModelContainer yoloModelContainer;
@@ -73,19 +79,39 @@ public class ModelAccuracyEvaluator {
         List<DetectedObject> detectedObjects;
         List<Double> detectionAccuracies = new ArrayList<>(totalFrames);   // store one detection accuracy record per frame
 
+        CanvasFrame canvasFrame = null;
+
+        if (SHOW_LIVE_EVAL_DISPLAY) {
+            canvasFrame = new CanvasFrame("Evaluation on video");
+        }
 
         Frame frame;
         while ((frame = grabber.grabImage()) != null) {
 
             detectedObjects = yoloModelContainer.runInference(new Mat(frameConverter.convertToMat(frame), cropRect));
             double accuracy = detectedObjects.size() / numbAnimals;
-            detectionAccuracies.add(
-                    accuracy <= 1.0 ? accuracy : 1 - Math.abs(1 - accuracy)     // count each extra detection as one negative detection from the score
-            );
+
+            if (THRESHOLD_TO_100) {
+                accuracy = Math.min(1.0, accuracy);
+            }
+
+            if (COUNT_EXTRA_DETECTIONS_NEGATIVELY) {
+                accuracy = accuracy <= 1.0 ? accuracy : 1 - Math.abs(1 - accuracy);     // count each extra detection as one negative detection from the score
+            }
+            detectionAccuracies.add(accuracy);
 
             frameNo = grabber.getFrameNumber();
             System.out.print("\r" + (frameNo + 1) + " of " + totalFrames + " frames processed");
+
+            if (SHOW_LIVE_EVAL_DISPLAY) {
+                canvasFrame.showImage(
+                        frameConverter.convert(new Mat(frameConverter.convertToMat(frame), cropRect))
+                );
+            }
         }
+
+        if (canvasFrame != null) {canvasFrame.dispose();}
+
         return detectionAccuracies;
     }
 
@@ -112,6 +138,23 @@ public class ModelAccuracyEvaluator {
      */
     public static void main(String[] args) throws IOException, NumberFormatException {
 
+        int numberOfTadpoles = 8;
+
+//        args = new String[]{"/home/ah2166/Videos/tad_test_vids/trialVids/1_tadpole/filenames.txt"};
+//        args = new String[]{"/home/ah2166/Videos/tad_test_vids/trialVids/2_tadpoles/eval_list_2t.txt"};
+//        args = new String[]{"/home/ah2166/Videos/tad_test_vids/trialVids/4_tadpoles/eval_list_4t.txt"};
+
+
+
+        args = new String[]{String.format(
+                "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
+                numberOfTadpoles, numberOfTadpoles)
+        };
+
+        String savePrefix = String.format("/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/evaluationData_%dt/%dtadpole",
+                numberOfTadpoles, numberOfTadpoles, numberOfTadpoles);
+
+
 
         if (args.length < 1) {
             System.out.println(
@@ -124,12 +167,15 @@ public class ModelAccuracyEvaluator {
         }
 
 
+
         ModelAccuracyEvaluator evaluator = new ModelAccuracyEvaluator();
 
         List<String> textLines = evaluator.readTextFiles(args[0]);        // video files to evaluate on
 
         List<List<Double>> detectionAccuracies = new ArrayList<>(textLines.size());
 
+
+        String saveName;
 
         for (String line : textLines) {
 
@@ -178,7 +224,12 @@ public class ModelAccuracyEvaluator {
             System.out.println(String.format("\nAverage accuracy: %.5f", dataPoints.stream().reduce(0.0, Double::sum) / dataPoints.size()));
 
 
-            String saveName = videoFile.toPath().getParent() + "/" + videoFile.getName().substring(0, videoFile.getName().length()-4) + ".dat";
+            saveName = String.format("%s_%d.dat", savePrefix, textLines.indexOf(line) + 1);
+
+            if (saveName == null) {
+                saveName = videoFile.toPath().getParent() + "/" + videoFile.getName().substring(0, videoFile.getName().length() - 4) + ".dat";
+            }
+
 
             IOUtils.writeDataToFile(dataPoints, saveName, "\n");
 

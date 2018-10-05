@@ -221,11 +221,15 @@ public class SinglePlateTracker extends Tracker {
 
             if (assignment.box == null) {
                 assignment.animal.predictTrajectory(dt, timePos);
-                continue;
             } else {
                 assignment.animal.updateLocation(
                         assignment.box.centerX, assignment.box.centerY, dt, timePos
                 );
+                if (DRAW_RECTANGLES) {
+                    // this rectangle drawing will be removed later  (?)
+                    rectangle(frameImage, new Point(assignment.box.topleftX, assignment.box.topleftY),
+                            new Point(assignment.box.botRightX, assignment.box.botRightY), Scalar.RED, 1, CV_AA, 0);
+                }
             }
         }
 
@@ -463,9 +467,26 @@ public class SinglePlateTracker extends Tracker {
 //        int n_objs = 1;
 //        String testVideo = "/home/ah2166/Videos/tad_test_vids/2_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
 //        int n_objs = 2;
-        String testVideo = "/home/ah2166/Videos/tad_test_vids/3_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
-        int n_objs = 3;
-        int[] cropDims = new int[]{130,10,670,670};   // {230,10,700,700};//
+//        String testVideo = "/home/ah2166/Videos/tad_test_vids/3_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
+//        int n_objs = 3;
+//        int[] cropDims = new int[]{130,10,670,670};   // {230,10,700,700};//
+
+//        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/1_tadpole/IMG_4972.MOV";
+//        int n_objs = 1;
+
+//        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/2_tadpoles/IMG_4994.MOV";
+//        int n_objs = 2;
+
+//        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/4_tadpoles/IMG_5014.MOV";
+//        int n_objs = 4;
+
+
+        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/8_tadpoles/IMG_5054.MOV";
+        int n_objs = 8;
+
+
+        //***** Note that x + width must be <= original image width, and y + height must be <= original image height**//
+        int[] cropDims = new int[]{235,0,720,720};   // {230,10,700,700};//
         SinglePlateTracker tracker = new SinglePlateTracker(n_objs, true,  cropDims, testVideo);
         tracker.trackVideo(testVideo);
 
