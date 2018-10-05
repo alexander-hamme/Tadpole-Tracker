@@ -84,6 +84,7 @@ public class OptimalAssigner {
                     break;
                 }
             }
+            // TODO  make sure this only happens if break doesn't get called in the second for loop!!
             assignments.add(new Assignment(anml, null));    // no box assignment for this animal
         }
 
