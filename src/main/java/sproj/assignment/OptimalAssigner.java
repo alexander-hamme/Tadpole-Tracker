@@ -3,6 +3,7 @@ package sproj.assignment;
 import sproj.tracking.AnimalWithFilter;
 import sproj.util.BoundingBox;
 
+import java.lang.reflect.Array;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,16 +61,30 @@ public class OptimalAssigner {
         return  Math.pow(Math.pow(anml.x - box.centerX, 2) + Math.pow(anml.y - box.centerY, 2), 0.5);
     }
 
-    private List<Assignment> parseSolvedMatrix(int[][] solvedMatrix, final List<AnimalWithFilter> animals, final List<BoundingBox> boundingBoxes) {
 
-        List<Assignment> assignments = new ArrayList<>();
+    private List<Assignment> parseSolvedMatrix(final int[][] solvedMatrix, final List<AnimalWithFilter> animals, final List<BoundingBox> boundingBoxes) {
 
-        for (int r=0; r<rows; r++) {
-            for (int c=0; c<cols; c++) {
+        ArrayList<Assignment> assignments = new ArrayList<>();
+
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
                 if (solvedMatrix[r][c] == STARRED) {
                     assignments.add(new Assignment(animals.get(r), boundingBoxes.get(c)));
                 }
             }
+        }
+
+        //        if (assignments.size() < animals.size()) {
+
+        for (AnimalWithFilter anml : animals) {
+
+            for (Assignment assignment : assignments) {
+
+                if (anml.equals(assignment.animal)) {
+                    break;
+                }
+            }
+            assignments.add(new Assignment(anml, null));    // no box assignment for this animal
         }
 
         return assignments;
@@ -197,14 +212,23 @@ public class OptimalAssigner {
             }
         }
 
-        System.out.println("Solved. Final Matrix:");
 
-        for (int r=0; r<costMatrix.length; r++) {
-            System.out.println(Arrays.toString(costMatrix[r]));
-        }
+        if (1==0) {
 
-        for (int r=0; r<maskMatrix.length; r++) {
-            System.out.println(Arrays.toString(maskMatrix[r]));
+
+
+            System.out.println("Solved. Final Matrix:");
+
+            for (int r = 0; r < costMatrix.length; r++) {
+                System.out.println(Arrays.toString(costMatrix[r]));
+            }
+
+            for (int r = 0; r < maskMatrix.length; r++) {
+                System.out.println(Arrays.toString(maskMatrix[r]));
+            }
+
+
+
         }
 
         // step 7
@@ -554,7 +578,7 @@ public class OptimalAssigner {
     }
 
 
-    public static void main(String[] args) {
+    public static void main1(String[] args) {
 
         OptimalAssigner assigner = new OptimalAssigner();
 

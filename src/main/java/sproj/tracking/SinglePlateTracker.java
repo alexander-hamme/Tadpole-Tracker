@@ -133,7 +133,6 @@ public class SinglePlateTracker extends Tracker {
     }
 
     private boolean assignmentIsReasonable(AnimalWithFilter anml, BoundingBox box, int frameNumber) {
-        // todo hungarian optimal assignment algorithms might go here?
 
         if (frameNumber <= NUMB_FRAMES_FOR_INIT) { return true; }
 
@@ -215,57 +214,79 @@ public class SinglePlateTracker extends Tracker {
         */
 
 
-        optimalAssigner.getOptimalAssignments(animals, boundingBoxes);
+        final List<OptimalAssigner.Assignment> assignments = optimalAssigner.getOptimalAssignments(animals, boundingBoxes);
 
 
-        // todo loop through BoundingBoxes & assign first, then do a separate loop through animals to check which dont have boxes
-        ArrayList<AnimalWithFilter> assignedAnimals = new ArrayList<>(this.animals.size());
-        AnimalWithFilter closestAnimal;
+        for (OptimalAssigner.Assignment assignment : assignments) {
 
-        for (BoundingBox box : boundingBoxes) {
-
-//            min_proximity = displThresh;     // start at max allowed value and then favor smaller values
-            min_proximity = prox_start_val;     // start at max allowed value and then favor smaller values.
-            // Illogical assignments will be discarded by assignmentIsReasonable() function
-
-            closestAnimal = null;
-
-            for (AnimalWithFilter animal : animals) {
-
-                if (!assignedAnimals.contains(animal)) {  // skip already assigned boxes
-                    // circleRadius = Math.round(box[2] + box[3] / 2);  // approximate circle from rectangle dimensions
-
-                    current_proximity = Math.pow(Math.pow(animal.x - box.centerX, 2) + Math.pow(animal.y - box.centerY, 2), 0.5);
-
-                    if (current_proximity < min_proximity) {
-                        min_proximity = current_proximity;
-                        closestAnimal = animal;
-                    }
-                }
-            }
-
-            if (closestAnimal != null && assignmentIsReasonable(closestAnimal, box, frameNumber)) {   // && RNN probability, etc etc
-                closestAnimal.updateLocation(box.centerX, box.centerY, dt, timePos);
-                assignedAnimals.add(closestAnimal);
-            }
-            if (DRAW_RECTANGLES) {
-                // this rectangle drawing will be removed later  (?)
-                rectangle(frameImage, new Point(box.topleftX, box.topleftY),
-                        new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
+            if (assignment.box == null) {
+                assignment.animal.predictTrajectory(dt, timePos);
+                continue;
+            } else {
+                assignment.animal.updateLocation(
+                        assignment.box.centerX, assignment.box.centerY, dt, timePos
+                );
             }
         }
 
 
         for (AnimalWithFilter animal : animals) {
 
-            if (! assignedAnimals.contains(animal)) {
-                animal.predictTrajectory(dt, timePos);
-            }
             if (DRAW_SHAPES) {
                 traceAnimalOnFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
             }
         }
 
+        if (1==0) {
+
+            // todo loop through BoundingBoxes & assign first, then do a separate loop through animals to check which dont have boxes
+            ArrayList<AnimalWithFilter> assignedAnimals = new ArrayList<>(this.animals.size());
+            AnimalWithFilter closestAnimal;
+
+            for (BoundingBox box : boundingBoxes) {
+
+//            min_proximity = displThresh;     // start at max allowed value and then favor smaller values
+                min_proximity = prox_start_val;     // start at max allowed value and then favor smaller values.
+                // Illogical assignments will be discarded by assignmentIsReasonable() function
+
+                closestAnimal = null;
+
+                for (AnimalWithFilter animal : animals) {
+
+                    if (!assignedAnimals.contains(animal)) {  // skip already assigned boxes
+                        // circleRadius = Math.round(box[2] + box[3] / 2);  // approximate circle from rectangle dimensions
+
+                        current_proximity = Math.pow(Math.pow(animal.x - box.centerX, 2) + Math.pow(animal.y - box.centerY, 2), 0.5);
+
+                        if (current_proximity < min_proximity) {
+                            min_proximity = current_proximity;
+                            closestAnimal = animal;
+                        }
+                    }
+                }
+
+                if (closestAnimal != null && assignmentIsReasonable(closestAnimal, box, frameNumber)) {   // && RNN probability, etc etc
+                    closestAnimal.updateLocation(box.centerX, box.centerY, dt, timePos);
+                    assignedAnimals.add(closestAnimal);
+                }
+                if (DRAW_RECTANGLES) {
+                    // this rectangle drawing will be removed later  (?)
+                    rectangle(frameImage, new Point(box.topleftX, box.topleftY),
+                            new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
+                }
+            }
+
+
+            for (AnimalWithFilter animal : animals) {
+
+                if (!assignedAnimals.contains(animal)) {
+                    animal.predictTrajectory(dt, timePos);
+                }
+                if (DRAW_SHAPES) {
+                    traceAnimalOnFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
+                }
+            }
+        }
 
         /**********************************************************************************************/
         /*
