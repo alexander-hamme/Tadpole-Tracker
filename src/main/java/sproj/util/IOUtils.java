@@ -215,11 +215,11 @@ public abstract class IOUtils {
     }
 
 
-    public static List<String> readLinesFromFile(String fileName) throws IOException {
+    public static List<String> readLinesFromFile(File file) throws IOException {
 
         List<String> lines = new ArrayList<>();
 
-        LineIterator it = FileUtils.lineIterator(new File(fileName), "UTF-8");
+        LineIterator it = FileUtils.lineIterator(file, "UTF-8");
         try {
             while (it.hasNext()) {
                 lines.add(it.nextLine());
