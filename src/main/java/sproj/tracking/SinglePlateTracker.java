@@ -219,7 +219,7 @@ public class SinglePlateTracker extends Tracker {
 
         for (OptimalAssigner.Assignment assignment : assignments) {
 
-            if (assignment.box == null) {
+            if (assignment.box == null) {       // no assignment
                 assignment.animal.predictTrajectory(dt, timePos);
             } else {
                 assignment.animal.updateLocation(

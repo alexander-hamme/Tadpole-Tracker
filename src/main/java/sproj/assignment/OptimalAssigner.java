@@ -11,6 +11,11 @@ import java.util.List;
 
 public class OptimalAssigner {
 
+
+    /* TODO  make sure there are never ZEROS in the starting cost matrix */
+
+    private final boolean DEBUG = false;
+
     private final int UNCOVERED = 0;
     private final int COVERED = 1;
     private final int STARRED = 1;
@@ -69,7 +74,20 @@ public class OptimalAssigner {
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 if (solvedMatrix[r][c] == STARRED) {
-                    assignments.add(new Assignment(animals.get(r), boundingBoxes.get(c)));
+
+                    // handle missing assignments
+
+                    if (r < animals.size()) {
+
+                        if (c < boundingBoxes.size()) {
+                            assignments.add(new Assignment(animals.get(r), boundingBoxes.get(c)));
+                        } else {
+                            assignments.add(new Assignment(animals.get(r), null));
+                        }
+
+                    } else {
+                        // todo:   do anything here?     -->  this means extra (false) bounding box detections
+                    }
                 }
             }
         }
@@ -107,14 +125,19 @@ public class OptimalAssigner {
         this.foundOptimalSolution = false;
 //        List<Assignment> assignments = new ArrayList<>(animals.size());
 
-        int anmlsSize = animals.size();
-        int boxesSize = boundingBoxes.size();
+        int anmlsSize = animals.size();              // the true value of how many animals there are
+        int boxesSize = boundingBoxes.size();        // will usually be less than or equal to (only in rare cases more than) animals.size()
 
-        rows = anmlsSize;          // the true value of how many animals there are
-        cols = boxesSize;    // will usually be less than or equal to (only in rare cases more than) animals.size()
 
-        int dimension = Math.max(rows, cols);
+        /*
+        rows = anmlsSize;
+        cols = boxesSize;
 
+        int dimension = Math.max(rows, cols); */
+
+
+        int dimension = Math.max(anmlsSize, boxesSize);
+        rows = cols = dimension;
 
         // TODO     it seems that the assignment algorithm still finds optimal assignments even if the passed in matrices
         // todo     have unbalanced dimensions... double check that this is always true
@@ -127,17 +150,39 @@ public class OptimalAssigner {
         rowCover = new int[rows];
         colCover = new int[cols];
 
-        for (int i=0; i<rows; i++) {
-            for (int j=0; j<cols; j++) {
+        for (int i=0; i<anmlsSize; i++) {
+            for (int j=0; j<boxesSize; j++) {
                 costMatrix[i][j] = Double.parseDouble(df.format(costOfAssignment(animals.get(i), boundingBoxes.get(j))));
             }
         }
 
+        fillBlanks(anmlsSize, boxesSize);          // TODO     check if this does what you want
+
         int[][] solvedMatrix = munkresSolve();
+
+
+        // reset costmatrix, maskMatrix, etc by setting to null?
 
         return parseSolvedMatrix(solvedMatrix, animals, boundingBoxes);
     }
 
+
+    private void fillBlanks(int rws, int cls) {
+
+        if (cls < rws) {                      // rows = animals.size,   cols = boundingboxes.size
+            for (int r=0; r<rws; r++) {
+                for (int c = cls; c < rws; c++) {
+                    costMatrix[r][c] = COST_OF_NON_ASSIGNMENT;
+                }
+            }
+        } else if (rws < cls) {
+            for (int r = rws; r < cls; r++) {
+                for (int c = 0; c < cls; c++) {
+                    costMatrix[r][c] = COST_OF_NON_ASSIGNMENT;
+                }
+            }
+        }
+    }
 
 
     /**
@@ -158,22 +203,22 @@ public class OptimalAssigner {
         maskMatrix = starZeroes(costMatrix, rowCover, colCover);
         colCover = coverColumns(maskMatrix, rowCover, colCover);*/
 
-            printUpdate(0);
+            if (DEBUG) {printUpdate(0);}
 
         reduceBySmallest();         // step 1               //costMatrix, rows, cols);
 
-            printUpdate(1);
+            if (DEBUG) {printUpdate(1);}
 
         starZeroes();               // step 2               //costMatrix, rowCover, colCover);
 
-            printUpdate(2);
+            if (DEBUG) {printUpdate(2);}
 
 
         int nextStep = 3;
 
         while(true) {
 
-            printUpdate(nextStep);
+            if (DEBUG) {printUpdate(nextStep);}
 
             if (nextStep == 7) {
                 break;
@@ -542,9 +587,8 @@ public class OptimalAssigner {
 
     public int[][] munkresSolveMatrix(double[][] matrix) {
 
-        rows = matrix.length;
-        cols = matrix[0].length;
-        int dimension = Math.max(rows, cols);
+        int dimension = Math.max(matrix.length, matrix[0].length);
+        rows = cols = dimension;
 
         costMatrix = new double[dimension][dimension];
         maskMatrix = new int[dimension][dimension];
@@ -553,10 +597,13 @@ public class OptimalAssigner {
         rowCover = new int[rows];
         colCover = new int[cols];
 
-        for (int r=0; r<rows; r++) {
-            if (cols >= 0) System.arraycopy(matrix[r], 0, costMatrix[r], 0, cols);
+        for (int r=0; r<matrix.length; r++) {
+            if (matrix[r].length >= 0) System.arraycopy(matrix[r], 0, costMatrix[r], 0, matrix[r].length);
         }
 
+
+        // TODO     check if this does what you want
+        fillBlanks(matrix.length, matrix[0].length);
 
         // Put fake values in the cost matrix to make up for missing data
 
@@ -579,7 +626,7 @@ public class OptimalAssigner {
     }
 
 
-    public static void main1(String[] args) {
+    public static void main(String[] args) {
 
         OptimalAssigner assigner = new OptimalAssigner();
 
