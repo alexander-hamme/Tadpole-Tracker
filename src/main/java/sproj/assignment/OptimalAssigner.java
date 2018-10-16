@@ -16,7 +16,7 @@ public class OptimalAssigner {
 
     private final boolean DEBUG = false;
 
-    private final boolean ADD_NULL_FOR_EACH_ANIMAL = true;
+    public boolean ADD_NULL_FOR_EACH_ANIMAL = true;
 
     private final int UNCOVERED = 0;
     private final int COVERED = 1;
@@ -27,11 +27,12 @@ public class OptimalAssigner {
 
     private boolean foundOptimalSolution;
 
-    private final double COST_OF_NON_ASSIGNMENT = 10.0;     // this should be high enough to not be a minimum value in a row or col,
+    public double COST_OF_NON_ASSIGNMENT = 30.0;     // this should be high enough to not be a minimum value in a row or col,
                                                             // but not high enough that it's worse than giving an assignment a value across the screen
                                                             // TODO: find out the highest (true) distance that tadpoles can cover in a frame or two and make this a bit higher than that
 
-    private final double FAKE_VALUE = 1000000.0; //Double.MAX_VALUE;   //Double.POSITIVE_INFINITY
+    public double COST_OF_ANIMAL_NON_ASSIGNMENT = 30.0;
+    public double COST_OF_BOX_NON_ASSIGNMENT = 50.0;
 
     private double[][] costMatrix;
     private int[][] maskMatrix;
@@ -68,6 +69,7 @@ public class OptimalAssigner {
     }
 
     private double costOfAssignment(AnimalWithFilter anml, BoundingBox box) {
+        if (anml == null || box == null) { return COST_OF_NON_ASSIGNMENT; }
         return  Math.pow(Math.pow(anml.x - box.centerX, 2) + Math.pow(anml.y - box.centerY, 2), 0.5);
     }
 
@@ -79,8 +81,6 @@ public class OptimalAssigner {
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 if (solvedMatrix[r][c] == STARRED) {
-
-                    // handle missing assignments
 
                     if (r < animals.size()) {
 
@@ -99,20 +99,98 @@ public class OptimalAssigner {
 
         //        if (assignments.size() < animals.size()) {
 
+        // TODO get rid of this    (it shouldn't ever be called?
         for (AnimalWithFilter anml : animals) {
+
+            if (anml == null) {continue;}
+
+            boolean alreadyAssigned = false;
 
             for (Assignment assignment : assignments) {
 
                 if (anml.equals(assignment.animal)) {
-                    break;
+                    alreadyAssigned = true;
                 }
             }
-            // TODO  make sure this only happens if break doesn't get called in the second for loop!!
-            assignments.add(new Assignment(anml, null));    // no box assignment for this animal
+            if (!alreadyAssigned) {
+                assignments.add(new Assignment(anml, null));    // no box assignment for this animal
+            }
         }
+
+
+        //TODO remove all double null assignments from list?
 
         return assignments;
     }
+
+
+
+
+
+
+    /**
+     * The length of the animals and boundingBoxes may be different at certain points in time.
+     * However, when adding fake values to make the matrix square, it should be kept in mind that
+     * the length of `animals` is always the true value.
+     *
+     * @param anmls
+     * @param boxes
+     * @return
+     */
+    public List<Assignment> getOptimalAssignments(final List<AnimalWithFilter> anmls, final List<BoundingBox> boxes) {
+
+        // Note: Animals are on rows, Bounding Boxes are on columns.
+
+        this.foundOptimalSolution = false;
+
+
+        final List<AnimalWithFilter> animals = new ArrayList<>(anmls.size() * 2);
+        final List<BoundingBox> boundingBoxes = new ArrayList<>(boxes.size() * 2);
+
+        for (AnimalWithFilter a : anmls) {
+            animals.add(a);
+            animals.add(null);
+        }
+
+        for (BoundingBox b : boxes) {
+            boundingBoxes.add(b);
+            boundingBoxes.add(null);
+        }
+
+
+//        List<Assignment> assignments = new ArrayList<>(animals.size());
+
+        int anmlsSize = animals.size();              // the true value of how many animals there are
+        int boxesSize = boundingBoxes.size();        // will usually be less than or equal to (only in rare cases more than) animals.size()
+
+        int dimension = Math.max(anmlsSize, boxesSize);
+        rows = cols = dimension;
+
+        costMatrix = new double[dimension][dimension];
+        maskMatrix = new int[dimension][dimension];
+        pathMatrix = new int[dimension*2 + 1][2];           // todo:     explain
+
+        rowCover = new int[rows];
+        colCover = new int[cols];
+
+        for (int i=0; i<anmlsSize; i++) {
+            for (int j=0; j<boxesSize; j++) {
+                costMatrix[i][j] = Double.parseDouble(df.format(costOfAssignment(animals.get(i), boundingBoxes.get(j))));
+            }
+        }
+
+        fillBlanks(anmlsSize, boxesSize);
+
+        int[][] solvedMatrix = munkresSolve();
+
+        // reset costmatrix, maskMatrix, etc by setting to null?
+
+        return parseSolvedMatrix(solvedMatrix, animals, boundingBoxes);
+    }
+
+
+
+
 
     /**
      * The length of the animals and boundingBoxes may be different at certain points in time.
@@ -123,7 +201,7 @@ public class OptimalAssigner {
      * @param boundingBoxes
      * @return
      */
-    public List<Assignment> getOptimalAssignments(final List<AnimalWithFilter> animals, final List<BoundingBox> boundingBoxes) {
+    public List<Assignment> getOptimalAssignmentsWithoutExtraNulls(final List<AnimalWithFilter> animals, final List<BoundingBox> boundingBoxes) {
 
         // Note: Animals are on rows, Bounding Boxes are on columns.
 
@@ -629,6 +707,56 @@ public class OptimalAssigner {
 
         return munkresSolve();
     }
+
+
+
+
+
+
+
+    private List<Assignment> parseSolvedMatrixORIGINAL(final int[][] solvedMatrix, final List<AnimalWithFilter> animals, final List<BoundingBox> boundingBoxes) {
+
+        ArrayList<Assignment> assignments = new ArrayList<>();
+
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (solvedMatrix[r][c] == STARRED) {
+
+                    // handle missing assignments
+
+                    if (r < animals.size()) {
+
+                        if (c < boundingBoxes.size()) {
+                            assignments.add(new Assignment(animals.get(r), boundingBoxes.get(c)));
+                        } else {
+                            assignments.add(new Assignment(animals.get(r), null));
+                        }
+
+                    } else {
+                        // todo:   do anything here?     -->  this means extra (false) bounding box detections
+                    }
+                }
+            }
+        }
+
+        //        if (assignments.size() < animals.size()) {
+
+        for (AnimalWithFilter anml : animals) {
+
+            for (Assignment assignment : assignments) {
+
+                if (anml.equals(assignment.animal)) {
+                    break;
+                }
+            }
+            // TODO  make sure this only happens if break doesn't get called in the second for loop!!
+            assignments.add(new Assignment(anml, null));    // no box assignment for this animal
+        }
+
+        return assignments;
+    }
+
+
 
 
     public static void main(String[] args) {

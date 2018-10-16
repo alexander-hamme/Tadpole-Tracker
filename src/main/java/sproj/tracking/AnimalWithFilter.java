@@ -28,6 +28,8 @@ public class AnimalWithFilter {
     public KalmanFilter trackingFilter;
     private int[] positionBounds = new int[4];
 
+    private boolean PREDICT_WITH_VELOCITY = true;
+
     public AnimalWithFilter(int x, int y, int[] positionBounds, Scalar clr, KalmanFilter kFilter) {
         this.x = x; this.y = y;
         this.positionBounds = positionBounds;
@@ -40,6 +42,7 @@ public class AnimalWithFilter {
 
 
     public void updateLocation(int x, int y, double dt, long timePos) {
+
         this.x = x; this.y = y;
         applyBoundsConstraints();
         dataPoints.add(new double[]{this.x, this.y, timePos});
@@ -58,6 +61,12 @@ public class AnimalWithFilter {
 
     public void predictTrajectory(double dt, long timePos) {
 
+        //TODO keep track of how many subsequent frames have been predicted, if greater than (5, or 10, etc),
+        // todo       temporarily increase assigner's COST_OF_NON_ASSIGNMENT (for this specific animal??)  to get back on track
+
+
+        // TODO  --> each animal should have its own dynamic COST_OF_NON_ASSIGNMENT!!!
+
         double[] predictedState = getPredictedState();
         System.out.println(String.format("Current [(%d,%d)(%.3f,%.3f)], estimation: %s",
                 this.x,this.y, this.vx, this.vy, Arrays.toString(predictedState))
@@ -68,15 +77,17 @@ public class AnimalWithFilter {
         double vx = predictedState[2];
         double vy = predictedState[3];
 
+        int newx, newy;
         // Simplest method
-         int newx = (int) Math.round(predictedState[0]);
-         int newy = (int) Math.round(predictedState[1]);
+        if (! PREDICT_WITH_VELOCITY) {
+            newx = (int) Math.round(predictedState[0]);
+            newy = (int) Math.round(predictedState[1]);
+        } else {
+            newx = (int) Math.round(this.x + (vx * dt));
+            newy = (int) Math.round(this.y - (vy * dt));
+        }
 
 
-        // d = rt    -->     x - x0 = vx*dt   -->    x =  x0 + vx*dt
-
-        /**int newx = (int) Math.round(this.x + (vx * dt));
-        int newy = (int) Math.round(this.y - (vy * dt));*/
 //        int newx = (int) Math.round((predX + (this.x + (vx * dt))) / 2);    // average the predicted position with calculated position from predicted velocity
 //        int newy = (int) Math.round((predY + (this.y + (vy * dt))) / 2);
 

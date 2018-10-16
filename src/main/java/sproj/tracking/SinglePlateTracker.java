@@ -51,6 +51,11 @@ public class SinglePlateTracker extends Tracker {
     private int videoFrameHeight;
     private int[] positionBounds;
 
+
+    private final int COST_OF_NON_ASSIGNMENT = 50;
+
+
+
 //    private List<BoundingBox> boundingBoxes;
 //    private List<DetectedObject> detectedObjects;
 
@@ -213,13 +218,73 @@ public class SinglePlateTracker extends Tracker {
         }
         */
 
+        // assign random boxes at start
+        if (frameNumber <= NUMB_FRAMES_FOR_INIT) {
+
+            optimalAssigner.COST_OF_NON_ASSIGNMENT = prox_start_val;
+            optimalAssigner.ADD_NULL_FOR_EACH_ANIMAL = false;
+
+            /*
+            ArrayList<BoundingBox> assignedBoxes = new ArrayList<>(boundingBoxes.size());
+            BoundingBox closestBox;
+
+            for (AnimalWithFilter animal : animals) {
+
+                min_proximity = displThresh;     // start at max allowed value and then favor smaller values
+                closestBox = null;
+
+                for (BoundingBox box : boundingBoxes) {
+
+                    if (!assignedBoxes.contains(box)) {  // skip already assigned boxes
+                        // circleRadius = Math.round(box[2] + box[3] / 2);  // approximate circle from rectangle dimensions
+
+                        current_proximity = Math.pow(Math.pow(animal.x - box.centerX, 2) + Math.pow(animal.y - box.centerY, 2), 0.5);
+
+                        if (current_proximity < min_proximity) {
+                            min_proximity = current_proximity;
+                            closestBox = box;
+                        }
+                    }
+
+                    if (DRAW_RECTANGLES) {
+                        // this rectangle drawing will be removed later  (?)
+                        rectangle(frameImage, new Point(box.topleftX, box.topleftY),
+                                new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
+                    }
+
+                    if (closestBox != null && assignmentIsReasonable(animal, closestBox, frameNumber)) {   // && RNN probability, etc etc
+                        animal.updateLocation(closestBox.centerX, closestBox.centerY, dt, timePos);
+                        assignedBoxes.add(closestBox);
+                    } else {
+                        // todo: instead of min_proximity --> use (Decision tree? / Markov? / SVM? / ???) to determine if the next point is reasonable
+                        animal.predictTrajectory(dt, timePos);
+                    }
+                }
+
+            }
+
+
+            for (AnimalWithFilter animal : animals) {
+
+                if (DRAW_SHAPES) {
+                    traceAnimalOnFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
+                }
+            }
+            */
+        } else {
+            optimalAssigner.COST_OF_NON_ASSIGNMENT = 40;
+            optimalAssigner.ADD_NULL_FOR_EACH_ANIMAL = true;
+        }
+
 
         final List<OptimalAssigner.Assignment> assignments = optimalAssigner.getOptimalAssignments(animals, boundingBoxes);
 
-
         for (OptimalAssigner.Assignment assignment : assignments) {
 
-            if (assignment.box == null || ! assignmentIsReasonable(assignment.animal, assignment.box, frameNumber)) {       // no assignment
+            if (assignment.animal == null) { continue; }
+
+//todo          if (assignment.box == null || ! assignmentIsReasonable(assignment.animal, assignment.box, frameNumber)) {       // no assignment
+            if (assignment.box == null) {       // no assignment
                 assignment.animal.predictTrajectory(dt, timePos);
             } else {
                 assignment.animal.updateLocation(

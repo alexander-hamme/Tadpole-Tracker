@@ -17,6 +17,12 @@ class OptimalAssignerTest {
 
 
     @Test
+    void testFixMatrix() {
+        // test that uneven matrix gets filled with COST_OF_NON_ASSIGNMENT value to even it out
+    }
+
+
+    @Test
     void testSolveMatrix() {
 
         // this matrix, where C(i,j) = i*j, is a good test for the Munkres algorithm because it requires all steps to find the solution
@@ -98,8 +104,54 @@ class OptimalAssignerTest {
             testOptimalAssignmentWhenEqual(i);
             System.out.println("Tested with " + i + " animals");
         }
+    }
+
+
+    @Test
+    void testThatOptimalAssignmentsAreNull() {
+
+        List<BoundingBox> boxes = new ArrayList<>();
+        boxes.add(new BoundingBox(new int[]{105,105}, 1, 1));
+        boxes.add(new BoundingBox(new int[]{155,155}, 1, 1));
+        boxes.add(new BoundingBox(new int[]{205,205}, 1, 1));
+        boxes.add(new BoundingBox(new int[]{300,300}, 1, 1));
+
+        List<AnimalWithFilter> animals = new ArrayList<>();
+        animals.add(new AnimalWithFilter(0, 0, null, null, null));
+        animals.add(new AnimalWithFilter(100, 100, null, null, null));
+        animals.add(new AnimalWithFilter(200, 200, null, null, null));
+        animals.add(new AnimalWithFilter(215, 215, null, null, null));
+
+        List<OptimalAssigner.Assignment> expectedAssignments = new ArrayList<>();
+
+        expectedAssignments.add(new OptimalAssigner.Assignment(animals.get(0), null));
+
+        expectedAssignments.add(new OptimalAssigner.Assignment(null, null));
+
+        expectedAssignments.add(new OptimalAssigner.Assignment(animals.get(1), boxes.get(0)));
+
+        expectedAssignments.add(new OptimalAssigner.Assignment(null, null));
+
+        expectedAssignments.add(new OptimalAssigner.Assignment(animals.get(2), boxes.get(2)));
+
+        expectedAssignments.add(new OptimalAssigner.Assignment(null, null));
+
+        expectedAssignments.add(new OptimalAssigner.Assignment(animals.get(3), null));
+
+        expectedAssignments.add(new OptimalAssigner.Assignment(null, null));
+
+
+        List<OptimalAssigner.Assignment> actualAssignments = assigner.getOptimalAssignments(animals, boxes);
+
+        for (int i=0; i<expectedAssignments.size(); i++) {
+            if (expectedAssignments.get(i).animal == null) {continue;}
+            assertEquals(expectedAssignments.get(i).animal, actualAssignments.get(i).animal);
+            assertEquals(expectedAssignments.get(i).box, actualAssignments.get(i).box);
+        }
+
 
     }
+
 
 
     @Test
