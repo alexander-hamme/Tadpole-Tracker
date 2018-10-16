@@ -16,6 +16,8 @@ public class OptimalAssigner {
 
     private final boolean DEBUG = false;
 
+    private final boolean ADD_NULL_FOR_EACH_ANIMAL = true;
+
     private final int UNCOVERED = 0;
     private final int COVERED = 1;
     private final int STARRED = 1;
@@ -25,7 +27,10 @@ public class OptimalAssigner {
 
     private boolean foundOptimalSolution;
 
-    private final double COST_OF_NON_ASSIGNMENT = 10.0;
+    private final double COST_OF_NON_ASSIGNMENT = 10.0;     // this should be high enough to not be a minimum value in a row or col,
+                                                            // but not high enough that it's worse than giving an assignment a value across the screen
+                                                            // TODO: find out the highest (true) distance that tadpoles can cover in a frame or two and make this a bit higher than that
+
     private final double FAKE_VALUE = 1000000.0; //Double.MAX_VALUE;   //Double.POSITIVE_INFINITY
 
     private double[][] costMatrix;

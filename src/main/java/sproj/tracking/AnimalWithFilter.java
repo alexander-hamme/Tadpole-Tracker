@@ -69,14 +69,14 @@ public class AnimalWithFilter {
         double vy = predictedState[3];
 
         // Simplest method
-//         int newx = (int) Math.round(predictedState[0]);
-//         int newy = (int) Math.round(predictedState[1]);
+         int newx = (int) Math.round(predictedState[0]);
+         int newy = (int) Math.round(predictedState[1]);
 
 
         // d = rt    -->     x - x0 = vx*dt   -->    x =  x0 + vx*dt
 
-        int newx = (int) Math.round(this.x + (vx * dt));
-        int newy = (int) Math.round(this.y - (vy * dt));
+        /**int newx = (int) Math.round(this.x + (vx * dt));
+        int newy = (int) Math.round(this.y - (vy * dt));*/
 //        int newx = (int) Math.round((predX + (this.x + (vx * dt))) / 2);    // average the predicted position with calculated position from predicted velocity
 //        int newy = (int) Math.round((predY + (this.y + (vy * dt))) / 2);
 

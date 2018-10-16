@@ -94,9 +94,9 @@ class OptimalAssignerTest {
     @Test
     void testOptimalAssignments() {
 
-        for (int i=0; i<15; i++) {
-            System.out.println("Testing with " + i + " animals");
+        for (int i=0; i<16; i++) {
             testOptimalAssignmentWhenEqual(i);
+            System.out.println("Tested with " + i + " animals");
         }
 
     }

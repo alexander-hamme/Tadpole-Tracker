@@ -219,7 +219,7 @@ public class SinglePlateTracker extends Tracker {
 
         for (OptimalAssigner.Assignment assignment : assignments) {
 
-            if (assignment.box == null) {       // no assignment
+            if (assignment.box == null || ! assignmentIsReasonable(assignment.animal, assignment.box, frameNumber)) {       // no assignment
                 assignment.animal.predictTrajectory(dt, timePos);
             } else {
                 assignment.animal.updateLocation(
@@ -230,6 +230,7 @@ public class SinglePlateTracker extends Tracker {
                     rectangle(frameImage, new Point(assignment.box.topleftX, assignment.box.topleftY),
                             new Point(assignment.box.botRightX, assignment.box.botRightY), Scalar.RED, 1, CV_AA, 0);
                 }
+
             }
         }
 
@@ -413,11 +414,7 @@ public class SinglePlateTracker extends Tracker {
             // clone this, so you can show the original scaled up image in the display window???
             resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
 
-
-
             Mat original = frameImg.clone();
-
-
 
             detectedObjects = yoloModelContainer.runInference(frameImg);    // TODO   pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), try with lower confidence?
 
@@ -430,9 +427,7 @@ public class SinglePlateTracker extends Tracker {
 
             updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
 
-
 //            System.out.println("Loop time: " + (System.currentTimeMillis() - time1) / 1000.0 + "s");
-
 
             keyEvent = canvasFrame.waitKey(msDelay);
             if (keyEvent != null) {
@@ -444,7 +439,7 @@ public class SinglePlateTracker extends Tracker {
                     case KeyEvent.VK_ESCAPE: break;      // hold escape key or 'q' to quit
                     case KeyEvent.VK_Q: break;
 
-                    case KeyEvent.VK_P: ;// pause? ;
+                    case KeyEvent.VK_P: Thread.sleep(1000);// pause? ;
                 }
 
             }
@@ -465,8 +460,8 @@ public class SinglePlateTracker extends Tracker {
     public static void main(String[] args) throws IOException, InterruptedException {
 //        String testVideo = "/home/ah2166/Videos/tad_test_vids/1_tad_3.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
 //        int n_objs = 1;
-//        String testVideo = "/home/ah2166/Videos/tad_test_vids/2_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
-//        int n_objs = 2;
+        String testVideo = "/home/ah2166/Videos/tad_test_vids/2_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
+        int n_objs = 2;
 //        String testVideo = "/home/ah2166/Videos/tad_test_vids/3_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
 //        int n_objs = 3;
 //        int[] cropDims = new int[]{130,10,670,670};   // {230,10,700,700};//
@@ -480,13 +475,12 @@ public class SinglePlateTracker extends Tracker {
 //        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/4_tadpoles/IMG_5014.MOV";
 //        int n_objs = 4;
 
-
-        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/8_tadpoles/IMG_5054.MOV";
-        int n_objs = 8;
-
+//        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/8_tadpoles/IMG_5054.MOV";
+//        int n_objs = 8;
+//        {235,0,720,720};
 
         //***** Note that x + width must be <= original image width, and y + height must be <= original image height**//
-        int[] cropDims = new int[]{235,0,720,720};   // {230,10,700,700};//
+        int[] cropDims = new int[]{130,10,670,670};//230,10,700,700};//
         SinglePlateTracker tracker = new SinglePlateTracker(n_objs, true,  cropDims, testVideo);
         tracker.trackVideo(testVideo);
 
