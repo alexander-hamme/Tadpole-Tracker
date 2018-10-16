@@ -3,7 +3,6 @@ package sproj.assignment;
 import sproj.tracking.AnimalWithFilter;
 import sproj.util.BoundingBox;
 
-import java.lang.reflect.Array;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,12 +26,9 @@ public class OptimalAssigner {
 
     private boolean foundOptimalSolution;
 
-    public double COST_OF_NON_ASSIGNMENT = 30.0;     // this should be high enough to not be a minimum value in a row or col,
+    public double DEFAULT_COST_OF_NON_ASSIGNMENT = 30.0;     // this should be high enough to not be a minimum value in a row or col,
                                                             // but not high enough that it's worse than giving an assignment a value across the screen
                                                             // TODO: find out the highest (true) distance that tadpoles can cover in a frame or two and make this a bit higher than that
-
-    public double COST_OF_ANIMAL_NON_ASSIGNMENT = 30.0;
-    public double COST_OF_BOX_NON_ASSIGNMENT = 50.0;
 
     private double[][] costMatrix;
     private int[][] maskMatrix;
@@ -69,7 +65,7 @@ public class OptimalAssigner {
     }
 
     private double costOfAssignment(AnimalWithFilter anml, BoundingBox box) {
-        if (anml == null || box == null) { return COST_OF_NON_ASSIGNMENT; }
+        if (anml == null || box == null) { return DEFAULT_COST_OF_NON_ASSIGNMENT; }
         return  Math.pow(Math.pow(anml.x - box.centerX, 2) + Math.pow(anml.y - box.centerY, 2), 0.5);
     }
 
@@ -255,13 +251,13 @@ public class OptimalAssigner {
         if (cls < rws) {                      // rows = animals.size,   cols = boundingboxes.size
             for (int r=0; r<rws; r++) {
                 for (int c = cls; c < rws; c++) {
-                    costMatrix[r][c] = COST_OF_NON_ASSIGNMENT;
+                    costMatrix[r][c] = DEFAULT_COST_OF_NON_ASSIGNMENT;
                 }
             }
         } else if (rws < cls) {
             for (int r = rws; r < cls; r++) {
                 for (int c = 0; c < cls; c++) {
-                    costMatrix[r][c] = COST_OF_NON_ASSIGNMENT;
+                    costMatrix[r][c] = DEFAULT_COST_OF_NON_ASSIGNMENT;
                 }
             }
         }

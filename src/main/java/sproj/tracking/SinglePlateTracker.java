@@ -1,6 +1,8 @@
 package sproj.tracking;
 
+import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacpp.opencv_core.*;
+import org.bytedeco.javacpp.opencv_imgproc;
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
@@ -16,7 +18,6 @@ import javax.swing.*;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import static sproj.util.IOUtils.writeAnimalPointsToFile;
@@ -220,61 +221,21 @@ public class SinglePlateTracker extends Tracker {
 
         // assign random boxes at start
         if (frameNumber <= NUMB_FRAMES_FOR_INIT) {
-
-            optimalAssigner.COST_OF_NON_ASSIGNMENT = prox_start_val;
+            optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = prox_start_val;
             optimalAssigner.ADD_NULL_FOR_EACH_ANIMAL = false;
-
-            /*
-            ArrayList<BoundingBox> assignedBoxes = new ArrayList<>(boundingBoxes.size());
-            BoundingBox closestBox;
-
-            for (AnimalWithFilter animal : animals) {
-
-                min_proximity = displThresh;     // start at max allowed value and then favor smaller values
-                closestBox = null;
-
-                for (BoundingBox box : boundingBoxes) {
-
-                    if (!assignedBoxes.contains(box)) {  // skip already assigned boxes
-                        // circleRadius = Math.round(box[2] + box[3] / 2);  // approximate circle from rectangle dimensions
-
-                        current_proximity = Math.pow(Math.pow(animal.x - box.centerX, 2) + Math.pow(animal.y - box.centerY, 2), 0.5);
-
-                        if (current_proximity < min_proximity) {
-                            min_proximity = current_proximity;
-                            closestBox = box;
-                        }
-                    }
-
-                    if (DRAW_RECTANGLES) {
-                        // this rectangle drawing will be removed later  (?)
-                        rectangle(frameImage, new Point(box.topleftX, box.topleftY),
-                                new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
-                    }
-
-                    if (closestBox != null && assignmentIsReasonable(animal, closestBox, frameNumber)) {   // && RNN probability, etc etc
-                        animal.updateLocation(closestBox.centerX, closestBox.centerY, dt, timePos);
-                        assignedBoxes.add(closestBox);
-                    } else {
-                        // todo: instead of min_proximity --> use (Decision tree? / Markov? / SVM? / ???) to determine if the next point is reasonable
-                        animal.predictTrajectory(dt, timePos);
-                    }
-                }
-
-            }
-
-
-            for (AnimalWithFilter animal : animals) {
-
-                if (DRAW_SHAPES) {
-                    traceAnimalOnFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
-                }
-            }
-            */
         } else {
-            optimalAssigner.COST_OF_NON_ASSIGNMENT = 40;
+            optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = 40;
             optimalAssigner.ADD_NULL_FOR_EACH_ANIMAL = true;
         }
+
+
+
+
+
+        // TODO  --> each animal should have its own dynamic COST_OF_NON_ASSIGNMENT!!!
+
+
+
 
 
         final List<OptimalAssigner.Assignment> assignments = optimalAssigner.getOptimalAssignments(animals, boundingBoxes);
@@ -444,8 +405,8 @@ public class SinglePlateTracker extends Tracker {
         CanvasFrame canvasFrame = new CanvasFrame("Tracker");
         canvasFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-//        CanvasFrame originalShower = new CanvasFrame("Original");
-//        originalShower.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        CanvasFrame originalShower = new CanvasFrame("Thresholding");
+        originalShower.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
 
 
@@ -479,9 +440,21 @@ public class SinglePlateTracker extends Tracker {
             // clone this, so you can show the original scaled up image in the display window???
             resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
 
-            Mat original = frameImg.clone();
 
-            detectedObjects = yoloModelContainer.runInference(frameImg);    // TODO   pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), try with lower confidence?
+
+
+            Mat toThreshold = frameImg.clone();
+            cvtColor(toThreshold, toThreshold, COLOR_RGB2GRAY);
+            adaptiveThreshold(toThreshold, toThreshold, 220, ADAPTIVE_THRESH_GAUSSIAN_C,//ADAPTIVE_THRESH_MEAN_C,   //ADAPTIVE_THRESH_GAUSSIAN_C,//
+                    THRESH_BINARY, 3, 7);
+
+            cvtColor(toThreshold, toThreshold, COLOR_GRAY2RGB);
+
+
+            cvtColor(frameImg, frameImg, COLOR_RGB2GRAY);
+            cvtColor(frameImg, frameImg, COLOR_GRAY2RGB);
+
+            detectedObjects = yoloModelContainer.runInference(frameImg);  // frameImg
 
 //            Java2DFrameConverter paintConverter = new Java2DFrameConverter();
 //            Component[] arr = canvasFrame.getComponents();
@@ -510,7 +483,7 @@ public class SinglePlateTracker extends Tracker {
             }
 
             canvasFrame.showImage(frameConverter.convert(frameImg));
-//            originalShower.showImage(frameConverter.convert(original));
+            originalShower.showImage(frameConverter.convert(toThreshold));
 
             frameNo = grabber.getFrameNumber();
 

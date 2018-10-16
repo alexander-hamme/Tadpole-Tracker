@@ -18,7 +18,7 @@ class OptimalAssignerTest {
 
     @Test
     void testFixMatrix() {
-        // test that uneven matrix gets filled with COST_OF_NON_ASSIGNMENT value to even it out
+        // test that uneven matrix gets filled with DEFAULT_COST_OF_NON_ASSIGNMENT value to even it out
     }
 
 

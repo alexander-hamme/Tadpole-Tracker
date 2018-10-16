@@ -62,10 +62,10 @@ public class AnimalWithFilter {
     public void predictTrajectory(double dt, long timePos) {
 
         //TODO keep track of how many subsequent frames have been predicted, if greater than (5, or 10, etc),
-        // todo       temporarily increase assigner's COST_OF_NON_ASSIGNMENT (for this specific animal??)  to get back on track
+        // todo       temporarily increase assigner's DEFAULT_COST_OF_NON_ASSIGNMENT (for this specific animal??)  to get back on track
 
 
-        // TODO  --> each animal should have its own dynamic COST_OF_NON_ASSIGNMENT!!!
+        // TODO  --> each animal should have its own dynamic DEFAULT_COST_OF_NON_ASSIGNMENT!!!
 
         double[] predictedState = getPredictedState();
         System.out.println(String.format("Current [(%d,%d)(%.3f,%.3f)], estimation: %s",
