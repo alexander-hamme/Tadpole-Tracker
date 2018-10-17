@@ -437,24 +437,49 @@ public class SinglePlateTracker extends Tracker {
 //            Mat frameImg = frameConverter.convertToMat(frame);
             Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);   // crop the frame
 
+            Mat toThreshold = frameImg.clone();
+
             // clone this, so you can show the original scaled up image in the display window???
             resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
 
 
-
-
-            Mat toThreshold = frameImg.clone();
             cvtColor(toThreshold, toThreshold, COLOR_RGB2GRAY);
-            adaptiveThreshold(toThreshold, toThreshold, 220, ADAPTIVE_THRESH_GAUSSIAN_C,//ADAPTIVE_THRESH_MEAN_C,   //ADAPTIVE_THRESH_GAUSSIAN_C,//
-                    THRESH_BINARY, 3, 7);
+
+//            GaussianBlur(toThreshold, toThreshold, new Size(3,3), 0.0);
+
+            CLAHE clahe = createCLAHE(2.0, new Size(20,20));
+            clahe.apply(toThreshold, toThreshold);
+//            equalizeHist(toThreshold, toThreshold);
+
 
             cvtColor(toThreshold, toThreshold, COLOR_GRAY2RGB);
+//            resize(toThreshold, toThreshold, new Size(IMG_WIDTH, IMG_HEIGHT));
 
 
-            cvtColor(frameImg, frameImg, COLOR_RGB2GRAY);
-            cvtColor(frameImg, frameImg, COLOR_GRAY2RGB);
+            /**
+            cvtColor(toThreshold, toThreshold, COLOR_RGB2GRAY);
 
-            detectedObjects = yoloModelContainer.runInference(frameImg);  // frameImg
+            GaussianBlur(toThreshold, toThreshold, new Size(3,3), 0.0);
+
+            adaptiveThreshold(toThreshold, toThreshold, 220, ADAPTIVE_THRESH_MEAN_C,//ADAPTIVE_THRESH_MEAN_C,   //ADAPTIVE_THRESH_GAUSSIAN_C,//
+                    THRESH_BINARY, 5, 7);
+
+
+             GaussianBlur(toThreshold, toThreshold, new Size(3,3), 0.0);
+             cvtColor(toThreshold, toThreshold, COLOR_GRAY2RGB);
+             resize(toThreshold, toThreshold, new Size(IMG_WIDTH, IMG_HEIGHT));
+
+
+             /*Mat element = getStructuringElement(MORPH_RECT,
+                    new Size(2*1 + 1, 2*1+1 ),
+                    new Point(1, 1) );
+            dilate(toThreshold, toThreshold, element);*/
+
+
+
+//            frameImg = toThreshold;
+
+            detectedObjects = yoloModelContainer.runInference(toThreshold);  // frameImg
 
 //            Java2DFrameConverter paintConverter = new Java2DFrameConverter();
 //            Component[] arr = canvasFrame.getComponents();
@@ -498,10 +523,10 @@ public class SinglePlateTracker extends Tracker {
     public static void main(String[] args) throws IOException, InterruptedException {
 //        String testVideo = "/home/ah2166/Videos/tad_test_vids/1_tad_3.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
 //        int n_objs = 1;
-        String testVideo = "/home/ah2166/Videos/tad_test_vids/2_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
-        int n_objs = 2;
-//        String testVideo = "/home/ah2166/Videos/tad_test_vids/3_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
-//        int n_objs = 3;
+//        String testVideo = "/home/ah2166/Videos/tad_test_vids/2_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
+//        int n_objs = 2;
+        String testVideo = "/home/ah2166/Videos/tad_test_vids/3_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
+        int n_objs = 3;
 //        int[] cropDims = new int[]{130,10,670,670};   // {230,10,700,700};//
 
 //        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/1_tadpole/IMG_4972.MOV";
