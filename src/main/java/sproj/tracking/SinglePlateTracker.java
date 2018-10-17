@@ -1,8 +1,6 @@
 package sproj.tracking;
 
-import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacpp.opencv_core.*;
-import org.bytedeco.javacpp.opencv_imgproc;
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
@@ -12,7 +10,7 @@ import sproj.assignment.OptimalAssigner;
 import sproj.prediction.KalmanFilterBuilder;
 import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
-import sproj.yolo_porting_attempts.YOLOModelContainer;
+import sproj.yolo.YOLOModelContainer;
 
 import javax.swing.*;
 import java.awt.event.KeyEvent;
@@ -366,11 +364,7 @@ public class SinglePlateTracker extends Tracker {
 
 
 
-
-
-
-
-    private void enhanceImageMethod2(Mat img) {
+    private void enhanceImageMethod1(Mat img) {
 
         GaussianBlur(img, img, new Size(3,3), 0.0);
 
@@ -385,15 +379,19 @@ public class SinglePlateTracker extends Tracker {
             dilate(toThreshold, toThreshold, element);*/
     }
 
-
-    private void enhanceImageMethod1(Mat img) {
-        GaussianBlur(img, img, new Size(3,3), 0.0);
-        CLAHE clahe = createCLAHE(25.0, new Size(5,5));
-        clahe.apply(img, img);
+    private void enhanceImageMethod2(Mat img) {
+        equalizeHist(img, img);
     }
 
     private void enhanceImageMethod3(Mat img) {
-        equalizeHist(img, img);
+        CLAHE clahe = createCLAHE(2.0, new Size(3,3));
+        clahe.apply(img, img);
+    }
+
+    private void enhanceImageMethod4(Mat img) {
+        GaussianBlur(img, img, new Size(3,3), 0.0);
+        CLAHE clahe = createCLAHE(2.0, new Size(5,5));
+        clahe.apply(img, img);
     }
 
 
@@ -460,22 +458,19 @@ public class SinglePlateTracker extends Tracker {
 
             Mat toThreshold = frameImg.clone();
 
-            // clone this, so you can show the original scaled up image in the display window???
+
+
+
+            cvtColor(frameImg, frameImg, COLOR_RGB2GRAY);
+            enhanceImageMethod3(frameImg);
+            cvtColor(frameImg, frameImg, COLOR_GRAY2RGB);
+
             resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
 
 
-
-
-
             cvtColor(toThreshold, toThreshold, COLOR_RGB2GRAY);
-
-
-            enhanceImageMethod1(toThreshold);
-//            enhanceImageMethod2(toThreshold);
-//            enhanceImageMethod3(toThreshold);
-
-
-
+//            enhanceImageMethod1(toThreshold);
+            enhanceImageMethod4(toThreshold);
             cvtColor(toThreshold, toThreshold, COLOR_GRAY2RGB);
 //            resize(toThreshold, toThreshold, new Size(IMG_WIDTH, IMG_HEIGHT));
 
@@ -483,7 +478,7 @@ public class SinglePlateTracker extends Tracker {
 
 
 
-            detectedObjects = yoloModelContainer.runInference(toThreshold);  // frameImg
+            detectedObjects = yoloModelContainer.runInference(frameImg);  // frameImg
 
 //            Java2DFrameConverter paintConverter = new Java2DFrameConverter();
 //            Component[] arr = canvasFrame.getComponents();
@@ -529,8 +524,8 @@ public class SinglePlateTracker extends Tracker {
 //        int n_objs = 1;
 //        String testVideo = "/home/ah2166/Videos/tad_test_vids/2_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
 //        int n_objs = 2;
-        String testVideo = "/home/ah2166/Videos/tad_test_vids/3_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
-        int n_objs = 3;
+//        String testVideo = "/home/ah2166/Videos/tad_test_vids/3_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
+//        int n_objs = 3;
 //        int[] cropDims = new int[]{130,10,670,670};   // {230,10,700,700};//
 
 //        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/1_tadpole/IMG_4972.MOV";
@@ -546,8 +541,13 @@ public class SinglePlateTracker extends Tracker {
 //        int n_objs = 8;
 //        {235,0,720,720};
 
+        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/2_tadpoles/IMG_5005.MOV";
+        int n_objs = 2;
+
         //***** Note that x + width must be <= original image width, and y + height must be <= original image height**//
-        int[] cropDims = new int[]{130,10,670,670};//230,10,700,700};//
+        int[] cropDims = new int[]{280,0,720,720};//230,10,700,700};//
+
+
         SinglePlateTracker tracker = new SinglePlateTracker(n_objs, true,  cropDims, testVideo);
         tracker.trackVideo(testVideo);
 

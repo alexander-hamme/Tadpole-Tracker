@@ -1,4 +1,4 @@
-package sproj.yolo_porting_attempts;
+package sproj.yolo;
 
 
 import org.bytedeco.javacpp.opencv_core.Mat;

@@ -6,7 +6,7 @@ import org.bytedeco.javacpp.opencv_core.Rect;
 import org.bytedeco.javacv.*;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 import sproj.util.IOUtils;
-import sproj.yolo_porting_attempts.YOLOModelContainer;
+import sproj.yolo.YOLOModelContainer;
 
 import org.bytedeco.javacpp.avutil;
 
@@ -17,7 +17,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**

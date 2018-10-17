@@ -1,11 +1,8 @@
 package sproj.tracking;
 
 
-import org.bytedeco.javacv.CanvasFrame;
-import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
-import org.bytedeco.javacv.FrameGrabber;
-import sproj.yolo_porting_attempts.YOLOModelContainer;
+import sproj.yolo.YOLOModelContainer;
 
 import java.io.IOException;
 

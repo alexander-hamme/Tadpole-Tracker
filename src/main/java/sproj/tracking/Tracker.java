@@ -6,7 +6,7 @@ import org.bytedeco.javacv.*;
 
 
 import sproj.util.Logger;
-import sproj.yolo_porting_attempts.YOLOModelContainer;
+import sproj.yolo.YOLOModelContainer;
 
 import java.io.IOException;
 import java.util.Iterator;

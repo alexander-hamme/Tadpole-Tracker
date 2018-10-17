@@ -4,9 +4,9 @@ import org.bytedeco.javacv.Frame;
 import sproj.tracking.Tracker;
 import java.io.IOException;
 
-public class EvaluationTracker extends Tracker {
+public class TrackerEvaluator extends Tracker {
 
-    public EvaluationTracker() {
+    public TrackerEvaluator() {
 
     }
 

@@ -2,7 +2,7 @@ package sproj.util;
 
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 import org.deeplearning4j.nn.layers.objdetect.YoloUtils;
-import sproj.yolo_porting_attempts.YOLOModelContainer;
+import sproj.yolo.YOLOModelContainer;
 
 import java.util.ArrayList;
 import java.util.List;
