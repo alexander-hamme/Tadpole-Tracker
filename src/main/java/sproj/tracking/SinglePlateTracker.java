@@ -370,10 +370,31 @@ public class SinglePlateTracker extends Tracker {
 
 
 
+    private void enhanceImageMethod2(Mat img) {
+
+        GaussianBlur(img, img, new Size(3,3), 0.0);
+
+        adaptiveThreshold(img, img, 220, ADAPTIVE_THRESH_MEAN_C,//ADAPTIVE_THRESH_MEAN_C,   //ADAPTIVE_THRESH_GAUSSIAN_C,//
+                THRESH_BINARY, 5, 7);
+
+        GaussianBlur(img, img, new Size(3,3), 0.0);
+
+        /*Mat element = getStructuringElement(MORPH_RECT,
+                    new Size(2*1 + 1, 2*1+1 ),
+                    new Point(1, 1) );
+            dilate(toThreshold, toThreshold, element);*/
+    }
 
 
+    private void enhanceImageMethod1(Mat img) {
+        GaussianBlur(img, img, new Size(3,3), 0.0);
+        CLAHE clahe = createCLAHE(25.0, new Size(5,5));
+        clahe.apply(img, img);
+    }
 
-
+    private void enhanceImageMethod3(Mat img) {
+        equalizeHist(img, img);
+    }
 
 
 
@@ -443,41 +464,24 @@ public class SinglePlateTracker extends Tracker {
             resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
 
 
+
+
+
             cvtColor(toThreshold, toThreshold, COLOR_RGB2GRAY);
 
-//            GaussianBlur(toThreshold, toThreshold, new Size(3,3), 0.0);
 
-            CLAHE clahe = createCLAHE(2.0, new Size(20,20));
-            clahe.apply(toThreshold, toThreshold);
-//            equalizeHist(toThreshold, toThreshold);
+            enhanceImageMethod1(toThreshold);
+//            enhanceImageMethod2(toThreshold);
+//            enhanceImageMethod3(toThreshold);
+
 
 
             cvtColor(toThreshold, toThreshold, COLOR_GRAY2RGB);
 //            resize(toThreshold, toThreshold, new Size(IMG_WIDTH, IMG_HEIGHT));
 
 
-            /**
-            cvtColor(toThreshold, toThreshold, COLOR_RGB2GRAY);
-
-            GaussianBlur(toThreshold, toThreshold, new Size(3,3), 0.0);
-
-            adaptiveThreshold(toThreshold, toThreshold, 220, ADAPTIVE_THRESH_MEAN_C,//ADAPTIVE_THRESH_MEAN_C,   //ADAPTIVE_THRESH_GAUSSIAN_C,//
-                    THRESH_BINARY, 5, 7);
 
 
-             GaussianBlur(toThreshold, toThreshold, new Size(3,3), 0.0);
-             cvtColor(toThreshold, toThreshold, COLOR_GRAY2RGB);
-             resize(toThreshold, toThreshold, new Size(IMG_WIDTH, IMG_HEIGHT));
-
-
-             /*Mat element = getStructuringElement(MORPH_RECT,
-                    new Size(2*1 + 1, 2*1+1 ),
-                    new Point(1, 1) );
-            dilate(toThreshold, toThreshold, element);*/
-
-
-
-//            frameImg = toThreshold;
 
             detectedObjects = yoloModelContainer.runInference(toThreshold);  // frameImg
 
