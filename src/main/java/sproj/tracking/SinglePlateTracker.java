@@ -448,8 +448,10 @@ public class SinglePlateTracker extends Tracker {
         int frameNo;
         int totalFrames = grabber.getLengthInVideoFrames();
 
+        boolean exitLoop = false;
+
         Frame frame;
-        while ((frame = grabber.grabImage()) != null) {
+        while ((frame = grabber.grabImage()) != null && !exitLoop) {
 
             time1 = System.currentTimeMillis();
 
@@ -498,8 +500,8 @@ public class SinglePlateTracker extends Tracker {
 
                 switch(keyChar) {
 
-                    case KeyEvent.VK_ESCAPE: break;      // hold escape key or 'q' to quit
-                    case KeyEvent.VK_Q: break;
+                    case KeyEvent.VK_ESCAPE: exitLoop = true;      // hold escape key or 'q' to quit
+                    case KeyEvent.VK_Q: exitLoop = true;
 
                     case KeyEvent.VK_P: Thread.sleep(1000);// pause? ;
                 }
