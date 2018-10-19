@@ -3,9 +3,13 @@ package sproj.util;
 import org.bytedeco.javacpp.avutil;
 import org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacv.*;
+import org.bytedeco.javacv.Frame;
 
 import javax.imageio.ImageIO;
 import java.awt.event.KeyEvent;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,6 +17,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Stream;
 
 import static org.bytedeco.javacpp.opencv_imgproc.*;
@@ -24,9 +29,14 @@ public class TrainingImageGenerator {
     private OpenCVFrameConverter frameConverter = new OpenCVFrameConverter.ToMat();
     private Java2DFrameConverter converterToImg = new Java2DFrameConverter();
 
-    FFmpegFrameGrabber grabber;
+    private FFmpegFrameGrabber grabber;
+    private Random randGen = new Random();
 
-    private final boolean RANDOM_CROP = false;
+    private final boolean RANDOM_CROP = true;
+    private final boolean RANDOM_ROTATE = true;
+    private final boolean SWAP_FILTERS = false;
+
+    private int imgNo = 568;
 
     private void initializeFGrabber(File videoFile) throws IOException {
         avutil.av_log_set_level(avutil.AV_LOG_QUIET);           // Suppress verbose FFMPEG metadata output to console
@@ -43,7 +53,11 @@ public class TrainingImageGenerator {
     }
 
     private void saveFrame(Frame frame, String fileName) throws IOException {
-        ImageIO.write(converterToImg.convert(frame), "jpg", new File(fileName));
+        BufferedImage img = converterToImg.convert(frame);
+        if (RANDOM_CROP) {
+            img = randomCrop(img);
+        }
+        ImageIO.write(img, "jpg", new File(fileName));
         System.out.println(String.format("Saved frame to %s", fileName));
     }
 
@@ -57,8 +71,8 @@ public class TrainingImageGenerator {
 
         GaussianBlur(img, img, new Size(3,3), 0.0);
 
-        adaptiveThreshold(img, img, 220, ADAPTIVE_THRESH_MEAN_C,//ADAPTIVE_THRESH_MEAN_C,   //ADAPTIVE_THRESH_GAUSSIAN_C,//
-                THRESH_BINARY, 5, 7);
+        adaptiveThreshold(img, img, 220, ADAPTIVE_THRESH_GAUSSIAN_C,//ADAPTIVE_THRESH_MEAN_C,   //ADAPTIVE_THRESH_GAUSSIAN_C,//
+                THRESH_BINARY, 9, 7);
 
 //        GaussianBlur(img, img, new Size(3,3), 0.0);
 
@@ -73,15 +87,104 @@ public class TrainingImageGenerator {
     }
 
     private void enhanceImageMethod3(Mat img) {
-        CLAHE clahe = createCLAHE(2.0, new Size(3,3));
+        CLAHE clahe = createCLAHE(2.0, new Size(5,5));
         clahe.apply(img, img);
     }
 
-    private void enhanceImageMethod4(Mat img) {
+    private void enhanceImageMethod5(Mat img) {
         GaussianBlur(img, img, new Size(3,3), 0.0);
         CLAHE clahe = createCLAHE(2.0, new Size(5,5));
         clahe.apply(img, img);
     }
+
+    private BufferedImage randomRotate(BufferedImage img) {
+
+        double angle = randGen.nextInt(271);
+        angle = Math.round(angle / 90) * 90.0;
+
+        AffineTransform affineTransform = new AffineTransform();
+
+        if (angle == 90.0 || angle == 270.0) {
+            affineTransform.translate(img.getHeight() / 2.0, img.getWidth() / 2.0);
+            affineTransform.rotate(angle * Math.PI / 180.0);
+            affineTransform.translate(-img.getWidth() / 2.0, -img.getHeight() / 2.0);
+
+        } else if (angle == 180) {
+            affineTransform.translate(img.getWidth() / 2.0, img.getHeight() / 2.0);
+            affineTransform.rotate(angle * Math.PI / 180.0);
+            affineTransform.translate(-img.getWidth() / 2.0, -img.getHeight() / 2.0);
+
+        } else {
+            affineTransform.rotate(angle * Math.PI / 180.0);
+        }
+
+        AffineTransformOp affineTransformOp = new AffineTransformOp(
+                affineTransform, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+
+        BufferedImage result;
+
+        if (angle == 90.0 || angle == 270.0) {
+            result = new BufferedImage(img.getHeight(), img.getWidth(), img.getType());
+
+        } else {
+            result = new BufferedImage(img.getWidth(), img.getHeight(), img.getType());
+        }
+
+        affineTransformOp.filter(img, result);
+
+        return result;
+    }
+
+    private BufferedImage randomCrop(BufferedImage img) {
+
+        int imgWidth = img.getWidth();
+        int imgHeight = img.getHeight();
+
+        int x = randGen.nextInt(2 * imgWidth / 3);
+        int y = randGen.nextInt(2 * imgHeight / 3);
+
+        int width = imgWidth - randGen.nextInt(imgWidth / 3);
+        int height = imgHeight - randGen.nextInt(imgHeight / 3);
+
+        while (x + width > imgWidth){x--;}
+        while (y + height > imgHeight){y--;}
+
+        /*System.out.println(String.format(
+                "Orig width, height: %d, %d, \nNew dims: %d %d %d %d",
+                imgWidth, imgHeight, x, y, width, height
+        ));*/
+
+        return img.getSubimage(x, y, width, height);
+
+    }
+
+    private List<BufferedImage> warpImages(File[] imagePaths) {
+
+        List<BufferedImage> randWarped = new ArrayList<>(imagePaths.length);
+
+        for (File imgPath : imagePaths) {
+
+            try {
+                BufferedImage img = ImageIO.read(imgPath);
+
+                if (img != null) {
+
+                    if (RANDOM_ROTATE) {
+                        img = randomRotate(img);
+                    }
+                    if (RANDOM_CROP) {
+                        img = randomCrop(img);
+                    }
+
+                    randWarped.add(img);
+                }
+            } catch (IOException e) {
+                System.err.println("Could not read image: " + imgPath);
+            }
+        }
+        return randWarped;
+    }
+
 
     private void run(File videoFile, List<Integer> cropDims, String saveDir) throws IOException, InterruptedException {
 
@@ -99,15 +202,15 @@ public class TrainingImageGenerator {
         );
         //new Rect(cropDims[0], cropDims[1], cropDims[2], cropDims[3]);  // use Range instead of Rect?
 
-        int imgNo = 568;
         String saveName;
 
         int skipFrames = 60;
 
         int frameNo;
 
-        int filterMethod = 0;
-        int filterSwitchFrequency = 300;
+        int numbFiltersToUse = 3;
+        int filterMethod = numbFiltersToUse-1;      // this makes it start at 0, filter 1
+        int filterSwitchFrequency = 3;
 
         while ((frame = grabber.grabImage()) != null && !exitLoop) {
 
@@ -125,11 +228,12 @@ public class TrainingImageGenerator {
                 frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);
             }
 
-
             cvtColor(frameImg, frameImg, COLOR_RGB2GRAY);
 
-            if (frameNo % filterSwitchFrequency == 0) {
-                filterMethod = ((filterMethod + 1) % 5);
+            if (SWAP_FILTERS) {
+                if (frameNo % filterSwitchFrequency == 0) {
+                    filterMethod = ((filterMethod + 1) % numbFiltersToUse);
+                }
             }
 
             switch (filterMethod) {
@@ -146,11 +250,11 @@ public class TrainingImageGenerator {
                     break;
                 }
                 case 3: {
-                    enhanceImageMethod4(frameImg);
+                    // no filter
                     break;
                 }
                 case 4: {
-                    // no filter
+                    break;
                 }
             }
 
@@ -160,22 +264,41 @@ public class TrainingImageGenerator {
             newFrame = frameConverter.convert(frameImg);
 
             boolean saveFrame = false;
-            keyEvent = canvasFrame.waitKey(10);
+            keyEvent = canvasFrame.waitKey(30);
             if (keyEvent != null) {
 
                 char keyChar = keyEvent.getKeyChar();
 
                 switch(keyChar) {
-                    case KeyEvent.VK_ESCAPE: {exitLoop = true; break;}      // hold escape key or 'q' to quit
-                    case KeyEvent.VK_S: {saveFrame = true; break;}
-                    case KeyEvent.VK_K: {skipAhead(skipFrames);}
-                    case KeyEvent.VK_Q: {canvasFrame.dispose(); System.exit(0);}
+
+                    case KeyEvent.VK_S: {
+                        Thread.sleep(500); // to prevent latency in releasing the key from saving hundreds of images
+                        saveFrame = true;
+                        break;
+                    }
+                    case KeyEvent.VK_K: {
+                        skipAhead(skipFrames);
+                        break;
+                    }
+                    case KeyEvent.VK_F: {   // switch filter method
+                        Thread.sleep(250);
+                        filterMethod = ((filterMethod + 1) % numbFiltersToUse);
+                        break;
+                    }
+                    case KeyEvent.VK_ESCAPE: {
+                        Thread.sleep(500);
+                        exitLoop = true; break;
+                    }
+                    case KeyEvent.VK_Q: {
+                        Thread.sleep(250);
+                        canvasFrame.dispose();
+                        System.exit(0);
+                    }
                 }
             }
             if (saveFrame) {
                 saveName = String.format("%s/tadpole%d.jpg", saveDir, imgNo++);
                 saveFrame(newFrame, saveName);
-                Thread.sleep(500); // to prevent latency in releasing the key from saving hundreds of images
             }
 
             canvasFrame.showImage(newFrame);
@@ -185,12 +308,35 @@ public class TrainingImageGenerator {
     }
 
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main2(String[] args) throws IOException {
+        String imgDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-18-18/unwarped";
+        String saveDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-18-18/";
+        File[] files = new File(imgDir).listFiles();
+
+        String saveName;
+        int saveIndx = 568;
+
+        if (files != null && files.length > 0) {
+
+            List<BufferedImage> randCropped = new TrainingImageGenerator().warpImages(files);
+
+            for (BufferedImage img : randCropped) {
+
+                System.out.print("\r" + (randCropped.indexOf(img) + 1) + " of " + randCropped.size() + " images warped");
+
+                saveName = String.format("%stadpole%d.jpg", saveDir, saveIndx++);
+                ImageIO.write(img, "jpg", new File(saveName));
+            }
+
+        }
+    }
+
+    public static void main1(String[] args) throws IOException, InterruptedException {
 
         TrainingImageGenerator imageGenerator = new TrainingImageGenerator();
 
         final String saveDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-18-18";
-
+        int imgNo = 568;
         int[] numberOfTadpoles = {1, 2, 4, 8};
 
 //        args = new String[]{"/home/ah2166/Videos/tad_test_vids/trialVids/1_tadpole/filenames.txt"};
@@ -199,18 +345,18 @@ public class TrainingImageGenerator {
 
         String[] fileDescriptors = new String[]{
 
-                String.format(
+                /*String.format(
                         "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
                         numberOfTadpoles[0], numberOfTadpoles[0]),
                 String.format(
                         "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
-                        numberOfTadpoles[1], numberOfTadpoles[1]),
+                        numberOfTadpoles[1], numberOfTadpoles[1]),*/
                 String.format(
                         "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
-                        numberOfTadpoles[1], numberOfTadpoles[2]),
+                        numberOfTadpoles[2], numberOfTadpoles[2]),
                 String.format(
                         "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
-                        numberOfTadpoles[1], numberOfTadpoles[3]),
+                        numberOfTadpoles[3], numberOfTadpoles[3]),
         };
 
         for (String fileDesc : fileDescriptors) {
@@ -247,7 +393,7 @@ public class TrainingImageGenerator {
                     ));
                     continue;
                 }
-
+                System.out.println("Running " + videoFile.toString());
                 imageGenerator.run(videoFile, cropDims, saveDir);
             }
         }
