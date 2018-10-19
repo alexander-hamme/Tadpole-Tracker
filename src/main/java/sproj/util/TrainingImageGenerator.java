@@ -331,7 +331,7 @@ public class TrainingImageGenerator {
         }
     }
 
-    public static void main1(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException {
 
         TrainingImageGenerator imageGenerator = new TrainingImageGenerator();
 
@@ -343,6 +343,7 @@ public class TrainingImageGenerator {
 //        args = new String[]{"/home/ah2166/Videos/tad_test_vids/trialVids/2_tadpoles/eval_list_2t.txt"};
 //        args = new String[]{"/home/ah2166/Videos/tad_test_vids/trialVids/4_tadpoles/eval_list_4t.txt"};
 
+//        if (args.length < 1) {
         String[] fileDescriptors = new String[]{
 
                 /*String.format(
