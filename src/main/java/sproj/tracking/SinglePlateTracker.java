@@ -249,7 +249,7 @@ public class SinglePlateTracker extends Tracker {
 
             if (assignment.animal == null) { continue; }
 
-//todo          if (assignment.box == null || ! assignmentIsReasonable(assignment.animal, assignment.box, frameNumber)) {       // no assignment
+//todo  if (assignment.box == null || ! assignmentIsReasonable(assignment.animal, assignment.box, frameNumber)) {       // no assignment
             if (assignment.box == null) {       // no assignment
                 assignment.animal.predictTrajectory(dt, timePos);
             } else {
@@ -261,104 +261,9 @@ public class SinglePlateTracker extends Tracker {
 
         if (DRAW_ANML_TRACKS) {
             for (AnimalWithFilter animal : animals) {
-//                traceAnimalOnFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
-            }
-        }
-
-        if (false) {
-
-            // todo loop through BoundingBoxes & assign first, then do a separate loop through animals to check which dont have boxes
-            ArrayList<AnimalWithFilter> assignedAnimals = new ArrayList<>(this.animals.size());
-            AnimalWithFilter closestAnimal;
-
-            for (BoundingBox box : boundingBoxes) {
-
-//            min_proximity = displThresh;     // start at max allowed value and then favor smaller values
-                min_proximity = prox_start_val;     // start at max allowed value and then favor smaller values.
-                // Illogical assignments will be discarded by assignmentIsReasonable() function
-
-                closestAnimal = null;
-
-                for (AnimalWithFilter animal : animals) {
-
-                    if (!assignedAnimals.contains(animal)) {  // skip already assigned boxes
-                        // circleRadius = Math.round(box[2] + box[3] / 2);  // approximate circle from rectangle dimensions
-
-                        current_proximity = Math.pow(Math.pow(animal.x - box.centerX, 2) + Math.pow(animal.y - box.centerY, 2), 0.5);
-
-                        if (current_proximity < min_proximity) {
-                            min_proximity = current_proximity;
-                            closestAnimal = animal;
-                        }
-                    }
-                }
-
-                if (closestAnimal != null && assignmentIsReasonable(closestAnimal, box, frameNumber)) {   // && RNN probability, etc etc
-                    closestAnimal.updateLocation(box.centerX, box.centerY, dt, timePos);
-                    assignedAnimals.add(closestAnimal);
-                }
-                if (DRAW_RECTANGLES) {
-                    // this rectangle drawing will be removed later  (?)
-                    rectangle(frameImage, new Point(box.topleftX, box.topleftY),
-                            new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
-                }
-            }
-
-
-            for (AnimalWithFilter animal : animals) {
-
-                if (!assignedAnimals.contains(animal)) {
-                    animal.predictTrajectory(dt, timePos);
-                }
-                if (DRAW_ANML_TRACKS) {
-                    traceAnimalOnFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
-                }
-            }
-        }
-
-        /**********************************************************************************************/
-        /*
-        ArrayList<BoundingBox> assignedBoxes = new ArrayList<>(boundingBoxes.size());
-        BoundingBox closestBox;
-
-        for (AnimalWithFilter animal : animals) {
-
-            min_proximity = displThresh;     // start at max allowed value and then favor smaller values
-            closestBox = null;
-
-            for (BoundingBox box : boundingBoxes) {
-
-                if (!assignedBoxes.contains(box)) {  // skip already assigned boxes
-                    // circleRadius = Math.round(box[2] + box[3] / 2);  // approximate circle from rectangle dimensions
-
-                    current_proximity = Math.pow(Math.pow(animal.x - box.centerX), 2 + Math.pow(animal.y - box.centerY), 2, 0.5);
-
-                    if (current_proximity < min_proximity) {
-                        min_proximity = current_proximity;
-                        closestBox = box;
-                    }
-                }
-
-                if (DRAW_RECTANGLES) {
-                    // this rectangle drawing will be removed later  (?)
-                    rectangle(frameImage, new Point(box.topleftX, box.topleftY),
-                            new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
-                }
-            }
-            //if (boundingBoxes.size() == animals.size() && closestBox != null) {   // This means min_proximity < displacement_thresh?
-            if (closestBox != null && assignmentIsReasonable(animal, closestBox, frameNumber)) {   // && RNN probability, etc etc
-                animal.updateLocation(closestBox.centerX, closestBox.centerY, dt, timePos);
-                assignedBoxes.add(closestBox);
-            } else {
-                // todo: instead of min_proximity --> use (Decision tree? / Markov? / SVM? / ???) to determine if the next point is reasonable
-                animal.predictTrajectory(dt, timePos);
-            }
-
-            if (DRAW_ANML_TRACKS) {
                 traceAnimalOnFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
             }
         }
-        */
     }
 
 
