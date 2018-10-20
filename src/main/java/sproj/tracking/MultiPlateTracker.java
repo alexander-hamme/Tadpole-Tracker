@@ -22,7 +22,7 @@ public class MultiPlateTracker extends Tracker {
     public MultiPlateTracker(int n_objs, boolean drawShapes, String videoPath) throws IOException {
 
         this.numb_of_anmls = n_objs;
-        this.DRAW_SHAPES = drawShapes;
+        this.DRAW_ANML_TRACKS = drawShapes;
         this.CANVAS_NAME = "Tadpole SinglePlateTracker";
 
         initializeFrameGrabber(videoPath);      // test if video file is valid and readable first

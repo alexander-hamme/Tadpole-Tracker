@@ -62,7 +62,7 @@ public class SinglePlateTracker extends Tracker {
     public SinglePlateTracker(int n_objs, boolean drawShapes, int[] crop, String videoPath) throws IOException {
 
         this.numb_of_anmls = n_objs;
-        this.DRAW_SHAPES = drawShapes;
+        this.DRAW_ANML_TRACKS = drawShapes;
         this.CANVAS_NAME = "Tadpole SinglePlateTracker";
 
         this.cropDimensions = crop;
@@ -234,7 +234,14 @@ public class SinglePlateTracker extends Tracker {
 
 
 
+        for (BoundingBox box : boundingBoxes) {
+            if (DRAW_RECTANGLES) {
+                // this rectangle drawing will be removed later  (?)
+                rectangle(frameImage, new Point(box.topleftX, box.topleftY),
+                        new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
+            }
 
+        }
 
         final List<OptimalAssigner.Assignment> assignments = optimalAssigner.getOptimalAssignments(animals, boundingBoxes);
 
@@ -249,24 +256,16 @@ public class SinglePlateTracker extends Tracker {
                 assignment.animal.updateLocation(
                         assignment.box.centerX, assignment.box.centerY, dt, timePos
                 );
-                if (DRAW_RECTANGLES) {
-                    // this rectangle drawing will be removed later  (?)
-                    rectangle(frameImage, new Point(assignment.box.topleftX, assignment.box.topleftY),
-                            new Point(assignment.box.botRightX, assignment.box.botRightY), Scalar.RED, 1, CV_AA, 0);
-                }
-
             }
         }
 
-
-        for (AnimalWithFilter animal : animals) {
-
-            if (DRAW_SHAPES) {
-                traceAnimalOnFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
+        if (DRAW_ANML_TRACKS) {
+            for (AnimalWithFilter animal : animals) {
+//                traceAnimalOnFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
             }
         }
 
-        if (1==0) {
+        if (false) {
 
             // todo loop through BoundingBoxes & assign first, then do a separate loop through animals to check which dont have boxes
             ArrayList<AnimalWithFilter> assignedAnimals = new ArrayList<>(this.animals.size());
@@ -311,7 +310,7 @@ public class SinglePlateTracker extends Tracker {
                 if (!assignedAnimals.contains(animal)) {
                     animal.predictTrajectory(dt, timePos);
                 }
-                if (DRAW_SHAPES) {
+                if (DRAW_ANML_TRACKS) {
                     traceAnimalOnFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
                 }
             }
@@ -355,7 +354,7 @@ public class SinglePlateTracker extends Tracker {
                 animal.predictTrajectory(dt, timePos);
             }
 
-            if (DRAW_SHAPES) {
+            if (DRAW_ANML_TRACKS) {
                 traceAnimalOnFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
             }
         }
@@ -461,18 +460,16 @@ public class SinglePlateTracker extends Tracker {
             Mat toThreshold = frameImg.clone();
 
 
-
-
             cvtColor(frameImg, frameImg, COLOR_RGB2GRAY);
+//            enhanceImageMethod2(frameImg);
             enhanceImageMethod3(frameImg);
             cvtColor(frameImg, frameImg, COLOR_GRAY2RGB);
 
-            resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
 
 
             cvtColor(toThreshold, toThreshold, COLOR_RGB2GRAY);
 //            enhanceImageMethod1(toThreshold);
-            enhanceImageMethod4(toThreshold);
+            enhanceImageMethod2(toThreshold);
             cvtColor(toThreshold, toThreshold, COLOR_GRAY2RGB);
 //            resize(toThreshold, toThreshold, new Size(IMG_WIDTH, IMG_HEIGHT));
 
@@ -480,6 +477,7 @@ public class SinglePlateTracker extends Tracker {
 
 
 
+            resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
             detectedObjects = yoloModelContainer.runInference(frameImg);  // frameImg
 
 //            Java2DFrameConverter paintConverter = new Java2DFrameConverter();
@@ -500,10 +498,9 @@ public class SinglePlateTracker extends Tracker {
 
                 switch(keyChar) {
 
-                    case KeyEvent.VK_ESCAPE: exitLoop = true;      // hold escape key or 'q' to quit
-                    case KeyEvent.VK_Q: exitLoop = true;
-
-                    case KeyEvent.VK_P: Thread.sleep(1000);// pause? ;
+                    case KeyEvent.VK_ESCAPE: exitLoop = true; break;      // hold escape key or 'q' to quit
+                    case KeyEvent.VK_Q: exitLoop = true; break;
+                    case KeyEvent.VK_P: Thread.sleep(1000); break;// pause? ;
                 }
 
             }
@@ -516,7 +513,8 @@ public class SinglePlateTracker extends Tracker {
             // todo System.out.print("\r" + (frameNo + 1) + " of " + totalFrames + " frames processed");
 
         }
-
+        canvasFrame.dispose();
+        originalShower.dispose();
         grabber.release();
     }
 

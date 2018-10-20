@@ -35,6 +35,9 @@ import sproj.TrackerApp;
 
 public class YOLOModelContainer {
 
+//    private final String MODEL_FILE_PATH = "src/main/resources/inference/oldModel.zip";
+    private final String MODEL_FILE_PATH = "src/main/resources/inference/yolov2_10000its.zip";
+
     private final Logger logger = TrackerApp.getLogger();   //  LogManager.getLogger("YOLOModelContainer");   // Todo don't create new instance, share one logger object, eg from Main
 
 //    Logger logger = LoggerFactory.getLogger(YOLOModelContainer.class);
@@ -45,7 +48,6 @@ public class YOLOModelContainer {
     private final int[] INPUT_SHAPE = {1, IMG_CHANNELS, IMG_WIDTH, IMG_HEIGHT};
     private final double CONF_THRESHOLD = 0.5;
     private final int WARMUP_ITERATIONS = 10;
-    private final String MODEL_FILE_PATH = "src/main/resources/inference/yolo2_dl4j_tad.zip";
 
     private final NativeImageLoader imageLoader = new NativeImageLoader(IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS);
     private final ImagePreProcessingScaler normalizingScaler = new ImagePreProcessingScaler(0, 1);
