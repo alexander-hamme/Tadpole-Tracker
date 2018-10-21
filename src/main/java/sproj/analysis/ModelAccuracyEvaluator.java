@@ -14,7 +14,6 @@ import sproj.yolo.YOLOModelContainer;
 import org.bytedeco.javacpp.avutil;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -36,9 +35,9 @@ public class ModelAccuracyEvaluator {
 
     // TODO : some kind of image thresholding / enhancement on each frame to make tadpoles darker?
 
-
-    private final boolean COUNT_EXTRA_DETECTIONS_NEGATIVELY = false;
+    private final boolean COUNT_EXTRA_DETECTIONS_NEGATIVELY = true;
     private final boolean THRESHOLD_DOWN_TO_100 = true;
+    private final boolean CHECK_FOR_RESUME_PROGRESS = true;      // for resuming evaluation instead of restarting from beginning
 
     private boolean WRITE_TO_FILE;
     private boolean SHOW_LIVE_EVAL_DISPLAY;
@@ -181,19 +180,28 @@ public class ModelAccuracyEvaluator {
     private void evaluateModel(File modelPath, HashMap<Integer, String> metaVideoList,
                                String dataSaveName) throws IOException {
 
+
+
         initalizeModelContainer(modelPath);
 
         List<List<Double>> anmlGroupAccuracies = new ArrayList<>(metaVideoList.size()); // each inner list contains points for all videos for animal number
 
         Set<Integer> anmlGroupNumbs = metaVideoList.keySet();
 
+        if (CHECK_FOR_RESUME_PROGRESS) {
+            if (new File(dataSaveName).exists() ||
+            new File(dataSaveName.split("\\.")[0] + anmlGroupNumbs.toArray()[0].toString() + ".eval").exists()) {
+                System.out.println("Model already evaluated for current group");
+                return;
+            }
+        }
 //        for (String videosList : metaVideoList) {
         for (Integer anmlNumb : anmlGroupNumbs) {
 
             List<String> textLines = readTextFile(metaVideoList.get(anmlNumb));
             List<Double> videoEvals = new ArrayList<>();       // each individual point represents accuracy over an entire video
 
-            System.out.println("Group " + anmlNumb + " videos");
+            System.out.println("\nGroup " + anmlNumb + " videos");
 
             for (String individualVideo : textLines) {     // individual video file to evaluate on
 
@@ -252,13 +260,20 @@ public class ModelAccuracyEvaluator {
                 }*/
             }
             anmlGroupAccuracies.add(videoEvals);
+
+            if (WRITE_TO_FILE) {
+//                for (List<Double> points : anmlGroupAccuracies) {
+                IOUtils.writeDataToFile(videoEvals,
+                        dataSaveName.split("\\.")[0] + anmlNumb.toString() + ".eval", "\n", true);
+//                }
+            }
         }
 
-        if (WRITE_TO_FILE) {
+        /*if (WRITE_TO_FILE) {
             for (List<Double> points : anmlGroupAccuracies) {
                 IOUtils.writeDataToFile(points, dataSaveName, "\n", true);
             }
-        }
+        }*/
 
         anmlGroupAccuracies.forEach(lst ->
                 System.out.println(String.format("Average accuracy on groups of %d: %.4f",
@@ -282,10 +297,26 @@ public class ModelAccuracyEvaluator {
             }
             String baseName = modelPath.getName().split("\\.")[0];
 
+            long startTime = System.currentTimeMillis();
+
             System.out.println("Evaluating model: " + modelPath.toString());
+
+            String dataSaveName = evalsSaveDir + baseName + ".eval";
+
+            if (CHECK_FOR_RESUME_PROGRESS) {
+                if (new File(dataSaveName).exists()) {
+                    System.out.println("Model already evaluated");
+                    continue;
+                }
+            }
+
             evaluateModel(modelPath, anmlGroupsMetaList,
                     evalsSaveDir + baseName + ".eval");
 
+            long endTime = System.currentTimeMillis() - startTime;
+            System.out.println(String.format("Total evaluation time of model: %d (%dm %ds)",
+                    endTime,
+                    (int) Math.floor((int) (endTime / 1000) / 60d), endTime / 1000 % 60));
         }
     }
 
@@ -308,7 +339,8 @@ public class ModelAccuracyEvaluator {
             return;
         }*/
 
-        ModelAccuracyEvaluator evaluator = new ModelAccuracyEvaluator(false, true);
+        ModelAccuracyEvaluator evaluator = new ModelAccuracyEvaluator(
+                true, false);
 
         int[] numberOfTadpoles = {1, 2, 4, 8};
 
