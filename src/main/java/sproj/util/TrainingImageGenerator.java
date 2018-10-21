@@ -308,7 +308,7 @@ public class TrainingImageGenerator {
     }
 
 
-    public static void main2(String[] args) throws IOException {
+    public static void generateWarpedImages(String[] args) throws IOException {
         String imgDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-18-18/unwarped";
         String saveDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-18-18/";
         File[] files = new File(imgDir).listFiles();

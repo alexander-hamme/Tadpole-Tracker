@@ -35,8 +35,8 @@ import sproj.TrackerApp;
 
 public class YOLOModelContainer {
 
-//    private final String MODEL_FILE_PATH = "src/main/resources/inference/oldModel.zip";
-    private final String MODEL_FILE_PATH = "src/main/resources/inference/yolov2_10000its.zip";
+//    private final String modelFilePath = "src/main/resources/inference/yolov2_10000its.zip";
+    private static final String DEFAULT_MODEL_PATH = "src/main/resources/inference/yolov2_10000its.zip";
 
     private final Logger logger = TrackerApp.getLogger();   //  LogManager.getLogger("YOLOModelContainer");   // Todo don't create new instance, share one logger object, eg from Main
 
@@ -82,15 +82,20 @@ public class YOLOModelContainer {
         return outputLayer.getPredictedObjects(output, CONF_THRESHOLD);
     }
 
+
     public YOLOModelContainer() throws IOException {
+        this(new File(DEFAULT_MODEL_PATH));
+    }
+
+    public YOLOModelContainer(File modelFilePath) throws IOException {
 
         try {
             logger.info("Loading model...");
-            yoloModel = ModelSerializer.restoreComputationGraph(new File(MODEL_FILE_PATH));
+            yoloModel = ModelSerializer.restoreComputationGraph(modelFilePath);
         } catch (FileNotFoundException e) {
-            throw new IOException("Invalid file path to model: " + MODEL_FILE_PATH, e);
+            throw new IOException("Invalid file path to model: " + modelFilePath, e);
         } catch (IOException e) {
-            throw new IOException("Model file could not be restored: " + MODEL_FILE_PATH, e);
+            throw new IOException("Model file could not be restored: " + modelFilePath, e);
         }
 
         logger.info("Loaded.");
@@ -98,6 +103,7 @@ public class YOLOModelContainer {
         outputLayer = (Yolo2OutputLayer) yoloModel.getOutputLayer(0);
         //        System.out.println(yoloModel.summary());
     }
+
 
     /**
      * Justification for running warm-up iterations before using the model for inference:
