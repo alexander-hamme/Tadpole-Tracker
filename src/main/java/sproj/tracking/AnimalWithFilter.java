@@ -11,6 +11,8 @@ import java.util.Iterator;
 
 public class AnimalWithFilter {
 
+    private final boolean DEBUG = false;
+
     public final Scalar color;
     public final int LINE_THICKNESS = 2;
     public final int CIRCLE_RADIUS = 15;
@@ -28,7 +30,7 @@ public class AnimalWithFilter {
     public KalmanFilter trackingFilter;
     private int[] positionBounds = new int[4];
 
-    private boolean PREDICT_WITH_VELOCITY = true;
+    private boolean PREDICT_WITH_VELOCITY = false;
 
     public AnimalWithFilter(int x, int y, int[] positionBounds, Scalar clr, KalmanFilter kFilter) {
         this.x = x; this.y = y;
@@ -68,9 +70,12 @@ public class AnimalWithFilter {
         // TODO  --> each animal should have its own dynamic DEFAULT_COST_OF_NON_ASSIGNMENT!!!
 
         double[] predictedState = getPredictedState();
-        System.out.println(String.format("Current [(%d,%d)(%.3f,%.3f)], estimation: %s",
-                this.x,this.y, this.vx, this.vy, Arrays.toString(predictedState))
-        );
+
+        if (DEBUG) {
+            System.out.println(String.format("Current [(%d,%d)(%.3f,%.3f)], estimation: %s",
+                    this.x, this.y, this.vx, this.vy, Arrays.toString(predictedState))
+            );
+        }
 
         double predX = predictedState[0]; //(int) Math.round(predictedState[0]);
         double predY = predictedState[1]; //(int) Math.round(predictedState[1]);
@@ -79,12 +84,12 @@ public class AnimalWithFilter {
 
         int newx, newy;
         // Simplest method
-        if (! PREDICT_WITH_VELOCITY) {
-            newx = (int) Math.round(predictedState[0]);
-            newy = (int) Math.round(predictedState[1]);
-        } else {
+        if (PREDICT_WITH_VELOCITY) {
             newx = (int) Math.round(this.x + (vx * dt));
             newy = (int) Math.round(this.y - (vy * dt));
+        } else {
+            newx = (int) Math.round(predictedState[0]);
+            newy = (int) Math.round(predictedState[1]);
         }
 
 
@@ -92,7 +97,7 @@ public class AnimalWithFilter {
 //        int newy = (int) Math.round((predY + (this.y + (vy * dt))) / 2);
 
 
-        System.out.println(String.format("new coordinates: (%d, %d)", newx, newy));
+        if (DEBUG) {System.out.println(String.format("new coordinates: (%d, %d)", newx, newy));}
 
 
 
@@ -139,9 +144,9 @@ public class AnimalWithFilter {
     private void updateKFilter() {
         double[] stateCorrection = new double[]{this.x, this.y, this.vx, this.vy, this.ax, this.ay};
         this.trackingFilter.predict();      // this needs to be called before calling correct()
-        System.out.println(String.format("\nUpdating filter: %d %d %.4f %.4f", this.x, this.y, this.vx, this.vy));
+        if (DEBUG) {System.out.println(String.format("\nUpdating filter: %d %d %.4f %.4f", this.x, this.y, this.vx, this.vy));}
         this.trackingFilter.correct(stateCorrection);
-        System.out.println(String.format("Prediction: %s", Arrays.toString(this.trackingFilter.getStateEstimation())));
+        if (DEBUG) {System.out.println(String.format("Prediction: %s", Arrays.toString(this.trackingFilter.getStateEstimation())));}
     }
 
     private double[] getPredictedState() {

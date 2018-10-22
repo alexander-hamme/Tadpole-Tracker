@@ -79,11 +79,22 @@ public abstract class Tracker {          //  TODO make this an interface?
      * @param videoFrameMat Mat object
      * @param animal Animal object
      */
-    protected void traceAnimalOnFrame(opencv_core.Mat videoFrameMat, AnimalWithFilter animal) {
+    protected void traceAnimalOnFrame(opencv_core.Mat videoFrameMat, AnimalWithFilter animal, double scaleMultiplier) {
         // info : http://bytedeco.org/javacpp-presets/opencv/apidocs/org/bytedeco/javacpp/opencv_imgproc.html#method.detail
 
         opencv_core.Scalar circleColor = animal.color; //new Scalar(0,255,0,1);
-        circle(videoFrameMat, new opencv_core.Point(animal.x, animal.y), animal.CIRCLE_RADIUS, circleColor);
+
+        if (scaleMultiplier == 1.0) {
+            circle(videoFrameMat, new opencv_core.Point(animal.x, animal.y),
+                    animal.CIRCLE_RADIUS, circleColor
+            );
+        } else {
+            circle(videoFrameMat, new opencv_core.Point(
+                            (int) Math.round(scaleMultiplier * animal.x),
+                            (int) Math.round(scaleMultiplier * animal.y)),
+                    animal.CIRCLE_RADIUS, circleColor
+            );
+        }
 
         // draw trailing trajectory line behind current animal
         int lineThickness = animal.LINE_THICKNESS;
@@ -99,26 +110,28 @@ public abstract class Tracker {          //  TODO make this an interface?
                 pt2 = linePointsIterator.next();
                 // lineThickness = Math.round(Math.sqrt(animal.LINE_THICKNESS / (animal.LINE_POINTS_SIZE - i)) * 2);
 
-                line(videoFrameMat,
+
+                if (scaleMultiplier != 1.0) {
+                    line(
+                        videoFrameMat,
+                        new opencv_core.Point(
+                                (int) Math.round(pt1[0] * scaleMultiplier), (int) Math.round(pt1[1] * scaleMultiplier)),
+                        new opencv_core.Point(
+                                (int) Math.round(pt2[0] * scaleMultiplier), (int) Math.round(pt2[1] * scaleMultiplier)),
+                        animal.color, lineThickness, LINE_AA, 0     // lineThickness, line type, shift
+                    );
+                } else {
+
+                    line(
+                        videoFrameMat,
                         new opencv_core.Point(pt1[0], pt1[1]),
                         new opencv_core.Point(pt2[0], pt2[1]),
-                        animal.color, lineThickness, LINE_AA, 0); // lineThickness, line type, shift
+                        animal.color, lineThickness, LINE_AA, 0     // lineThickness, line type, shift
+                    );
+                }
+
                 pt1 = pt2;                                           // -->  line type is LINE_4, LINE_8, or LINE_AA
             }
-
-            /*test prediction
-            int x = animal.x;
-            int y = animal.y;
-            for (int i=0; i<10; i++) {
-                double[] prediction = animal.getPredictedState();
-                line(videoFrameMat,
-                        new opencv_core.Point(x, y),
-                        new opencv_core.Point((int) prediction[0], (int) prediction[1]),
-                        opencv_core.Scalar.RED, lineThickness, LINE_AA, 0); // lineThickness, line type, shift
-                x = (int) prediction[0];
-                y = (int) prediction[1];
-                animal.trackingFilter.correct(prediction);
-            }//*/
         } else {
             logger.warn("Line points iterator is empty, failed to draw trajectory paths.");
         }

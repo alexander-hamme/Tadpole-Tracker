@@ -214,7 +214,7 @@ public class ModelAccuracyEvaluator {
             List<String> textLines = readTextFile(metaVideoList.get(anmlNumb));
             List<Double> videoEvals = new ArrayList<>();       // each individual point represents accuracy over an entire video
 
-            System.out.println("\nGroup " + anmlNumb + " videos");
+            System.out.println("\nGroup " + anmlNumb + "data/videos");
 
             for (String individualVideo : textLines) {     // individual video file to evaluate on
 
@@ -402,13 +402,13 @@ public class ModelAccuracyEvaluator {
         Arrays.sort(modelPaths);
 
         HashMap<Integer, String> anmlGroupsMetaList = new HashMap<>();
-        String evalsSaveDir = "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/src/main/resources/evaluations/";
+        String evalsSaveDir = "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/dataevaluations/";
 
 
-        for (int i = 0; i < numberOfTadpoles.length; i++) {
-            anmlGroupsMetaList.putIfAbsent(numberOfTadpoles[i], String.format(
+        for (int groupN : numberOfTadpoles) {
+            anmlGroupsMetaList.putIfAbsent(groupN, String.format(
                     "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
-                    numberOfTadpoles[i], numberOfTadpoles[i]));
+                    groupN, groupN));
         }
 
 

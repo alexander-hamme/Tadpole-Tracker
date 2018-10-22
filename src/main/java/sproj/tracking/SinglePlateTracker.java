@@ -118,9 +118,14 @@ public class SinglePlateTracker extends Tracker {
 
         KalmanFilterBuilder filterBuilder = new KalmanFilterBuilder();
 
-        int[][] colors = {{100, 100, 100}, {90, 90, 90}, {255, 0, 255}, {0, 255, 255}, {0, 0, 255}, {47, 107, 85},
-                {113, 179, 60}, {255, 0, 0}, {255, 255, 255}, {0, 180, 0}, {255, 255, 0}, {160, 160, 160},
-                {160, 160, 0}, {0, 0, 0}, {202, 204, 249}, {0, 255, 127}, {40, 46, 78}};
+        // BGR not RGB
+        int[][] colors = {
+                // magenta          cyan           slate blue        green          blue          red
+                {255, 0, 255},   {255, 255, 0},  {160,40,40},  {0, 255, 0},   {255, 0, 0}, {0, 0, 255},
+                // yellow
+                {0, 255, 255}, {47, 107, 85}, {113, 179, 60},  {0, 180, 0},   {160, 160, 0}, {0, 0, 0},
+                {0, 255, 127},  {40, 46, 78},  {160, 160, 160}, {90, 90, 90},  {202, 204, 249}
+        };
 
         // distribute
         int x, y;
@@ -261,7 +266,7 @@ public class SinglePlateTracker extends Tracker {
 
         if (DRAW_ANML_TRACKS) {
             for (AnimalWithFilter animal : animals) {
-                traceAnimalOnFrame(frameImage, animal);             // call this here so that this.animals doesn't have to be iterated through again
+                traceAnimalOnFrame(frameImage, animal, 1.0);             // call this here so that this.animals doesn't have to be iterated through again
             }
         }
     }
@@ -325,11 +330,11 @@ public class SinglePlateTracker extends Tracker {
 
     private void track(Rect cropRect) throws InterruptedException, IOException {
 
-        CanvasFrame canvasFrame = new CanvasFrame("Tracker");
+        CanvasFrame canvasFrame = new CanvasFrame("Raw Frame");
         canvasFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-        CanvasFrame originalShower = new CanvasFrame("Thresholding");
-        originalShower.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        CanvasFrame tracking = new CanvasFrame("Tracker Display");
+        tracking.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
 
 
@@ -362,21 +367,19 @@ public class SinglePlateTracker extends Tracker {
 //            Mat frameImg = frameConverter.convertToMat(frame);
             Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);   // crop the frame
 
-            Mat toThreshold = frameImg.clone();
+            Mat trackingOnly = frameImg.clone();
 
 
             cvtColor(frameImg, frameImg, COLOR_RGB2GRAY);
 //            enhanceImageMethod2(frameImg);
-            enhanceImageMethod3(frameImg);
+//            enhanceImageMethod3(frameImg);
             cvtColor(frameImg, frameImg, COLOR_GRAY2RGB);
 
-
-
-            cvtColor(toThreshold, toThreshold, COLOR_RGB2GRAY);
-//            enhanceImageMethod1(toThreshold);
-            enhanceImageMethod2(toThreshold);
-            cvtColor(toThreshold, toThreshold, COLOR_GRAY2RGB);
-//            resize(toThreshold, toThreshold, new Size(IMG_WIDTH, IMG_HEIGHT));
+            cvtColor(trackingOnly, trackingOnly, COLOR_RGB2GRAY);
+//            enhanceImageMethod3(trackingOnly);
+            enhanceImageMethod2(trackingOnly);
+            cvtColor(trackingOnly, trackingOnly, COLOR_GRAY2RGB);
+//            resize(trackingOnly, trackingOnly, new Size(IMG_WIDTH, IMG_HEIGHT));
 
 
 
@@ -410,8 +413,15 @@ public class SinglePlateTracker extends Tracker {
 
             }
 
+            if (DRAW_ANML_TRACKS) {
+                double scaleMultiplier = trackingOnly.rows() / (double) frameImg.rows();
+                for (AnimalWithFilter animal : animals) {
+                    traceAnimalOnFrame(trackingOnly, animal, scaleMultiplier);             // call this here so that this.animals doesn't have to be iterated through again
+                }
+            }
+
             canvasFrame.showImage(frameConverter.convert(frameImg));
-            originalShower.showImage(frameConverter.convert(toThreshold));
+            tracking.showImage(frameConverter.convert(trackingOnly));
 
             frameNo = grabber.getFrameNumber();
 
@@ -419,7 +429,7 @@ public class SinglePlateTracker extends Tracker {
 
         }
         canvasFrame.dispose();
-        originalShower.dispose();
+        tracking.dispose();
         grabber.release();
     }
 
@@ -446,11 +456,15 @@ public class SinglePlateTracker extends Tracker {
 //        int n_objs = 8;
 //        {235,0,720,720};
 
-        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/2_tadpoles/IMG_5005.MOV";
-        int n_objs = 2;
+//        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/2_tadpoles/IMG_5005.MOV";
+//        int[] cropDims = new int[]{280,0,720,720};//230,10,700,700};//
+//        int n_objs = 2;
 
+        String testVideo = "data/videos/IMG_5126.MOV";
+        int n_objs = 4;
         //***** Note that x + width must be <= original image width, and y + height must be <= original image height**//
-        int[] cropDims = new int[]{280,0,720,720};//230,10,700,700};//
+        int[] cropDims = new int[]{160,40,650,650};//230,10,700,700};//
+
 
 
         SinglePlateTracker tracker = new SinglePlateTracker(n_objs, true,  cropDims, testVideo);
