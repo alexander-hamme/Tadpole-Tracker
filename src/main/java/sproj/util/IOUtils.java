@@ -141,8 +141,14 @@ public abstract class IOUtils {
     public static void writeDataToFile(List<Double> dataPoints, String fileName, String separator, boolean append) throws IOException {
 
         try (FileWriter writer = new FileWriter(fileName, append)) {
+            int idx = 0;
+            int sze = dataPoints.size();
             for(Double point: dataPoints) {
-                writer.write(point.toString() + separator);
+                if (idx++ != sze-1){        // don't write newline at end of file
+                    writer.write(point.toString() + separator);
+                } else {
+                    writer.write(point.toString());
+                }
             }
         }
     }
