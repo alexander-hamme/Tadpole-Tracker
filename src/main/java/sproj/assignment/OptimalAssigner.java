@@ -15,21 +15,20 @@ public class OptimalAssigner {
 
     private final boolean DEBUG = false;
 
-    public boolean ADD_NULL_FOR_EACH_ANIMAL = true;
-
-    private final int UNCOVERED = 0;
     private final int COVERED = 1;
+    private final int UNCOVERED = 0;
     private final int STARRED = 1;
     private final int UNSTARRED = 0;
     private final int PRIMED = 2;
     private final int UNPRIMED = 0;
 
-    private boolean foundOptimalSolution;
-
-    public double DEFAULT_COST_OF_NON_ASSIGNMENT = 30.0;     // this should be high enough to not be a minimum value in a row or col,
+    public static final double DEFAULT_COST_OF_NON_ASSIGNMENT = 30.0;     // this should be high enough to not be a minimum value in a row or col,
                                                             // but not high enough that it's worse than giving an assignment a value across the screen
-                                                            // TODO: find out the highest (true) distance that tadpoles can cover in a frame or two and make this a bit higher than that
+                                                            // TODO:       find out the highest (true) distance that tadpoles can cover in a frame or two and
+                                                            // todo        multiply  this by number of frames skipped
 
+    private DecimalFormat df = new DecimalFormat("#.###");
+    private boolean foundOptimalSolution;
     private double[][] costMatrix;
     private int[][] maskMatrix;
     private int[][] pathMatrix;
@@ -37,7 +36,6 @@ public class OptimalAssigner {
     private int[] colCover;
     private int rows, cols;
 
-    private DecimalFormat df = new DecimalFormat("#.###");
 
     public OptimalAssigner() {
 
@@ -49,10 +47,69 @@ public class OptimalAssigner {
         public AnimalWithFilter animal;
         public BoundingBox box;
 
-        public Assignment(AnimalWithFilter anml, BoundingBox box) {
+        private Assignment(AnimalWithFilter anml, BoundingBox box) {
             this.animal = anml;
             this.box = box;
         }
+    }
+
+
+    /**
+     * The length of the animals and boundingBoxes may be different at certain points in time.
+     * However, when adding fake values to make the matrix square, it should be kept in mind that
+     * the length of `animals` is always the true value.
+     *
+     * @param anmls
+     * @param boxes
+     * @return
+     */
+    public List<Assignment> getOptimalAssignments(final List<AnimalWithFilter> anmls, final List<BoundingBox> boxes) {
+
+        // Note: Animals are on rows, Bounding Boxes are on columns.
+
+        this.foundOptimalSolution = false;
+
+        final List<AnimalWithFilter> animals = new ArrayList<>(anmls.size() * 2);
+        final List<BoundingBox> boundingBoxes = new ArrayList<>(boxes.size() * 2);
+
+        for (AnimalWithFilter a : anmls) {
+            animals.add(a);
+            animals.add(null);
+        }
+
+        for (BoundingBox b : boxes) {
+            boundingBoxes.add(b);
+            boundingBoxes.add(null);
+        }
+
+//        List<Assignment> assignments = new ArrayList<>(animals.size());
+
+        int anmlsSize = animals.size();              // the true value of how many animals there are
+        int boxesSize = boundingBoxes.size();        // will usually be less than or equal to (only in rare cases more than) animals.size()
+
+        int dimension = Math.max(anmlsSize, boxesSize);
+        rows = cols = dimension;
+
+        costMatrix = new double[dimension][dimension];
+        maskMatrix = new int[dimension][dimension];
+        pathMatrix = new int[dimension*2 + 1][2];           // todo:     explain
+
+        rowCover = new int[rows];
+        colCover = new int[cols];
+
+        for (int i=0; i<anmlsSize; i++) {
+            for (int j=0; j<boxesSize; j++) {
+                costMatrix[i][j] = Double.parseDouble(df.format(costOfAssignment(animals.get(i), boundingBoxes.get(j))));
+            }
+        }
+
+        fillBlanks(anmlsSize, boxesSize);
+
+        int[][] solvedMatrix = munkresSolve();
+
+        // reset costmatrix, maskMatrix, etc by setting to null?
+
+        return parseSolvedMatrix(solvedMatrix, animals, boundingBoxes);
     }
 
     public double[][] getCostMatrix() {
@@ -125,63 +182,7 @@ public class OptimalAssigner {
 
 
 
-    /**
-     * The length of the animals and boundingBoxes may be different at certain points in time.
-     * However, when adding fake values to make the matrix square, it should be kept in mind that
-     * the length of `animals` is always the true value.
-     *
-     * @param anmls
-     * @param boxes
-     * @return
-     */
-    public List<Assignment> getOptimalAssignments(final List<AnimalWithFilter> anmls, final List<BoundingBox> boxes) {
 
-        // Note: Animals are on rows, Bounding Boxes are on columns.
-
-        this.foundOptimalSolution = false;
-
-        final List<AnimalWithFilter> animals = new ArrayList<>(anmls.size() * 2);
-        final List<BoundingBox> boundingBoxes = new ArrayList<>(boxes.size() * 2);
-
-        for (AnimalWithFilter a : anmls) {
-            animals.add(a);
-            animals.add(null);
-        }
-
-        for (BoundingBox b : boxes) {
-            boundingBoxes.add(b);
-            boundingBoxes.add(null);
-        }
-
-//        List<Assignment> assignments = new ArrayList<>(animals.size());
-
-        int anmlsSize = animals.size();              // the true value of how many animals there are
-        int boxesSize = boundingBoxes.size();        // will usually be less than or equal to (only in rare cases more than) animals.size()
-
-        int dimension = Math.max(anmlsSize, boxesSize);
-        rows = cols = dimension;
-
-        costMatrix = new double[dimension][dimension];
-        maskMatrix = new int[dimension][dimension];
-        pathMatrix = new int[dimension*2 + 1][2];           // todo:     explain
-
-        rowCover = new int[rows];
-        colCover = new int[cols];
-
-        for (int i=0; i<anmlsSize; i++) {
-            for (int j=0; j<boxesSize; j++) {
-                costMatrix[i][j] = Double.parseDouble(df.format(costOfAssignment(animals.get(i), boundingBoxes.get(j))));
-            }
-        }
-
-        fillBlanks(anmlsSize, boxesSize);
-
-        int[][] solvedMatrix = munkresSolve();
-
-        // reset costmatrix, maskMatrix, etc by setting to null?
-
-        return parseSolvedMatrix(solvedMatrix, animals, boundingBoxes);
-    }
 
 
 
@@ -337,22 +338,16 @@ public class OptimalAssigner {
         }
 
 
-        if (1==0) {
-
-
+        if (DEBUG) {
 
             System.out.println("Solved. Final Matrix:");
 
-            for (int r = 0; r < costMatrix.length; r++) {
-                System.out.println(Arrays.toString(costMatrix[r]));
+            for (double[] aCostMatrix : costMatrix) {
+                System.out.println(Arrays.toString(aCostMatrix));
             }
-
-            for (int r = 0; r < maskMatrix.length; r++) {
-                System.out.println(Arrays.toString(maskMatrix[r]));
+            for (int[] aMaskMatrix : maskMatrix) {
+                System.out.println(Arrays.toString(aMaskMatrix));
             }
-
-
-
         }
 
         // step 7
@@ -647,18 +642,18 @@ public class OptimalAssigner {
         ));
     }
 
-    public String matrix2dIntToString(int[][] matrix) {
+    public static String matrix2dIntToString(int[][] matrix) {
         StringBuilder stringBuilder = new StringBuilder();
-        for (int r=0; r<matrix.length; r++) {
-            stringBuilder.append(Arrays.toString(matrix[r]) + "\n");
+        for (int[] aMatrix : matrix) {
+            stringBuilder.append(Arrays.toString(aMatrix)).append("\n");
         }
         return stringBuilder.toString();
     }
 
     private String matrix2dToString(double[][] matrix) {
         StringBuilder stringBuilder = new StringBuilder();
-        for (int r=0; r<matrix.length; r++) {
-            stringBuilder.append(Arrays.toString(matrix[r]) + "\n");
+        for (double[] aMatrix : matrix) {
+            stringBuilder.append(Arrays.toString(aMatrix)).append("\n");
         }
         return stringBuilder.toString();
     }

@@ -186,60 +186,29 @@ public class SinglePlateTracker extends Tracker {
      */
     private void updateObjectTracking(List<BoundingBox> boundingBoxes, Mat frameImage, int frameNumber, long timePos) {
 
-        double min_proximity, current_proximity;
-
         // the length of the diagonal across the frame--> the largest possible displacement distance for an object in the image   todo move this elsewhere
-        int prox_start_val = (int) Math.round(Math.sqrt(Math.pow(frameImage.rows(), 2) + Math.pow(frameImage.cols(), 2)));
 
-        double displThresh = (frameNumber > NUMB_FRAMES_FOR_INIT) ? DISPL_THRESH : prox_start_val;   // start out with large proximity threshold to quickly snap to objects
-
-        double dt = 1.0 / videoFrameRate;
-
-
-        // TODO:   instead of looping through either the bounding boxes or Animals, you need to loop through them together & minimize the total
-        // todo    cost of assignments.  this may require polynomial time, but for such a small number of objects it shouldn't make much difference.
-
-        /*
-        double numberOfComputations = this.animals.size() * boundingBoxes.size();
-
-        HashMap<AnimalWithFilter, BoundingBox> optimalAssignments = new HashMap<>(this.animals.size());
-
-
-
-        double[] costMatrix = new double[] {
-
-        }
-
-
-        double maxCostStartValue = prox_start_val * this.animals.size();
-        double minimumCost = maxCostStartValue;
-        double currentCost;
-        for (int i=0; i<numberOfComputations; i++) {
-
-            // cost is defined as the Euclidean distance between the Animal and the BoundingBox
-
-
-        }
-        */
-
-        // assign random boxes at start
         if (frameNumber <= NUMB_FRAMES_FOR_INIT) {
+
+            int prox_start_val = (int) Math.round(Math.sqrt(Math.pow(frameImage.rows(), 2) + Math.pow(frameImage.cols(), 2)));
+
             for (AnimalWithFilter anml : animals) {
                 anml.setCurrCostNonAssignnmnt(prox_start_val);
             }
+
         }
-            /*optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = prox_start_val;
+
+        double dt = 1.0 / videoFrameRate;
+
+        /*optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = prox_start_val;
             optimalAssigner.ADD_NULL_FOR_EACH_ANIMAL = false;
         } else {
             optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = AnimalWithFilter.DEFAULT_COST_OF_NON_ASSIGNMENT;
             optimalAssigner.ADD_NULL_FOR_EACH_ANIMAL = true;
         }*/
 
-        // TODO  --> each animal should have its own dynamic COST_OF_NON_ASSIGNMENT!!!
 
-
-
-
+        // each animal has its own dynamic COST_OF_NON_ASSIGNMENT
         for (BoundingBox box : boundingBoxes) {
             if (DRAW_RECTANGLES) {
                 // this rectangle drawing will be removed later  (?)
@@ -254,7 +223,6 @@ public class SinglePlateTracker extends Tracker {
 
             if (assignment.animal == null) { continue; }
 
-//todo  if (assignment.box == null || ! assignmentIsReasonable(assignment.animal, assignment.box, frameNumber)) {       // no assignment
             if (assignment.box == null) {       // no assignment
                 assignment.animal.predictTrajectory(dt, timePos);
             } else {

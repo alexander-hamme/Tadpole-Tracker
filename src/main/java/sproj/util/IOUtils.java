@@ -125,6 +125,10 @@ public abstract class IOUtils {
 
                 Iterator<double[]> pointsIterator = animal.getDataPointsIterator();
 
+<<<<<<< HEAD
+=======
+                //writer.write(String.format("Animal Number %d, RGBA color label: %s\n", animals.indexOf(animal)+1, animal.color.toString()));
+>>>>>>> bb7c1b6757078e15e1b93f3824d524399e9e7017
                 writer.write(String.format("Animal Number %d|BGRA color label: %s\n", animals.indexOf(animal)+1, animal.color.toString()));
                 while (pointsIterator.hasNext()) {
                     double[] point = pointsIterator.next();
