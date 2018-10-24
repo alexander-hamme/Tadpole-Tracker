@@ -125,7 +125,8 @@ public abstract class IOUtils {
 
                 Iterator<double[]> pointsIterator = animal.getDataPointsIterator();
 
-                writer.write(String.format("Animal Number %d, RGBA color label: %s\n", animals.indexOf(animal)+1, animal.color.toString()));
+                //writer.write(String.format("Animal Number %d, RGBA color label: %s\n", animals.indexOf(animal)+1, animal.color.toString()));
+                writer.write(String.format("Animal Number %d|BGRA color label: %s\n", animals.indexOf(animal)+1, animal.color.toString()));
                 while (pointsIterator.hasNext()) {
                     double[] point = pointsIterator.next();
                     writer.write(point[0] + "," + point[1] + "\n");

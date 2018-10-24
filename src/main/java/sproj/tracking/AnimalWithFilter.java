@@ -76,7 +76,7 @@ public class AnimalWithFilter {
 
         this.x = x; this.y = y;
         applyBoundsConstraints();
-        dataPoints.add(new double[]{this.x, this.y, timePos});
+        dataPoints.add(new double[]{timePos, this.x, this.y});
         linePoints.add(new int[]{this.x, this.y});   // calls the addFirst() method, adds to front of Deque
         updateVelocity(dt);
         updateKFilter();
