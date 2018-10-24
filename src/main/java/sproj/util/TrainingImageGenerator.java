@@ -308,13 +308,18 @@ public class TrainingImageGenerator {
     }
 
 
-    public static void generateWarpedImages(String[] args) throws IOException {
-        String imgDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-18-18/unwarped";
-        String saveDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-18-18/";
+    public static void main(String[] args) throws IOException, InterruptedException {
+//        generateWarpedImages();
+        generateImages();
+    }
+
+    public static void generateWarpedImages() throws IOException {
+        String imgDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-24-18/unwarped";
+        String saveDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-24-18/";
         File[] files = new File(imgDir).listFiles();
 
         String saveName;
-        int saveIndx = 568;
+        int saveIndx = 708;
 
         if (files != null && files.length > 0) {
 
@@ -331,11 +336,12 @@ public class TrainingImageGenerator {
         }
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void generateImages() throws IOException, InterruptedException {
 
         TrainingImageGenerator imageGenerator = new TrainingImageGenerator();
 
-        final String saveDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-18-18";
+//        final String saveDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-18-18";
+        final String saveDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-24-18";
         int imgNo = 568;
         int[] numberOfTadpoles = {1, 2, 4, 8};
 
@@ -346,18 +352,20 @@ public class TrainingImageGenerator {
 //        if (args.length < 1) {
         String[] fileDescriptors = new String[]{
 
+                "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/data/videos/petriDishVids.txt",
+
                 /*String.format(
                         "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
                         numberOfTadpoles[0], numberOfTadpoles[0]),
                 String.format(
                         "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
-                        numberOfTadpoles[1], numberOfTadpoles[1]),*/
+                        numberOfTadpoles[1], numberOfTadpoles[1]),
                 String.format(
                         "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
                         numberOfTadpoles[2], numberOfTadpoles[2]),
                 String.format(
                         "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
-                        numberOfTadpoles[3], numberOfTadpoles[3]),
+                        numberOfTadpoles[3], numberOfTadpoles[3]),*/
         };
 
         for (String fileDesc : fileDescriptors) {
