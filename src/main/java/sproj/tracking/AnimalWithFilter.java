@@ -11,6 +11,10 @@ import java.util.Iterator;
 
 public class AnimalWithFilter {
 
+    public final double DEFAULT_COST_OF_NON_ASSIGNMENT = 30.0;     // this should be high enough to not be a minimum value in a row or col,
+    // but not high enough that it's worse than giving an assignment a value across the screen
+    // TODO: find out the highest (true) distance that tadpoles can cover in a frame or two and make this a bit higher than that
+
     private final boolean DEBUG = false;
 
     public final Scalar color;
@@ -30,6 +34,9 @@ public class AnimalWithFilter {
     public KalmanFilter trackingFilter;
     private int[] positionBounds = new int[4];
 
+    private int timeStepsPredicted = 0;
+    private double currentCostNonAssignnmnt;
+
     private boolean PREDICT_WITH_VELOCITY = false;
 
     public AnimalWithFilter(int x, int y, int[] positionBounds, Scalar clr, KalmanFilter kFilter) {
@@ -40,10 +47,12 @@ public class AnimalWithFilter {
         linePoints = new CircularFifoQueue<>(LINE_POINTS_SIZE);
         dataPoints = new ArrayList<>(DATA_BUFFER_ARRAY_SIZE);
         trackingFilter = kFilter;
+
+        this.currentCostNonAssignnmnt = DEFAULT_COST_OF_NON_ASSIGNMENT;
     }
 
 
-    public void updateLocation(int x, int y, double dt, long timePos) {
+    public void updateLocation(int x, int y, double dt, long timePos, boolean isPredicted) {
 
         this.x = x; this.y = y;
         applyBoundsConstraints();

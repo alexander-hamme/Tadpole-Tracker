@@ -139,7 +139,6 @@ public class OptimalAssigner {
 
         this.foundOptimalSolution = false;
 
-
         final List<AnimalWithFilter> animals = new ArrayList<>(anmls.size() * 2);
         final List<BoundingBox> boundingBoxes = new ArrayList<>(boxes.size() * 2);
 
@@ -152,7 +151,6 @@ public class OptimalAssigner {
             boundingBoxes.add(b);
             boundingBoxes.add(null);
         }
-
 
 //        List<Assignment> assignments = new ArrayList<>(animals.size());
 

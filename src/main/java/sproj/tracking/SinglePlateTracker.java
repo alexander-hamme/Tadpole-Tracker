@@ -231,12 +231,7 @@ public class SinglePlateTracker extends Tracker {
             optimalAssigner.ADD_NULL_FOR_EACH_ANIMAL = true;
         }
 
-
-
-
-
         // TODO  --> each animal should have its own dynamic COST_OF_NON_ASSIGNMENT!!!
-
 
 
         for (BoundingBox box : boundingBoxes) {
@@ -245,7 +240,6 @@ public class SinglePlateTracker extends Tracker {
                 rectangle(frameImage, new Point(box.topleftX, box.topleftY),
                         new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
             }
-
         }
 
         final List<OptimalAssigner.Assignment> assignments = optimalAssigner.getOptimalAssignments(animals, boundingBoxes);
@@ -335,8 +329,6 @@ public class SinglePlateTracker extends Tracker {
 
         CanvasFrame tracking = new CanvasFrame("Tracker Display");
         tracking.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-
-
 
         int msDelay = 10;
         List<BoundingBox> boundingBoxes;
