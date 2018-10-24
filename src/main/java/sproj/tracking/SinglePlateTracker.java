@@ -224,14 +224,20 @@ public class SinglePlateTracker extends Tracker {
 
         // assign random boxes at start
         if (frameNumber <= NUMB_FRAMES_FOR_INIT) {
-            optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = prox_start_val;
+            for (AnimalWithFilter anml : animals) {
+                anml.setCurrCostNonAssignnmnt(prox_start_val);
+            }
+        }
+            /*optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = prox_start_val;
             optimalAssigner.ADD_NULL_FOR_EACH_ANIMAL = false;
         } else {
-            optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = 40;
+            optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = AnimalWithFilter.DEFAULT_COST_OF_NON_ASSIGNMENT;
             optimalAssigner.ADD_NULL_FOR_EACH_ANIMAL = true;
-        }
+        }*/
 
         // TODO  --> each animal should have its own dynamic COST_OF_NON_ASSIGNMENT!!!
+
+
 
 
         for (BoundingBox box : boundingBoxes) {
@@ -253,7 +259,7 @@ public class SinglePlateTracker extends Tracker {
                 assignment.animal.predictTrajectory(dt, timePos);
             } else {
                 assignment.animal.updateLocation(
-                        assignment.box.centerX, assignment.box.centerY, dt, timePos
+                        assignment.box.centerX, assignment.box.centerY, dt, timePos, false
                 );
             }
         }
