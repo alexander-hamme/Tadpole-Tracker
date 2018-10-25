@@ -48,7 +48,7 @@ public class SinglePlateTracker extends Tracker {
     private int[] cropDimensions;       // array of four ints, of the form:  [center_x, center_y, width, height]
     private int videoFrameWidth;
     private int videoFrameHeight;
-    private int[] positionBounds;
+    private int[] positionBounds;       // x1, x2, y1, y2
 
 
     private final int COST_OF_NON_ASSIGNMENT = 50;
@@ -59,24 +59,26 @@ public class SinglePlateTracker extends Tracker {
 //    private List<DetectedObject> detectedObjects;
 
 
-    public SinglePlateTracker(int n_objs, boolean drawShapes, int[] crop, String videoPath) throws IOException {
+    public SinglePlateTracker(final int n_objs, final boolean drawShapes,
+                              final int[] crop, String videoPath) throws IOException {
 
         this.numb_of_anmls = n_objs;
         this.DRAW_ANML_TRACKS = drawShapes;
         this.CANVAS_NAME = "Tadpole SinglePlateTracker";
-
+        //                       x        y        width    height
+        this.cropRect = new Rect(crop[0], crop[1], crop[2], crop[3]);
         this.cropDimensions = crop;
-        this.videoFrameWidth = cropDimensions[2];
-        this.videoFrameHeight = cropDimensions[3];
-        this.cropRect = new Rect(cropDimensions[0], cropDimensions[1], cropDimensions[2], cropDimensions[3]);  // use Range instead of Rect?
 
-        this.positionBounds = new int[]{0, videoFrameWidth, 0, videoFrameHeight};
+        this.videoFrameWidth = crop[2];
+        this.videoFrameHeight = crop[3];
 
-        logger.info("initializing");
+        this.positionBounds = new int[]{0, videoFrameWidth, 0, videoFrameHeight};  // x1, x2, y1, y2
+
+        logger.info("initializing tracker...");
         initializeFrameGrabber(videoPath);      // test if video file is valid and readable first
-        logger.info("creating animals");
+//        logger.info("creating animal objects");
         createAnimalObjects();
-        logger.info("warming up");
+//        logger.info("warming up model");
         yoloModelContainer = new YOLOModelContainer();  // load model
     }
 
@@ -277,17 +279,21 @@ public class SinglePlateTracker extends Tracker {
     /**
      * OLD CODE    for quick testing purposes only
      *
-     * @param videoPath
      * @throws IOException
      * @throws InterruptedException
      */
 
 
+    /**
+     * Grabber has been initialized by the time this function is called
+     * @throws IOException
+     * @throws InterruptedException
+     */
+//    public void trackVideo(String videoPath) throws IOException, InterruptedException {
+    public void trackVideo() throws IOException, InterruptedException {
 
-    public void trackVideo(String videoPath) throws IOException, InterruptedException {
-
-        grabber = new FFmpegFrameGrabber(videoPath);
-        grabber.start();    // open video file
+//        grabber = new FFmpegFrameGrabber(videoPath);
+//        grabber.start();    // open video file
 
         try {
             track(cropRect);
@@ -431,11 +437,9 @@ public class SinglePlateTracker extends Tracker {
         //***** Note that x + width must be <= original image width, and y + height must be <= original image height**//
         int[] cropDims = new int[]{160,40,650,650};//230,10,700,700};//
 
-
-
         SinglePlateTracker tracker = new SinglePlateTracker(n_objs, true,  cropDims, testVideo);
-        tracker.trackVideo(testVideo);
+        tracker.trackVideo();
 
-        writeAnimalPointsToFile(tracker.animals, "/home/ah2166/Documents/sproj/tracking_data/motionData/testData1.dat", false);
+        writeAnimalPointsToFile(tracker.animals, "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/data/tracking_data/motionData/trackingData.dat", false);
     }
 }

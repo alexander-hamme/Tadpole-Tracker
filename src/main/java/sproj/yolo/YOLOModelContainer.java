@@ -90,7 +90,8 @@ public class YOLOModelContainer {
     public YOLOModelContainer(File modelFilePath) throws IOException {
 
         try {
-            logger.info("Loading model...");
+//            logger.info("Loading model...");
+            System.out.print("Loading model...");
             yoloModel = ModelSerializer.restoreComputationGraph(modelFilePath);
         } catch (FileNotFoundException e) {
             throw new IOException("Invalid file path to model: " + modelFilePath, e);
@@ -98,7 +99,8 @@ public class YOLOModelContainer {
             throw new IOException("Model file could not be restored: " + modelFilePath, e);
         }
 
-        logger.info("Loaded.");
+//        logger.info("Loaded.");
+        System.out.print("\rModel loaded.");
         warmupModel(WARMUP_ITERATIONS);
         outputLayer = (Yolo2OutputLayer) yoloModel.getOutputLayer(0);
         //        System.out.println(yoloModel.summary());

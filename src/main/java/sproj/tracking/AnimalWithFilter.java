@@ -32,15 +32,15 @@ public class AnimalWithFilter {
     public double currentHeading;
     public MovementState movementState;
     public KalmanFilter trackingFilter;
-    private int[] positionBounds = new int[4];
+    private int[] positionBounds;
 
     private int timeStepsPredicted;         // count of consecutive time steps that have not had true updates
     private double currCostNonAssignnmnt;
-    private final double MAXCOST = 1000.0;
+    private double MAXCOST;
 
     private boolean PREDICT_WITH_VELOCITY = false;
 
-    public AnimalWithFilter(int x, int y, int[] positionBounds, Scalar clr, KalmanFilter kFilter) {
+    public AnimalWithFilter(int x, int y, final int[] positionBounds, final Scalar clr, KalmanFilter kFilter) {
         this.x = x; this.y = y;
         this.positionBounds = positionBounds;
         currentHeading = 0;
@@ -51,6 +51,14 @@ public class AnimalWithFilter {
 
         this.timeStepsPredicted = 0;
         this.currCostNonAssignnmnt = DEFAULT_COST_OF_NON_ASSIGNMENT;
+
+        this.MAXCOST = 100.0;
+                /*(double) Math.round(
+                Math.pow(
+                    Math.pow(positionBounds[1] - positionBounds[0], 2)
+                  + Math.pow(positionBounds[3] - positionBounds[2], 2),
+                0.5)
+        );*/
     }
 
     public void setCurrCostNonAssignnmnt(final double val) {

@@ -47,7 +47,7 @@ public class OptimalAssigner {
         public AnimalWithFilter animal;
         public BoundingBox box;
 
-        private Assignment(AnimalWithFilter anml, BoundingBox box) {
+        public Assignment(AnimalWithFilter anml, BoundingBox box) {
             this.animal = anml;
             this.box = box;
         }

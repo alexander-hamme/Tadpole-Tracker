@@ -79,12 +79,11 @@ public class TrackerApp extends Application {
         numb_objs_to_track = 5;
         drawShapes = true;
 
-
         //***** Note that x + width must be <= original image width, and y + height must be <= original image height**//
         crop = new int[]{60,210,500,500};
             // video file IMG_3086  -->  {60,210,500,500}
             // video file IMG_3085  -->  {550, 160, 500, 500}
-        videoPath = "src/main/resources/videos/IMG_3085.MOV";
+        videoPath = "data/videos/IMG_5126.MOV";
     }
 
     private void setUpGraphics(Stage stage) {
