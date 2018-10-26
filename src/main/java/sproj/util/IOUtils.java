@@ -266,21 +266,24 @@ public abstract class IOUtils {
     }
 
     public static void main(String[] args) throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
-        String modelDir = "/home/ah2166/Documents/darknet/modelConversion/convertedModels/";
+        String modelDir = "/home/ah2166/Documents/darknet/modelConversion/convertedModels";
         String savePath = "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/src/main/resources/inference/";
 
 //        int its = 10000;
 //        while (its <= 18000) {
-        for (int its = 10000; its < 19000; ) {
+        int minModel = 10000;
+        int maxModel = 13000;
 
-            System.out.println("Converting model " + (its  % 10000 / 1000 + 1) + " of " + 19 % 10);
+        for (int its = minModel; its < maxModel; ) {
+
+            System.out.println("Converting model " + (its  % minModel / 1000 + 1) + " of " + (maxModel - minModel) / 1000);
 
             /*String yoloModelFile = String.format("%s/%dits/yolov2_%dits.h5", modelDir, its, its);
             double[][] priorBoxes = {{1.3221, 1.73145}, {3.19275, 4.00944}, {5.05587, 8.09892}, {9.47112, 4.84053}, {11.2364, 10.0071}};
 
             convertYAD2KWeights(yoloModelFile,
-                    savePath + String.format("yolov2_%dits.zip", its), priorBoxes);*/
-            its += 1000;
+                    savePath + String.format("yolov2_%ditsNEW.zip", its), priorBoxes);
+            its += 1000;*/
         }
     }
 }

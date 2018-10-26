@@ -128,7 +128,8 @@ public class OptimalAssigner {
     }
 
 
-    private List<Assignment> parseSolvedMatrix(final int[][] solvedMatrix, final List<AnimalWithFilter> animals, final List<BoundingBox> boundingBoxes) {
+    private List<Assignment> parseSolvedMatrix(final int[][] solvedMatrix, final List<AnimalWithFilter> animals,
+                                               final List<BoundingBox> boundingBoxes) {
 
         ArrayList<Assignment> assignments = new ArrayList<>();
 
@@ -197,7 +198,8 @@ public class OptimalAssigner {
      * @param boundingBoxes
      * @return
      */
-    public List<Assignment> getOptimalAssignmentsWithoutExtraNulls(final List<AnimalWithFilter> animals, final List<BoundingBox> boundingBoxes) {
+    public List<Assignment> getOptimalAssignmentsWithoutExtraNulls(
+            final List<AnimalWithFilter> animals, final List<BoundingBox> boundingBoxes) {
 
         // Note: Animals are on rows, Bounding Boxes are on columns.
 
@@ -704,7 +706,8 @@ public class OptimalAssigner {
 
 
 
-    private List<Assignment> parseSolvedMatrixORIGINAL(final int[][] solvedMatrix, final List<AnimalWithFilter> animals, final List<BoundingBox> boundingBoxes) {
+    private List<Assignment> parseSolvedMatrixORIGINAL(final int[][] solvedMatrix, final List<AnimalWithFilter> animals,
+                                                       final List<BoundingBox> boundingBoxes) {
 
         ArrayList<Assignment> assignments = new ArrayList<>();
 

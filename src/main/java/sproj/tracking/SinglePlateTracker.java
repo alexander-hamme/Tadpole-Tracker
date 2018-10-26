@@ -344,12 +344,12 @@ public class SinglePlateTracker extends Tracker {
 
             cvtColor(frameImg, frameImg, COLOR_RGB2GRAY);
 //            enhanceImageMethod2(frameImg);
-//            enhanceImageMethod3(frameImg);
+            enhanceImageMethod3(frameImg);
             cvtColor(frameImg, frameImg, COLOR_GRAY2RGB);
 
             cvtColor(trackingOnly, trackingOnly, COLOR_RGB2GRAY);
-//            enhanceImageMethod3(trackingOnly);
-            enhanceImageMethod2(trackingOnly);
+//            enhanceImageMethod2(trackingOnly);
+            enhanceImageMethod3(trackingOnly);
             cvtColor(trackingOnly, trackingOnly, COLOR_GRAY2RGB);
 //            resize(trackingOnly, trackingOnly, new Size(IMG_WIDTH, IMG_HEIGHT));
 
