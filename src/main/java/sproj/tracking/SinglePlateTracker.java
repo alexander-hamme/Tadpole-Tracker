@@ -432,10 +432,14 @@ public class SinglePlateTracker extends Tracker {
 //        int[] cropDims = new int[]{280,0,720,720};//230,10,700,700};//
 //        int n_objs = 2;
 
-        String testVideo = "data/videos/IMG_5126.MOV";
-        int n_objs = 4;
+//        String testVideo = "data/videos/IMG_5126.MOV";
+//        int n_objs = 4;
+
+        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/6tads/IMG_5214.MOV";
+        int n_objs = 6;
+
         //***** Note that x + width must be <= original image width, and y + height must be <= original image height**//
-        int[] cropDims = new int[]{160,40,650,650};//230,10,700,700};//
+        int[] cropDims = new int[]{245,30,660,660};//230,10,700,700};//
 
         SinglePlateTracker tracker = new SinglePlateTracker(n_objs, true,  cropDims, testVideo);
         tracker.trackVideo();

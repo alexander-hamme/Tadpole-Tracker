@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class IOUtils {
 
@@ -139,6 +140,20 @@ public abstract class IOUtils {
         }
     }
 
+    public static void writeLinesToFile(List<String> lines, String fileName, String separator, boolean append) throws IOException {
+
+        try (FileWriter writer = new FileWriter(fileName, append)) {
+            int idx = 0;
+            int size = lines.size();
+            for(String point: lines) {
+                if (idx++ != size-1){        // don't write newline at end of file
+                    writer.write(point + separator);
+                } else {
+                    writer.write(point);
+                }
+            }
+        }
+    }
 
     public static void writeDataToFile(List<Double> dataPoints, String fileName, String separator, boolean append) throws IOException {
 
@@ -155,23 +170,48 @@ public abstract class IOUtils {
         }
     }
 
+    public static void readYoloTrainingLog(String fileName, String saveName) throws IOException {
+
+        List<String> loss = new ArrayList<>();
+
+        try (Stream<String> stream = Files.lines(Paths.get(fileName))) {
+            stream.forEach(line -> {
+
+                if (line.contains("images")) {
+
+                    String n1 = line.split(":")[0];
+                    String n2 = line.split(",")[1].trim().split(" ")[0];
+
+
+                    loss.add(n1 + "," + n2);
+                    /*try {
+
+                        loss.add(new double[]{
+                                Double.parseDouble(n1),
+                                Double.parseDouble(n2)
+                        });
+                    } catch (NumberFormatException ignored) {
+
+                    }*/
+                }
+            });
+        }
+
+        writeLinesToFile(loss, saveName, "\n", false);
+    }
+
 
     public static List<String> readLinesFromFile(File file) throws IOException {
 
         List<String> lines = new ArrayList<>();
 
-        LineIterator it = FileUtils.lineIterator(file, "UTF-8");
-        try {
+        try (LineIterator it = FileUtils.lineIterator(file, "UTF-8")) {
             while (it.hasNext()) {
                 lines.add(it.nextLine());
             }
-        } finally {
-            it.close();
         }
         return lines;
     }
-
-
 
     static HashedMap<String, List<String>> parseArgs(String[] args) {
 
@@ -265,25 +305,33 @@ public abstract class IOUtils {
         }
     }
 
-    public static void main(String[] args) throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
+    public static void main(String[] args) throws IOException {
+        readYoloTrainingLog(
+                "/home/ah2166/Documents/sproj/python/graphing/training/trainingOutput2.log",
+                "/home/ah2166/Documents/sproj/python/graphing/training/trainingOutputPoints.dat"
+                );
+    }
+
+    public static void main1(String[] args) throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
         String modelDir = "/home/ah2166/Documents/darknet/modelConversion/convertedModels";
         String savePath = "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/src/main/resources/inference/";
 
 //        int its = 10000;
 //        while (its <= 18000) {
         int minModel = 10000;
-        int maxModel = 13000;
+        int maxModel = 17000;
 
         for (int its = minModel; its < maxModel; ) {
 
             System.out.println("Converting model " + (its  % minModel / 1000 + 1) + " of " + (maxModel - minModel) / 1000);
 
-            /*String yoloModelFile = String.format("%s/%dits/yolov2_%dits.h5", modelDir, its, its);
+            String yoloModelFile = String.format("%s/%dits/yolov2_%d.h5", modelDir, its, its);
             double[][] priorBoxes = {{1.3221, 1.73145}, {3.19275, 4.00944}, {5.05587, 8.09892}, {9.47112, 4.84053}, {11.2364, 10.0071}};
 
             convertYAD2KWeights(yoloModelFile,
-                    savePath + String.format("yolov2_%ditsNEW.zip", its), priorBoxes);
-            its += 1000;*/
+                    savePath + String.format("yolov2_%d.zip", its), priorBoxes);
+            its += 1000;
+            //*/
         }
     }
 }

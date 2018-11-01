@@ -36,7 +36,7 @@ public class AnimalWithFilter {
 
     private int timeStepsPredicted;         // count of consecutive time steps that have not had true updates
     private double currCostNonAssignnmnt;
-    private double MAXCOST;
+    private final double MAXCOST = 1000.0;  // better value?
 
     private boolean PREDICT_WITH_VELOCITY = false;
 
@@ -52,7 +52,7 @@ public class AnimalWithFilter {
         this.timeStepsPredicted = 0;
         this.currCostNonAssignnmnt = DEFAULT_COST_OF_NON_ASSIGNMENT;
 
-        this.MAXCOST = 100.0;
+//        this.MAXCOST = 100.0;
                 /*(double) Math.round(
                 Math.pow(
                     Math.pow(positionBounds[1] - positionBounds[0], 2)
