@@ -28,8 +28,6 @@ import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.IUpdater;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import sproj.tracking.Animal;
 import sproj.tracking.AnimalWithFilter;
 
@@ -38,13 +36,14 @@ import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class IOUtils {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(IOUtils.class);
     private IOUtils() {}
 
     public static INDArray loadImage(File imgFile) throws IOException {
@@ -125,10 +124,12 @@ public abstract class IOUtils {
 
                 Iterator<double[]> pointsIterator = animal.getDataPointsIterator();
 
-                writer.write(String.format("Animal Number %d, RGBA color label: %s\n", animals.indexOf(animal)+1, animal.color.toString()));
+                //writer.write(String.format("Animal Number %d, RGBA color label: %s\n", animals.indexOf(animal)+1, animal.color.toString()));
+                writer.write(String.format("Animal Number %d|BGRA color label: %s\n", animals.indexOf(animal)+1, animal.color.toString()));
                 while (pointsIterator.hasNext()) {
                     double[] point = pointsIterator.next();
-                    writer.write(point[0] + "," + point[1] + "\n");
+                    writer.write(point[0] + "," + point[1] + "," + point[2] + "\n");
+//                    writer.write(String.join(",", point) + "\n");
                 }
                 if (animals.indexOf(animal) < animals.size()-1) {    // add newline after all but the last animal
                     writer.write("\n");
@@ -137,6 +138,100 @@ public abstract class IOUtils {
         }
     }
 
+    public static <T> void writeNestedObjArraysToFile(List<T[][]> nestedArrs, String fileName, String separator,
+                                                boolean append) throws IOException {
+
+        try (FileWriter writer = new FileWriter(fileName, append)) {
+
+            int idx = 0;
+            int size = nestedArrs.size();
+
+            for(T[][] arr: nestedArrs) {
+
+                int i = 0;
+                int sz = arr.length;
+
+                for (T[] obj : arr) {
+
+                    String toWrite = Arrays.toString(obj);
+
+                    if (i++ != sz - 1) {        // don't write separator at end of line
+                        writer.write(toWrite + separator);
+                    } else {
+                        writer.write(toWrite);
+                    }
+                }
+                /*if (idx++ != size - 1) {        // don't write newline at end of file
+                    writer.write("\n");
+                }*/
+                writer.write("\n");
+            }
+        }
+
+    }
+
+    public static <T> void writeObjArraysToFile(List<T[]> objArrays, String fileName, String separator,
+                                                boolean append) throws IOException {
+
+        try (FileWriter writer = new FileWriter(fileName, append)) {
+
+            int idx = 0;
+            int size = objArrays.size();
+
+            for(T[] arr: objArrays) {
+
+                int i = 0;
+                int sz = arr.length;
+
+                for (T obj : arr) {
+
+                    String toWrite = obj.toString();
+
+                    if (i++ != sz - 1) {        // don't write separator at end of line
+                        writer.write(toWrite + separator);
+                    } else {
+                        writer.write(toWrite);
+                    }
+                }
+                /*if (idx++ != size - 1) {        // don't write newline at end of file
+                    writer.write("\n");
+                }*/
+                writer.write("\n");
+            }
+        }
+    }
+
+    public static <T> void writeObjectsToFile(List<T> objects, String fileName, String separator,
+                                          boolean append) throws IOException {
+        try (FileWriter writer = new FileWriter(fileName, append)) {
+            int idx = 0;
+            int size = objects.size();
+            for(T point: objects) {
+                String toWrite = point.toString();
+                if (idx++ != size-1){        // don't write newline at end of file
+                    writer.write(toWrite + separator);
+                } else {
+                    writer.write(toWrite);
+                }
+            }
+        }
+    }
+
+    public static void writeLinesToFile(List<String> lines, String fileName, String separator,
+                                        boolean append) throws IOException {
+
+        try (FileWriter writer = new FileWriter(fileName, append)) {
+            int idx = 0;
+            int size = lines.size();
+            for(String point: lines) {
+                if (idx++ != size-1){        // don't write newline at end of file
+                    writer.write(point + separator);
+                } else {
+                    writer.write(point);
+                }
+            }
+        }
+    }
 
     public static void writeDataToFile(List<Double> dataPoints, String fileName, String separator, boolean append) throws IOException {
 
@@ -153,23 +248,48 @@ public abstract class IOUtils {
         }
     }
 
+    public static void readYoloTrainingLog(String fileName, String saveName) throws IOException {
+
+        List<String> loss = new ArrayList<>();
+
+        try (Stream<String> stream = Files.lines(Paths.get(fileName))) {
+            stream.forEach(line -> {
+
+                if (line.contains("images")) {
+
+                    String n1 = line.split(":")[0];
+                    String n2 = line.split(",")[1].trim().split(" ")[0];
+
+
+                    loss.add(n1 + "," + n2);
+                    /*try {
+
+                        loss.add(new double[]{
+                                Double.parseDouble(n1),
+                                Double.parseDouble(n2)
+                        });
+                    } catch (NumberFormatException ignored) {
+
+                    }*/
+                }
+            });
+        }
+
+        writeLinesToFile(loss, saveName, "\n", false);
+    }
+
 
     public static List<String> readLinesFromFile(File file) throws IOException {
 
         List<String> lines = new ArrayList<>();
 
-        LineIterator it = FileUtils.lineIterator(file, "UTF-8");
-        try {
+        try (LineIterator it = FileUtils.lineIterator(file, "UTF-8")) {
             while (it.hasNext()) {
                 lines.add(it.nextLine());
             }
-        } finally {
-            it.close();
         }
         return lines;
     }
-
-
 
     static HashedMap<String, List<String>> parseArgs(String[] args) {
 
@@ -263,22 +383,33 @@ public abstract class IOUtils {
         }
     }
 
-    public static void main(String[] args) throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
-        String modelDir = "/home/ah2166/Documents/darknet/modelConversion/convertedModels/";
+    public static void main(String[] args) throws IOException {
+        readYoloTrainingLog(
+                "/home/ah2166/Documents/sproj/python/graphing/training/trainingOutput2.log",
+                "/home/ah2166/Documents/sproj/python/graphing/training/trainingOutputPoints.dat"
+                );
+    }
+
+    public static void main1(String[] args) throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
+        String modelDir = "/home/ah2166/Documents/darknet/modelConversion/convertedModels";
         String savePath = "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/src/main/resources/inference/";
 
 //        int its = 10000;
 //        while (its <= 18000) {
-        for (int its = 10000; its < 19000; ) {
+        int minModel = 10000;
+        int maxModel = 17000;
 
-            System.out.println("Converting model " + (its  % 10000 / 1000 + 1) + " of " + 19 % 10);
+        for (int its = minModel; its < maxModel; ) {
 
-            /*String yoloModelFile = String.format("%s/%dits/yolov2_%dits.h5", modelDir, its, its);
+            System.out.println("Converting model " + (its  % minModel / 1000 + 1) + " of " + (maxModel - minModel) / 1000);
+
+            String yoloModelFile = String.format("%s/%dits/yolov2_%d.h5", modelDir, its, its);
             double[][] priorBoxes = {{1.3221, 1.73145}, {3.19275, 4.00944}, {5.05587, 8.09892}, {9.47112, 4.84053}, {11.2364, 10.0071}};
 
             convertYAD2KWeights(yoloModelFile,
-                    savePath + String.format("yolov2_%dits.zip", its), priorBoxes);*/
+                    savePath + String.format("yolov2_%d.zip", its), priorBoxes);
             its += 1000;
+            //*/
         }
     }
 }

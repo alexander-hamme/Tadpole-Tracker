@@ -3,7 +3,7 @@ package sproj.tracking;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.math3.filter.KalmanFilter;
 import org.bytedeco.javacpp.opencv_core.Scalar;
-import sproj.util.BoundingBox;
+import sproj.assignment.OptimalAssigner;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,6 +12,10 @@ import java.util.Iterator;
 public class AnimalWithFilter {
 
     private final boolean DEBUG = false;
+
+    private final double DEFAULT_COST_OF_NON_ASSIGNMENT = OptimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT;     // this should be high enough to not be a minimum value in a row or col,
+    // but not high enough that it's worse than giving an assignment a value across the screen
+    // TODO: find out the highest (true) distance that tadpoles can cover in a frame or two and make this a bit higher than that
 
     public final Scalar color;
     public final int LINE_THICKNESS = 2;
@@ -28,11 +32,15 @@ public class AnimalWithFilter {
     public double currentHeading;
     public MovementState movementState;
     public KalmanFilter trackingFilter;
-    private int[] positionBounds = new int[4];
+    private int[] positionBounds;
+
+    private int timeStepsPredicted;         // count of consecutive time steps that have not had true updates
+    private double currCostNonAssignnmnt;
+    private final double MAXCOST = 1000.0;  // better value?
 
     private boolean PREDICT_WITH_VELOCITY = false;
 
-    public AnimalWithFilter(int x, int y, int[] positionBounds, Scalar clr, KalmanFilter kFilter) {
+    public AnimalWithFilter(int x, int y, final int[] positionBounds, final Scalar clr, KalmanFilter kFilter) {
         this.x = x; this.y = y;
         this.positionBounds = positionBounds;
         currentHeading = 0;
@@ -40,14 +48,43 @@ public class AnimalWithFilter {
         linePoints = new CircularFifoQueue<>(LINE_POINTS_SIZE);
         dataPoints = new ArrayList<>(DATA_BUFFER_ARRAY_SIZE);
         trackingFilter = kFilter;
+
+        this.timeStepsPredicted = 0;
+        this.currCostNonAssignnmnt = DEFAULT_COST_OF_NON_ASSIGNMENT;
+
+//        this.MAXCOST = 100.0;
+                /*(double) Math.round(
+                Math.pow(
+                    Math.pow(positionBounds[1] - positionBounds[0], 2)
+                  + Math.pow(positionBounds[3] - positionBounds[2], 2),
+                0.5)
+        );*/
+    }
+
+    public void setCurrCostNonAssignnmnt(final double val) {
+        currCostNonAssignnmnt = val;
+    }
+
+    public double getCurrNonAssignmentCost() {
+        return currCostNonAssignnmnt;
     }
 
 
-    public void updateLocation(int x, int y, double dt, long timePos) {
+    public void updateLocation(int x, int y, double dt, long timePos, boolean isPredicted) {
+
+        if (isPredicted) {
+            timeStepsPredicted++;
+            currCostNonAssignnmnt = (currCostNonAssignnmnt + timeStepsPredicted) % MAXCOST; // todo % some value
+//            currCostNonAssignnmnt = (DEFAULT_COST_OF_NON_ASSIGNMENT + timeStepsPredicted) % MAXCOST; // todo % some value
+            System.out.println("Current cost: " + currCostNonAssignnmnt);
+        } else {
+            timeStepsPredicted = 0;
+            currCostNonAssignnmnt = DEFAULT_COST_OF_NON_ASSIGNMENT;
+        }
 
         this.x = x; this.y = y;
         applyBoundsConstraints();
-        dataPoints.add(new double[]{this.x, this.y, timePos});
+        dataPoints.add(new double[]{timePos, this.x, this.y});
         linePoints.add(new int[]{this.x, this.y});   // calls the addFirst() method, adds to front of Deque
         updateVelocity(dt);
         updateKFilter();
@@ -62,12 +99,6 @@ public class AnimalWithFilter {
     }
 
     public void predictTrajectory(double dt, long timePos) {
-
-        //TODO keep track of how many subsequent frames have been predicted, if greater than (5, or 10, etc),
-        // todo       temporarily increase assigner's DEFAULT_COST_OF_NON_ASSIGNMENT (for this specific animal??)  to get back on track
-
-
-        // TODO  --> each animal should have its own dynamic DEFAULT_COST_OF_NON_ASSIGNMENT!!!
 
         double[] predictedState = getPredictedState();
 
@@ -85,6 +116,7 @@ public class AnimalWithFilter {
         int newx, newy;
         // Simplest method
         if (PREDICT_WITH_VELOCITY) {
+            // todo use predX and predY with predicted velocities
             newx = (int) Math.round(this.x + (vx * dt));
             newy = (int) Math.round(this.y - (vy * dt));
         } else {
@@ -100,16 +132,14 @@ public class AnimalWithFilter {
         if (DEBUG) {System.out.println(String.format("new coordinates: (%d, %d)", newx, newy));}
 
 
-
         // todo method 3:  use predicted position to calculate heading, and then factor in velocity to predict position?
 
 
-
-        updateLocation(newx, newy, dt, timePos);
+        updateLocation(newx, newy, dt, timePos, true);
     }
 
 
-    /** Use line points because it keeps track of only the most recent points */
+    /** Use line points array because it keeps track of the most recent points */
     private void updateVelocity(double dt) {        // TODO use timePos points to calculate dt!
 
         int subtractionIdx = 3;  // calculate velocity over the last N frames
@@ -118,26 +148,11 @@ public class AnimalWithFilter {
             this.vy = 0;
 
         } else {
-
-            // todo double dt = timePos - timePosPrev
-
             // todo average these out so the change in values isnt so drastic
             int[] prevPoint = linePoints.get(linePoints.size() - 1 - subtractionIdx);   // the most recent point is at the end index
             this.vx = (this.x - prevPoint[0]) / (subtractionIdx * dt);
-
-
-            // Have to flip the subtraction because y axis in graphics increases by going down instead of up
+            /* flip the subtraction because y axis in graphics increases by going down instead of up */
              this.vy = ((prevPoint[1] - this.y) / (subtractionIdx * dt));
-//            this.vy = -1 * ((this.y - prevPoint[1]) / (subtractionIdx * dt));
-
-            /*
-            System.out.println(String.format("Current (%d, %d) from %sdx: %d dy: %d,   Velocity: %.4f %.4f",
-                    this.x, this.y, Arrays.toString(prevPoint), this.x - prevPoint[0], this.y - prevPoint[1], this.vx, this.vy)
-            );
-            */
-
-//            this.vx *= 1000;
-//            this.vy *= 1000;
         }
     }
 
@@ -151,10 +166,10 @@ public class AnimalWithFilter {
 
     private double[] getPredictedState() {
         this.trackingFilter.predict();
-//        return this.trackingFilter.getStateEstimation();
-        double[] predictedState = this.trackingFilter.getStateEstimation();
+        return this.trackingFilter.getStateEstimation();
+//        double[] predictedState = this.trackingFilter.getStateEstimation();
 //        this.trackingFilter.correct(predictedState);        // this is already called when predictTrajectory() calls updateLocation
-        return predictedState;
+//        return predictedState;
     }
 
     private enum MovementState {

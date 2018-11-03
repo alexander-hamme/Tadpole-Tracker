@@ -42,41 +42,38 @@ public class SinglePlateTracker extends Tracker {
 
 //    private int numb_of_anmls;
 
-
-
     private Rect cropRect;
     private int[] cropDimensions;       // array of four ints, of the form:  [center_x, center_y, width, height]
     private int videoFrameWidth;
     private int videoFrameHeight;
-    private int[] positionBounds;
-
+    private int[] positionBounds;       // x1, x2, y1, y2
 
     private final int COST_OF_NON_ASSIGNMENT = 50;
-
-
 
 //    private List<BoundingBox> boundingBoxes;
 //    private List<DetectedObject> detectedObjects;
 
 
-    public SinglePlateTracker(int n_objs, boolean drawShapes, int[] crop, String videoPath) throws IOException {
+    public SinglePlateTracker(final int n_objs, final boolean drawShapes,
+                              final int[] crop, String videoPath) throws IOException {
 
         this.numb_of_anmls = n_objs;
         this.DRAW_ANML_TRACKS = drawShapes;
         this.CANVAS_NAME = "Tadpole SinglePlateTracker";
-
+        //                       x        y        width    height
+        this.cropRect = new Rect(crop[0], crop[1], crop[2], crop[3]);
         this.cropDimensions = crop;
-        this.videoFrameWidth = cropDimensions[2];
-        this.videoFrameHeight = cropDimensions[3];
-        this.cropRect = new Rect(cropDimensions[0], cropDimensions[1], cropDimensions[2], cropDimensions[3]);  // use Range instead of Rect?
 
-        this.positionBounds = new int[]{0, videoFrameWidth, 0, videoFrameHeight};
+        this.videoFrameWidth = crop[2];
+        this.videoFrameHeight = crop[3];
 
-        logger.info("initializing");
+        this.positionBounds = new int[]{0, videoFrameWidth, 0, videoFrameHeight};  // x1, x2, y1, y2
+
+        logger.info("initializing tracker...");
         initializeFrameGrabber(videoPath);      // test if video file is valid and readable first
-        logger.info("creating animals");
+//        logger.info("creating animal objects");
         createAnimalObjects();
-        logger.info("warming up");
+//        logger.info("warming up model");
         yoloModelContainer = new YOLOModelContainer();  // load model
     }
 
@@ -186,66 +183,35 @@ public class SinglePlateTracker extends Tracker {
      */
     private void updateObjectTracking(List<BoundingBox> boundingBoxes, Mat frameImage, int frameNumber, long timePos) {
 
-        double min_proximity, current_proximity;
-
         // the length of the diagonal across the frame--> the largest possible displacement distance for an object in the image   todo move this elsewhere
-        int prox_start_val = (int) Math.round(Math.sqrt(Math.pow(frameImage.rows(), 2) + Math.pow(frameImage.cols(), 2)));
 
-        double displThresh = (frameNumber > NUMB_FRAMES_FOR_INIT) ? DISPL_THRESH : prox_start_val;   // start out with large proximity threshold to quickly snap to objects
+        if (frameNumber <= NUMB_FRAMES_FOR_INIT) {
+
+            int prox_start_val = (int) Math.round(Math.sqrt(Math.pow(frameImage.rows(), 2) + Math.pow(frameImage.cols(), 2)));
+
+            for (AnimalWithFilter anml : animals) {
+                anml.setCurrCostNonAssignnmnt(prox_start_val);
+            }
+
+        }
 
         double dt = 1.0 / videoFrameRate;
 
-
-        // TODO:   instead of looping through either the bounding boxes or Animals, you need to loop through them together & minimize the total
-        // todo    cost of assignments.  this may require polynomial time, but for such a small number of objects it shouldn't make much difference.
-
-        /*
-        double numberOfComputations = this.animals.size() * boundingBoxes.size();
-
-        HashMap<AnimalWithFilter, BoundingBox> optimalAssignments = new HashMap<>(this.animals.size());
-
-
-
-        double[] costMatrix = new double[] {
-
-        }
-
-
-        double maxCostStartValue = prox_start_val * this.animals.size();
-        double minimumCost = maxCostStartValue;
-        double currentCost;
-        for (int i=0; i<numberOfComputations; i++) {
-
-            // cost is defined as the Euclidean distance between the Animal and the BoundingBox
-
-
-        }
-        */
-
-        // assign random boxes at start
-        if (frameNumber <= NUMB_FRAMES_FOR_INIT) {
-            optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = prox_start_val;
+        /*optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = prox_start_val;
             optimalAssigner.ADD_NULL_FOR_EACH_ANIMAL = false;
         } else {
-            optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = 40;
+            optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = AnimalWithFilter.DEFAULT_COST_OF_NON_ASSIGNMENT;
             optimalAssigner.ADD_NULL_FOR_EACH_ANIMAL = true;
-        }
+        }*/
 
 
-
-
-
-        // TODO  --> each animal should have its own dynamic COST_OF_NON_ASSIGNMENT!!!
-
-
-
+        // each animal has its own dynamic COST_OF_NON_ASSIGNMENT
         for (BoundingBox box : boundingBoxes) {
             if (DRAW_RECTANGLES) {
                 // this rectangle drawing will be removed later  (?)
                 rectangle(frameImage, new Point(box.topleftX, box.topleftY),
                         new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
             }
-
         }
 
         final List<OptimalAssigner.Assignment> assignments = optimalAssigner.getOptimalAssignments(animals, boundingBoxes);
@@ -254,12 +220,11 @@ public class SinglePlateTracker extends Tracker {
 
             if (assignment.animal == null) { continue; }
 
-//todo  if (assignment.box == null || ! assignmentIsReasonable(assignment.animal, assignment.box, frameNumber)) {       // no assignment
             if (assignment.box == null) {       // no assignment
                 assignment.animal.predictTrajectory(dt, timePos);
             } else {
                 assignment.animal.updateLocation(
-                        assignment.box.centerX, assignment.box.centerY, dt, timePos
+                        assignment.box.centerX, assignment.box.centerY, dt, timePos, false
                 );
             }
         }
@@ -309,17 +274,21 @@ public class SinglePlateTracker extends Tracker {
     /**
      * OLD CODE    for quick testing purposes only
      *
-     * @param videoPath
      * @throws IOException
      * @throws InterruptedException
      */
 
 
+    /**
+     * Grabber has been initialized by the time this function is called
+     * @throws IOException
+     * @throws InterruptedException
+     */
+//    public void trackVideo(String videoPath) throws IOException, InterruptedException {
+    public void trackVideo() throws IOException, InterruptedException {
 
-    public void trackVideo(String videoPath) throws IOException, InterruptedException {
-
-        grabber = new FFmpegFrameGrabber(videoPath);
-        grabber.start();    // open video file
+//        grabber = new FFmpegFrameGrabber(videoPath);
+//        grabber.start();    // open video file
 
         try {
             track(cropRect);
@@ -335,8 +304,6 @@ public class SinglePlateTracker extends Tracker {
 
         CanvasFrame tracking = new CanvasFrame("Tracker Display");
         tracking.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-
-
 
         int msDelay = 10;
         List<BoundingBox> boundingBoxes;
@@ -372,12 +339,12 @@ public class SinglePlateTracker extends Tracker {
 
             cvtColor(frameImg, frameImg, COLOR_RGB2GRAY);
 //            enhanceImageMethod2(frameImg);
-//            enhanceImageMethod3(frameImg);
+            enhanceImageMethod3(frameImg);
             cvtColor(frameImg, frameImg, COLOR_GRAY2RGB);
 
             cvtColor(trackingOnly, trackingOnly, COLOR_RGB2GRAY);
-//            enhanceImageMethod3(trackingOnly);
-            enhanceImageMethod2(trackingOnly);
+//            enhanceImageMethod2(trackingOnly);
+            enhanceImageMethod3(trackingOnly);
             cvtColor(trackingOnly, trackingOnly, COLOR_GRAY2RGB);
 //            resize(trackingOnly, trackingOnly, new Size(IMG_WIDTH, IMG_HEIGHT));
 
@@ -460,16 +427,18 @@ public class SinglePlateTracker extends Tracker {
 //        int[] cropDims = new int[]{280,0,720,720};//230,10,700,700};//
 //        int n_objs = 2;
 
-        String testVideo = "data/videos/IMG_5126.MOV";
-        int n_objs = 4;
+//        String testVideo = "data/videos/IMG_5126.MOV";
+//        int n_objs = 4;
+
+        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/6tads/IMG_5214.MOV";
+        int n_objs = 6;
+
         //***** Note that x + width must be <= original image width, and y + height must be <= original image height**//
-        int[] cropDims = new int[]{160,40,650,650};//230,10,700,700};//
-
-
+        int[] cropDims = new int[]{245,30,660,660};//230,10,700,700};//
 
         SinglePlateTracker tracker = new SinglePlateTracker(n_objs, true,  cropDims, testVideo);
-        tracker.trackVideo(testVideo);
+        tracker.trackVideo();
 
-        writeAnimalPointsToFile(tracker.animals, "/home/ah2166/Documents/sproj/tracking_data/motionData/testData1.dat", false);
+        writeAnimalPointsToFile(tracker.animals, "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/data/tracking_data/motionData/trackingData.dat", false);
     }
 }

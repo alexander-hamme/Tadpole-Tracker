@@ -13,6 +13,7 @@ import sproj.yolo.YOLOModelContainer;
 
 import org.bytedeco.javacpp.avutil;
 
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -100,14 +101,18 @@ public class ModelAccuracyEvaluator {
             canvasFrame = new CanvasFrame("Evaluation on video");
         }
 
+        boolean exitLoop = false;
         Frame frame;
         Mat frameImg;
+        KeyEvent keyEvent;
 
         long startTime = System.currentTimeMillis();
 
-        while ((frame = grabber.grabImage()) != null) {
+        while ((frame = grabber.grabImage()) != null && !exitLoop) {
 
             frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);
+
+            //todo test effects on accuracy of different frame filter algorithms
 
             detectedObjects = yoloModelContainer.runInference(frameImg);
             double accuracy = detectedObjects.size() / (double) numbAnimals;
@@ -142,6 +147,29 @@ public class ModelAccuracyEvaluator {
                 canvasFrame.showImage(
                         frameConverter.convert(frameImg)
                 );
+
+                try {
+                    keyEvent = canvasFrame.waitKey(10);
+                } catch (InterruptedException ignored) {
+                    continue;
+                }
+                if (keyEvent != null) {
+
+                    char keyChar = keyEvent.getKeyChar();
+
+                    switch(keyChar) {
+
+                        case KeyEvent.VK_ESCAPE: exitLoop = true; break;      // hold escape key or 'q' to quit
+
+                        case KeyEvent.VK_Q: {       // shift q to quit entirely
+                            canvasFrame.dispose();
+                            grabber.release();
+                            System.exit(0);
+                        }
+
+                    }
+
+                }
             }
         }
 
@@ -214,7 +242,7 @@ public class ModelAccuracyEvaluator {
             List<String> textLines = readTextFile(metaVideoList.get(anmlNumb));
             List<Double> videoEvals = new ArrayList<>();       // each individual point represents accuracy over an entire video
 
-            System.out.println("\nGroup " + anmlNumb + "data/videos");
+            System.out.println("\nGroup " + anmlNumb + " videos");
 
             for (String individualVideo : textLines) {     // individual video file to evaluate on
 
@@ -330,8 +358,6 @@ public class ModelAccuracyEvaluator {
             )
         );
 
-        if (true) return;
-
         for (File modelPath : modelPaths) {
 
             if (!(modelPath.exists() && modelPath.isFile())) {
@@ -344,7 +370,7 @@ public class ModelAccuracyEvaluator {
 
             System.out.println("Evaluating model: " + modelPath.toString());
 
-            String dataSaveName = evalsSaveDir + baseName + ".eval";
+            String dataSaveName = evalsSaveDir + baseName + ".dat";
 
             if (CHECK_TO_RESUME_PROGRESS) {
                 if (new File(dataSaveName).exists()) {
@@ -384,10 +410,10 @@ public class ModelAccuracyEvaluator {
         }*/
 
         ModelAccuracyEvaluator evaluator = new ModelAccuracyEvaluator(
-                true, true
+                true, false
         );
 
-        int[] numberOfTadpoles = {1, 2, 4, 8};
+        int[] numberOfTadpoles = {1, 2, 4, 6};
 
         String modelsDir = "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/src/main/resources/inference";
         File[] modelPaths = new File(modelsDir).listFiles(
@@ -402,12 +428,12 @@ public class ModelAccuracyEvaluator {
         Arrays.sort(modelPaths);
 
         HashMap<Integer, String> anmlGroupsMetaList = new HashMap<>();
-        String evalsSaveDir = "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/dataevaluations/";
+        String evalsSaveDir = "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/data/modelEvals/";
 
 
         for (int groupN : numberOfTadpoles) {
             anmlGroupsMetaList.putIfAbsent(groupN, String.format(
-                    "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
+                    "/home/ah2166/Videos/tad_test_vids/trialVids/%dtads/eval_list_%dt.txt",
                     groupN, groupN));
         }
 
