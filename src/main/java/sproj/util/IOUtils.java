@@ -28,8 +28,6 @@ import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.IUpdater;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import sproj.tracking.Animal;
 import sproj.tracking.AnimalWithFilter;
 
@@ -38,6 +36,7 @@ import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,7 +44,6 @@ import java.util.stream.Stream;
 
 public abstract class IOUtils {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(IOUtils.class);
     private IOUtils() {}
 
     public static INDArray loadImage(File imgFile) throws IOException {
@@ -140,7 +138,87 @@ public abstract class IOUtils {
         }
     }
 
-    public static void writeLinesToFile(List<String> lines, String fileName, String separator, boolean append) throws IOException {
+    public static <T> void writeNestedObjArraysToFile(List<T[][]> nestedArrs, String fileName, String separator,
+                                                boolean append) throws IOException {
+
+        try (FileWriter writer = new FileWriter(fileName, append)) {
+
+            int idx = 0;
+            int size = nestedArrs.size();
+
+            for(T[][] arr: nestedArrs) {
+
+                int i = 0;
+                int sz = arr.length;
+
+                for (T[] obj : arr) {
+
+                    String toWrite = Arrays.toString(obj);
+
+                    if (i++ != sz - 1) {        // don't write separator at end of line
+                        writer.write(toWrite + separator);
+                    } else {
+                        writer.write(toWrite);
+                    }
+                }
+                /*if (idx++ != size - 1) {        // don't write newline at end of file
+                    writer.write("\n");
+                }*/
+                writer.write("\n");
+            }
+        }
+
+    }
+
+    public static <T> void writeObjArraysToFile(List<T[]> objArrays, String fileName, String separator,
+                                                boolean append) throws IOException {
+
+        try (FileWriter writer = new FileWriter(fileName, append)) {
+
+            int idx = 0;
+            int size = objArrays.size();
+
+            for(T[] arr: objArrays) {
+
+                int i = 0;
+                int sz = arr.length;
+
+                for (T obj : arr) {
+
+                    String toWrite = obj.toString();
+
+                    if (i++ != sz - 1) {        // don't write separator at end of line
+                        writer.write(toWrite + separator);
+                    } else {
+                        writer.write(toWrite);
+                    }
+                }
+                /*if (idx++ != size - 1) {        // don't write newline at end of file
+                    writer.write("\n");
+                }*/
+                writer.write("\n");
+            }
+        }
+    }
+
+    public static <T> void writeObjectsToFile(List<T> objects, String fileName, String separator,
+                                          boolean append) throws IOException {
+        try (FileWriter writer = new FileWriter(fileName, append)) {
+            int idx = 0;
+            int size = objects.size();
+            for(T point: objects) {
+                String toWrite = point.toString();
+                if (idx++ != size-1){        // don't write newline at end of file
+                    writer.write(toWrite + separator);
+                } else {
+                    writer.write(toWrite);
+                }
+            }
+        }
+    }
+
+    public static void writeLinesToFile(List<String> lines, String fileName, String separator,
+                                        boolean append) throws IOException {
 
         try (FileWriter writer = new FileWriter(fileName, append)) {
             int idx = 0;

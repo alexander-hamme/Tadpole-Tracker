@@ -42,18 +42,13 @@ public class SinglePlateTracker extends Tracker {
 
 //    private int numb_of_anmls;
 
-
-
     private Rect cropRect;
     private int[] cropDimensions;       // array of four ints, of the form:  [center_x, center_y, width, height]
     private int videoFrameWidth;
     private int videoFrameHeight;
     private int[] positionBounds;       // x1, x2, y1, y2
 
-
     private final int COST_OF_NON_ASSIGNMENT = 50;
-
-
 
 //    private List<BoundingBox> boundingBoxes;
 //    private List<DetectedObject> detectedObjects;
