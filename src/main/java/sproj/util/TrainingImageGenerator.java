@@ -36,7 +36,7 @@ public class TrainingImageGenerator {
     private final boolean RANDOM_ROTATE = true;
     private final boolean SWAP_FILTERS = false;
 
-    private int imgNo = 568;
+    private int imageNumber;
 
     private void initializeFGrabber(File videoFile) throws IOException {
         avutil.av_log_set_level(avutil.AV_LOG_QUIET);           // Suppress verbose FFMPEG metadata output to console
@@ -205,7 +205,6 @@ public class TrainingImageGenerator {
         String saveName;
 
         int skipFrames = 60;
-
         int frameNo;
 
         int numbFiltersToUse = 3;
@@ -297,7 +296,7 @@ public class TrainingImageGenerator {
                 }
             }
             if (saveFrame) {
-                saveName = String.format("%s/tadpole%d.jpg", saveDir, imgNo++);
+                saveName = String.format("%s/tadpole%d.jpg", saveDir, imageNumber++);
                 saveFrame(newFrame, saveName);
             }
 
@@ -308,20 +307,16 @@ public class TrainingImageGenerator {
     }
 
 
-    public static void main(String[] args) throws IOException, InterruptedException {
-//        generateWarpedImages();
-        generateImages();
-    }
+    public static void generateWarpedImages(String imgDir, String saveDir, int imgNo) throws IOException {
 
-    public static void generateWarpedImages() throws IOException {
-        String imgDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-24-18/unwarped";
-        String saveDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-24-18/";
         File[] files = new File(imgDir).listFiles();
 
         String saveName;
-        int saveIndx = 708;
+        int saveIndx = imgNo;
 
         if (files != null && files.length > 0) {
+
+            Arrays.sort(files);
 
             List<BufferedImage> randCropped = new TrainingImageGenerator().warpImages(files);
 
@@ -336,37 +331,46 @@ public class TrainingImageGenerator {
         }
     }
 
-    public static void generateImages() throws IOException, InterruptedException {
+    private void setImgNo(int n) {
+        this.imageNumber = n;
+    }
 
-        TrainingImageGenerator imageGenerator = new TrainingImageGenerator();
-
-//        final String saveDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-18-18";
-        final String saveDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-24-18";
-        int imgNo = 568;
-        int[] numberOfTadpoles = {1, 2, 4, 8};
-
-//        args = new String[]{"/home/ah2166/Videos/tad_test_vids/trialVids/1_tadpole/filenames.txt"};
-//        args = new String[]{"/home/ah2166/Videos/tad_test_vids/trialVids/2_tadpoles/eval_list_2t.txt"};
-//        args = new String[]{"/home/ah2166/Videos/tad_test_vids/trialVids/4_tadpoles/eval_list_4t.txt"};
+    public static void main(String[] args) throws IOException, InterruptedException {
+        ///*
+        final String saveDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-30-18";
+        int[] numbersOfTadpoles = {1, 2, 4, 6};
+        int imageNumber = 764;
 
 //        if (args.length < 1) {
+        /*String[] fileDescriptors = new String[numbersOfTadpoles.length];
+
+        for (int i=0;i < numbersOfTadpoles.length; i++) {
+
+            fileDescriptors[i] = String.format(
+                    "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
+                    numbersOfTadpoles[i], numbersOfTadpoles[i]);
+        }
+        */
         String[] fileDescriptors = new String[]{
-
-                "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/data/videos/petriDishVids.txt",
-
-                /*String.format(
-                        "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
-                        numberOfTadpoles[0], numberOfTadpoles[0]),
                 String.format(
-                        "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
-                        numberOfTadpoles[1], numberOfTadpoles[1]),
-                String.format(
-                        "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
-                        numberOfTadpoles[2], numberOfTadpoles[2]),
-                String.format(
-                        "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
-                        numberOfTadpoles[3], numberOfTadpoles[3]),*/
+                        "/home/ah2166/Videos/tad_test_vids/trialVids/%dtads/eval_list_%dt.txt",
+                        numbersOfTadpoles[2], numbersOfTadpoles[2]),
         };
+        /**/
+        //generateImages(saveDir, fileDescriptors, imageNumber);
+
+        imageNumber = 734;
+
+        String imgDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-30-18/";
+        String saveImgDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-30-18/warped/";
+        generateWarpedImages(imgDir, saveImgDir, imageNumber);
+    }
+
+    public static void generateImages(String saveDir, String[] fileDescriptors, int imageNo)
+            throws IOException, InterruptedException {
+
+        TrainingImageGenerator imageGenerator = new TrainingImageGenerator();
+        imageGenerator.setImgNo(imageNo);
 
         for (String fileDesc : fileDescriptors) {
 
