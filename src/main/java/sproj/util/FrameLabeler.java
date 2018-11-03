@@ -1,5 +1,6 @@
 package sproj.util;
 
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.bytedeco.javacpp.avutil;
 import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacpp.opencv_imgproc;
@@ -7,6 +8,7 @@ import org.bytedeco.javacv.*;
 import org.bytedeco.javacv.Frame;
 
 import javax.imageio.ImageIO;
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
@@ -61,39 +63,19 @@ public class FrameLabeler {
     }
 
     private void skipAhead(int N) throws FrameGrabber.Exception {
-        while(grabber.grab() != null) {
-            if (N-- <= 0) break;
+
+        int length = grabber.getLengthInVideoFrames();
+
+        while (--N > 0) {
+
+            if (grabber.getFrameNumber() == length - 2) {   // dont skip the last frame
+                break;
+            }
+
+            if (grabber.grabImage() == null) {
+                break;
+            }
         }
-    }
-
-    private void addMouseListener(CanvasFrame frame) {
-        frame.getCanvas().addMouseListener(new MouseListener() {
-
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                System.out.println("Clicked: " + e.getPoint().toString());
-            }
-
-            @Override
-            public void mousePressed(MouseEvent e) {
-                System.out.println("Pressed");
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                System.out.println("Released");
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                System.out.println("Entered");
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                System.out.println("Exited");
-            }
-        });
     }
 
     private void run(File videoFile, List<Integer> cropDims, String saveName) throws IOException, InterruptedException {
@@ -101,6 +83,8 @@ public class FrameLabeler {
         initializeFGrabber(videoFile);
 
         CanvasFrame canvasFrame = new CanvasFrame("'Shift+S' to save progress, 'Shift+Z' to undo, 'Esc' to quit");
+        canvasFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
         KeyEvent keyEvent;
         Frame frame, newFrame;
 
@@ -111,7 +95,7 @@ public class FrameLabeler {
         );
         //new Rect(cropDims[0], cropDims[1], cropDims[2], cropDims[3]);  // use Range instead of Rect?
 
-        int skipFrames = 60;
+        int framesToSkip = 10;
         int frameNo;
 
         int numbFiltersToUse = 3;
@@ -127,44 +111,45 @@ public class FrameLabeler {
 
             @Override
             public void mouseClicked(MouseEvent e) {
-                System.out.println("Clicked: " + e.getPoint().toString());
                 currPointsToDraw.push(new Integer[]{e.getX(), e.getY()});
             }
 
             @Override
             public void mousePressed(MouseEvent e) {
-                System.out.println("Pressed");
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                System.out.println("Released");
             }
 
             @Override
             public void mouseEntered(MouseEvent e) {
-                System.out.println("Entered");
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                System.out.println("Exited");
             }
         });
 
         List<Integer[][]> labeledPoints = new ArrayList<>(grabber.getLengthInVideoFrames());
         opencv_core.Mat frameImg;
 
-
         boolean savePoints;
+        int length = grabber.getLengthInVideoFrames();
 
         while ((frame = grabber.grabImage()) != null) {
+
+
+            // TODO   add a way to backtrack (just by one frame),  and also to resume progress if you close
+            // TODO     save the frame number with points
 
             savePoints = false;
 
             frameNo = grabber.getFrameNumber();
             frameImg = new opencv_core.Mat(frameConverter.convertToMat(frame), cropRect);
 
+            System.out.print("\rFrame " + frameNo + " of " + length +
+                            ", frames left to label: " + (((length - frameNo) / framesToSkip) + 1));
             // cvtColor(frameImg, frameImg, COLOR_RGB2GRAY);
             //cvtColor(frameImg, frameImg, COLOR_GRAY2RGB);
 
@@ -183,7 +168,9 @@ public class FrameLabeler {
                     opencv_core.Mat matCopy = frameImg.clone();
                     points = new Integer[currPointsToDraw.size()][];
                     currPointsToDraw.toArray(points);
+
                     for (Integer[] pt : points) {
+                        if (pt==null) {continue;}
                         circle(matCopy, new opencv_core.Point(pt[0], pt[1]),
                                 3, opencv_core.Scalar.RED, CV_FILLED, 8, 0);
                     }
@@ -204,7 +191,10 @@ public class FrameLabeler {
                     switch (keyChar) {
 
                         case KeyEvent.VK_ENTER: {
-                            Thread.sleep(250); // to prevent latency in releasing the key from saving hundreds of images
+
+                            if (currPointsToDraw.empty()) {break;}      // don't continue if no labels on current frameQQ
+
+                            // Thread.sleep(500); // to prevent latency in releasing the key from saving hundreds of images
                             exitLoop = true;
                             break;
                         }
@@ -219,50 +209,49 @@ public class FrameLabeler {
                             break;
                         }
                         case KeyEvent.VK_Q: {
-                            Thread.sleep(250);
-
-                            System.out.println("Labeled Points:\n");
-                            for (Integer[][] pts : labeledPoints) {
-                                for (Integer[] pt : pts) {
-                                    System.out.println(Arrays.toString(pt));
-                                }
-                            }
-
                             canvasFrame.dispose();
+                            Thread.sleep(500);
                             System.exit(0);
+                            break;
                         }
                         case KeyEvent.VK_Z: { // undo most recent point
-                            Thread.sleep(250);
+                            Thread.sleep(300);
                             if (!currPointsToDraw.isEmpty()) {
                                 currPointsToDraw.pop();
                             }
+                            break;
                         }
                     }
                 }
             }
+
+            skipAhead(framesToSkip);
+
             if (points != null) {//currPointsToDraw.isEmpty()) {
-                /*points = new Point[currPointsToDraw.size()];
-                for (int i=0; i<points.length; i++) {
+                points = new Integer[currPointsToDraw.size()+1][];
+                for (int i=0; i<points.length-1; i++) {
                     points[i] = currPointsToDraw.pop();
-                }*/
+                }
+                points[points.length-1] = new Integer[]{frameNo};
                 labeledPoints.add(points);
-                while(! currPointsToDraw.empty()) {currPointsToDraw.pop();}
+                //while(! currPointsToDraw.empty()) {currPointsToDraw.pop();}
             }
 
 
-            if (! labeledPoints.isEmpty() && (savePoints || labeledPoints.size() > 15)) {
+            if (! labeledPoints.isEmpty() && (savePoints || labeledPoints.size() >= 5)) {
                 IOUtils.writeNestedObjArraysToFile(labeledPoints, saveName, ",", true);
-                System.out.println(String.format("Saved %d points to file", labeledPoints.size()));
+                // System.out.println(String.format("Saved %d points to file", labeledPoints.size()));
                 labeledPoints.clear();
             }
-
-            System.out.println("Labeled Points size: " + labeledPoints.size());
         }
 
-        System.out.println("Labeled Points:\n");
+        /*System.out.println("Labeled Points:\n");
         for (Integer[][] pts : labeledPoints) {
-            System.out.println(Arrays.toString(pts));
-        }
+            for (Integer[] pt : pts) {
+                System.out.println(Arrays.toString(pt));
+            }
+        }*/
+
         canvasFrame.dispose();
     }
 
@@ -271,7 +260,6 @@ public class FrameLabeler {
         ///*
         final String saveDir = "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/data/labeledVideoPoints/";
         int[] numbersOfTadpoles = {1, 2, 4, 6};
-        int imageNumber = 764;
 
 //        if (args.length < 1) {
         /*String[] fileDescriptors = new String[numbersOfTadpoles.length];
@@ -291,12 +279,10 @@ public class FrameLabeler {
         /**/
         //generateImages(saveDir, fileDescriptors, imageNumber);
 
-        imageNumber = 734;
-
-        runLabeler(saveDir, fileDescriptors, imageNumber);
+        runLabeler(saveDir, fileDescriptors);
     }
 
-    public static void runLabeler(String saveDir, String[] fileDescriptors, int imageNo)
+    public static void runLabeler(String saveDir, String[] fileDescriptors)
             throws IOException, InterruptedException {
 
         FrameLabeler labeler = new FrameLabeler();
@@ -316,12 +302,14 @@ public class FrameLabeler {
                 File videoFile;
                 List<Integer> cropDims = new ArrayList<>();
 
+                int numbAnimals;
+
                 try {
 
                     videoFile = new File(split[0]);
                     assert videoFile.exists() && !videoFile.isDirectory();
 
-                    // numbAnimals = Integer.parseInt(split[1]);
+                    numbAnimals = Integer.parseInt(split[1]);
 
                     // convert third string argument to 4 integers; the crop dimensions
                     Arrays.asList(split[2].split(" ")).forEach(s ->
@@ -336,9 +324,11 @@ public class FrameLabeler {
                     ));
                     continue;
                 }
-                System.out.println("Running " + videoFile.toString());
+                System.out.println("\nRunning " + videoFile.toString());
 
-                labeler.run(videoFile, cropDims, saveDir + videoFile.getName().split("\\.")[0] + "_pts.dat");
+                labeler.run(videoFile, cropDims,
+                        saveDir + numbAnimals + "tads/" +
+                                videoFile.getName().split("\\.")[0] + "_pts.dat");
 
             }
         }
