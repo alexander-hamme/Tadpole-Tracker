@@ -249,6 +249,7 @@ public class FrameLabeler {
                 while(! currPointsToDraw.empty()) {currPointsToDraw.pop();}
             }
 
+
             if (! labeledPoints.isEmpty() && (savePoints || labeledPoints.size() > 15)) {
                 IOUtils.writeNestedObjArraysToFile(labeledPoints, saveName, ",", true);
                 System.out.println(String.format("Saved %d points to file", labeledPoints.size()));
