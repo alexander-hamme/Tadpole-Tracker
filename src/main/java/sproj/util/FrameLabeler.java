@@ -68,7 +68,7 @@ public class FrameLabeler {
 
         initializeFGrabber(videoFile);
 
-        CanvasFrame canvasFrame = new CanvasFrame("'Shift+S' to save progress, 'Shift+Z' to undo, 'Esc' to quit");
+        CanvasFrame canvasFrame = new CanvasFrame("'Shift+Z' to undo, 'Esc' to quit");
         canvasFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         KeyEvent keyEvent;
@@ -180,28 +180,28 @@ public class FrameLabeler {
 
                             if (currPointsToDraw.empty()) {break;}      // don't continue if no labels on current frameQQ
 
-                            // Thread.sleep(500); // to prevent latency in releasing the key from saving hundreds of images
                             exitLoop = true;
                             break;
                         }
                         case KeyEvent.VK_ESCAPE: {
-                            Thread.sleep(500);
-                            exitLoop = true;
-                            break;
-                        }
-                        case KeyEvent.VK_S: {
-                            Thread.sleep(150);
-                            savePoints = true;
-                            break;
-                        }
-                        case KeyEvent.VK_Q: {
                             canvasFrame.dispose();
                             Thread.sleep(500);
                             System.exit(0);
                             break;
                         }
+                        /*case KeyEvent.VK_S: {
+                            Thread.sleep(150);
+                            savePoints = true;
+                            break;
+                        }*/
+                        /*case KeyEvent.VK_Q: {
+                            canvasFrame.dispose();
+                            Thread.sleep(500);
+                            System.exit(0);
+                            break;
+                        }*/
                         case KeyEvent.VK_Z: { // undo most recent point
-                            Thread.sleep(300);
+                            Thread.sleep(300);  // create small amount of latency to allow releasing the key
                             if (!currPointsToDraw.isEmpty()) {
                                 currPointsToDraw.pop();
                             }
@@ -224,7 +224,7 @@ public class FrameLabeler {
             }
 
 
-            if (! labeledPoints.isEmpty() && (savePoints || labeledPoints.size() >= 5)) {
+            if (! labeledPoints.isEmpty() && labeledPoints.size() >= 5) {
                 IOUtils.writeNestedObjArraysToFile(labeledPoints, saveName, ",", true);
                 // System.out.println(String.format("Saved %d points to file", labeledPoints.size()));
                 labeledPoints.clear();
