@@ -34,20 +34,6 @@ public class FrameLabeler {
 
     private FFmpegFrameGrabber grabber;
 
-
-    private class LabeledPointsHolder {
-
-        List<List<Point>> labeledPoints;
-        private int currLstIndx;
-
-        private LabeledPointsHolder(int estLength) {
-            labeledPoints = new ArrayList<>(estLength);
-            currLstIndx = 0;
-
-        }
-    }
-
-
     private void initializeFGrabber(File videoFile) throws IOException {
         avutil.av_log_set_level(avutil.AV_LOG_QUIET);           // Suppress verbose FFMPEG metadata output to console
         grabber = new FFmpegFrameGrabber(videoFile);
