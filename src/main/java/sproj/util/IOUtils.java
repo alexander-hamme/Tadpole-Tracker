@@ -383,27 +383,28 @@ public abstract class IOUtils {
         }
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main1(String[] args) throws IOException {
         readYoloTrainingLog(
                 "/home/ah2166/Documents/sproj/python/graphing/training/trainingOutput2.log",
                 "/home/ah2166/Documents/sproj/python/graphing/training/trainingOutputPoints.dat"
                 );
     }
 
-    public static void main1(String[] args) throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
+    public static void main(String[] args) throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
         String modelDir = "/home/ah2166/Documents/darknet/modelConversion/convertedModels";
         String savePath = "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/src/main/resources/inference/";
 
 //        int its = 10000;
 //        while (its <= 18000) {
-        int minModel = 10000;
-        int maxModel = 17000;
+        int minModel = 19000;
+        int maxModel = 19000;
 
-        for (int its = minModel; its < maxModel; ) {
+        for (int its = minModel; its <= maxModel; ) {
 
-            System.out.println("Converting model " + (its  % minModel / 1000 + 1) + " of " + (maxModel - minModel) / 1000);
+            System.out.println("Converting model " + (its  % minModel / 1000 + 1) + " of " + (maxModel - minModel + 1) / 1000);
 
-            String yoloModelFile = String.format("%s/%dits/yolov2_%d.h5", modelDir, its, its);
+//            String yoloModelFile = String.format("%s/%dits/yolov2_%d.h5", modelDir, its, its);
+            String yoloModelFile = String.format("%s/yolo-obj_%d.h5", modelDir, its);
             double[][] priorBoxes = {{1.3221, 1.73145}, {3.19275, 4.00944}, {5.05587, 8.09892}, {9.47112, 4.84053}, {11.2364, 10.0071}};
 
             convertYAD2KWeights(yoloModelFile,

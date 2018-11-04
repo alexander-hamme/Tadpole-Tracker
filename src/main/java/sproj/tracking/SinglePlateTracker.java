@@ -183,8 +183,7 @@ public class SinglePlateTracker extends Tracker {
      */
     private void updateObjectTracking(List<BoundingBox> boundingBoxes, Mat frameImage, int frameNumber, long timePos) {
 
-        // the length of the diagonal across the frame--> the largest possible displacement distance for an object in the image   todo move this elsewhere
-
+        // the length of the diagonal across the frame--> the largest possible displacement distance for an object in the image
         if (frameNumber <= NUMB_FRAMES_FOR_INIT) {
 
             int prox_start_val = (int) Math.round(Math.sqrt(Math.pow(frameImage.rows(), 2) + Math.pow(frameImage.cols(), 2)));
@@ -194,6 +193,15 @@ public class SinglePlateTracker extends Tracker {
             }
 
         }
+
+
+        // TODO:   DECREASE Model confidence threshold and INCREASE NMS threshold
+        // todo    when lots of tadpoles are close together
+
+        // int proximityCounter
+
+
+
 
         double dt = 1.0 / videoFrameRate;
 

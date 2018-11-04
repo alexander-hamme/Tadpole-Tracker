@@ -9,7 +9,7 @@ import java.util.List;
 
 public class DetectionsParser {
 
-    private final double iouThreshold = 0.3;                                        // if iou between two boxes > threshold, they are merged
+    private final double iouThreshold = 0.5;                                        // if iou between two boxes > threshold, they are merged
     private final int IMG_WIDTH = YOLOModelContainer.IMG_WIDTH;
     private final int IMG_HEIGHT = YOLOModelContainer.IMG_HEIGHT;
     private final double numberOfGridCells = 13.0;

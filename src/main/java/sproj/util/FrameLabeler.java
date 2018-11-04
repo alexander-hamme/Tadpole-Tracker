@@ -127,7 +127,9 @@ public class FrameLabeler {
 
 
             // TODO   add a way to backtrack (just by one frame),  and also to resume progress if you close
-            // TODO     save the frame number with points
+
+            // TODO   use model to detect & plot points, and just check if they're right
+
 
             savePoints = false;
 

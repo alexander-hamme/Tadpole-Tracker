@@ -36,7 +36,7 @@ import sproj.TrackerApp;
 public class YOLOModelContainer {
 
 //    private final String modelFilePath = "src/main/resources/inference/yolov2_10000its.zip";
-    private static final String DEFAULT_MODEL_PATH = "src/main/resources/inference/yolov2_16000.zip";
+    private static final String DEFAULT_MODEL_PATH = "src/main/resources/inference/yolov2_19000.zip";
 
     private final Logger logger = TrackerApp.getLogger();   //  LogManager.getLogger("YOLOModelContainer");   // Todo don't create new instance, share one logger object, eg from Main
 
@@ -46,7 +46,7 @@ public class YOLOModelContainer {
     public static final int IMG_HEIGHT = 416;
     private final int IMG_CHANNELS = 3;
     private final int[] INPUT_SHAPE = {1, IMG_CHANNELS, IMG_WIDTH, IMG_HEIGHT};
-    private final double CONF_THRESHOLD = 0.5;
+    private final double CONF_THRESHOLD = 0.3;
     private final int WARMUP_ITERATIONS = 10;
 
     private final NativeImageLoader imageLoader = new NativeImageLoader(IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS);
@@ -82,7 +82,6 @@ public class YOLOModelContainer {
         return outputLayer.getPredictedObjects(output, CONF_THRESHOLD);
     }
 
-
     public YOLOModelContainer() throws IOException {
         this(new File(DEFAULT_MODEL_PATH));
     }
@@ -103,7 +102,6 @@ public class YOLOModelContainer {
         System.out.print("\rModel loaded.");
         warmupModel(WARMUP_ITERATIONS);
         outputLayer = (Yolo2OutputLayer) yoloModel.getOutputLayer(0);
-        //        System.out.println(yoloModel.summary());
     }
 
 
