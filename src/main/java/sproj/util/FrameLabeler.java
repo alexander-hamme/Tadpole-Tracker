@@ -1,32 +1,32 @@
 package sproj.util;
 
-import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.bytedeco.javacpp.avutil;
-import org.bytedeco.javacpp.opencv_core;
-import org.bytedeco.javacpp.opencv_imgproc;
-import org.bytedeco.javacv.*;
-import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacpp.opencv_core.Mat;
+import org.bytedeco.javacpp.opencv_core.Rect;
+import org.bytedeco.javacpp.opencv_core.Point;
+import org.bytedeco.javacpp.opencv_core.Scalar;
 
-import javax.imageio.ImageIO;
-import javax.swing.*;
-import java.awt.*;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.CanvasFrame;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.FrameGrabber;
+import org.bytedeco.javacv.OpenCVFrameConverter;
+
+import javax.swing.WindowConstants;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Stack;
 import java.util.stream.Stream;
 
-import static org.bytedeco.javacpp.opencv_imgproc.*;
-import static org.bytedeco.javacpp.opencv_imgproc.COLOR_GRAY2RGB;
-import static org.bytedeco.javacpp.opencv_imgproc.cvtColor;
+import static org.bytedeco.javacpp.opencv_imgproc.circle;
 
 public class FrameLabeler {
 
@@ -66,9 +66,14 @@ public class FrameLabeler {
 
     private void run(File videoFile, List<Integer> cropDims, String saveName) throws IOException, InterruptedException {
 
+        if (new File(saveName).exists()) {
+            System.out.println("Video already has labeled points file: " + saveName);
+            return;
+        }
+
         initializeFGrabber(videoFile);
 
-        CanvasFrame canvasFrame = new CanvasFrame("'Shift+Z' to undo, 'Esc' to quit");
+        CanvasFrame canvasFrame = new CanvasFrame("'Enter' continue, 'Shift+Z' undo, 'Shift+K' skip, 'Esc' quit");
         canvasFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         KeyEvent keyEvent;
@@ -76,20 +81,12 @@ public class FrameLabeler {
 
         int[] imageDimensions = new int[]{grabber.getImageWidth(), grabber.getImageHeight()};
 
-        opencv_core.Rect cropRect = new opencv_core.Rect(
+        Rect cropRect = new Rect(
                 cropDims.get(0), cropDims.get(1), cropDims.get(2), cropDims.get(3)
         );
-        //new Rect(cropDims[0], cropDims[1], cropDims[2], cropDims[3]);  // use Range instead of Rect?
 
         int framesToSkip = 10;
         int frameNo;
-
-        int numbFiltersToUse = 3;
-        int filterMethod = numbFiltersToUse-1;      // this makes it start at 0, filter 1
-        int filterSwitchFrequency = 3;
-
-//        canvasFrame
-//        addMouseListener(canvasFrame);
 
         final Stack<Integer[]> currPointsToDraw = new Stack<>();
 
@@ -118,9 +115,8 @@ public class FrameLabeler {
         });
 
         List<Integer[][]> labeledPoints = new ArrayList<>(grabber.getLengthInVideoFrames());
-        opencv_core.Mat frameImg;
+        Mat frameImg;
 
-        boolean savePoints;
         int length = grabber.getLengthInVideoFrames();
 
         while ((frame = grabber.grabImage()) != null) {
@@ -130,14 +126,11 @@ public class FrameLabeler {
 
             // TODO   use model to detect & plot points, and just check if they're right
 
-
-            savePoints = false;
-
             frameNo = grabber.getFrameNumber();
-            frameImg = new opencv_core.Mat(frameConverter.convertToMat(frame), cropRect);
+            frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);
 
             System.out.print("\rFrame " + frameNo + " of " + length +
-                            ", frames left to label: " + (((length - frameNo) / framesToSkip) + 1));
+                            ", " + (((length - frameNo) / framesToSkip) + 1) + " frames left to label");
             // cvtColor(frameImg, frameImg, COLOR_RGB2GRAY);
             //cvtColor(frameImg, frameImg, COLOR_GRAY2RGB);
 
@@ -153,14 +146,14 @@ public class FrameLabeler {
 
                 if (! currPointsToDraw.isEmpty()) {
 
-                    opencv_core.Mat matCopy = frameImg.clone();
+                    Mat matCopy = frameImg.clone();
                     points = new Integer[currPointsToDraw.size()][];
                     currPointsToDraw.toArray(points);
 
                     for (Integer[] pt : points) {
                         if (pt==null) {continue;}
-                        circle(matCopy, new opencv_core.Point(pt[0], pt[1]),
-                                3, opencv_core.Scalar.RED, CV_FILLED, 8, 0);
+                        circle(matCopy, new Point(pt[0], pt[1]),
+                                3, Scalar.RED, -1, 8, 0);       // -1 is CV_FILLED, to fill the circle
                     }
                     newFrame = frameConverter.convert(matCopy);
                 } else {
@@ -191,11 +184,11 @@ public class FrameLabeler {
                             System.exit(0);
                             break;
                         }
-                        /*case KeyEvent.VK_S: {
+                        case KeyEvent.VK_K: {                           // skip current video
                             Thread.sleep(150);
-                            savePoints = true;
-                            break;
-                        }*/
+                            canvasFrame.dispose();
+                            return;
+                        }
                         /*case KeyEvent.VK_Q: {
                             canvasFrame.dispose();
                             Thread.sleep(500);
@@ -239,29 +232,29 @@ public class FrameLabeler {
                 System.out.println(Arrays.toString(pt));
             }
         }*/
-
+        if (! labeledPoints.isEmpty()) {
+            IOUtils.writeNestedObjArraysToFile(labeledPoints, saveName, ",", true);
+        }
         canvasFrame.dispose();
     }
 
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        ///*
-        final String saveDir = "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/data/labeledVideoPoints/";
+
+        final String saveDir = "output/";
         int[] numbersOfTadpoles = {1, 2, 4, 6};
 
-//        if (args.length < 1) {
-        /*String[] fileDescriptors = new String[numbersOfTadpoles.length];
+        String [] fileDescriptors = new String[numbersOfTadpoles.length];
 
         for (int i=0;i < numbersOfTadpoles.length; i++) {
-
-            fileDescriptors[i] = String.format(
-                    "/home/ah2166/Videos/tad_test_vids/trialVids/%d_tadpoles/eval_list_%dt.txt",
-                    numbersOfTadpoles[i], numbersOfTadpoles[i]);
+            fileDescriptors[i] = String.format("videos/eval_list_%dt.txt", numbersOfTadpoles[i]);
         }
-        */
+
+
+        /*
         String[] fileDescriptors = new String[]{
                 String.format(
-                        "/home/ah2166/Videos/tad_test_vids/trialVids/%dtads/eval_list_%dt.txt",
+                        "videos/%dtads/eval_list_%dt.txt",
                         numbersOfTadpoles[2], numbersOfTadpoles[2]),
         };
         /**/
