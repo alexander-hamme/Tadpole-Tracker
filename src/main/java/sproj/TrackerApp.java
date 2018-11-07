@@ -68,7 +68,7 @@ public class TrackerApp extends Application {
         // input from user todo
         String selected = "singleplate";
         if (selected == "singleplate") {
-            trackerProgram = new SinglePlateTracker(numb_objs_to_track, drawShapes, crop, videoPath);
+            trackerProgram = new SinglePlateTracker(numb_objs_to_track, drawShapes, crop, videoPath, "");
         } else {
             trackerProgram = new MultiPlateTracker(numb_objs_to_track, drawShapes, videoPath);
         }

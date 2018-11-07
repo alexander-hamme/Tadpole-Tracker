@@ -40,4 +40,9 @@ public class MultiPlateTracker extends Tracker {
     protected void createAnimalObjects() {
         // for dish in dishes... assign one animal to the center of the dish
     }
+
+    @Override
+    protected void createAnimalFiles(String baseFilePrefix) throws IOException {
+
+    }
 }

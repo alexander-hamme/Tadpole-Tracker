@@ -8,6 +8,8 @@ import org.bytedeco.javacv.*;
 import sproj.util.Logger;
 import sproj.yolo.YOLOModelContainer;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Iterator;
 
@@ -66,6 +68,8 @@ public abstract class Tracker {          //  TODO make this an interface?
     }
 
     protected abstract void createAnimalObjects();
+
+    protected abstract void createAnimalFiles(String baseFilePrefix) throws IOException;
 
     protected void initializeFrameGrabber(String videoPath) throws FrameGrabber.Exception {
         avutil.av_log_set_level(avutil.AV_LOG_QUIET);       // Suppress verbose FFMPEG metadata output to console

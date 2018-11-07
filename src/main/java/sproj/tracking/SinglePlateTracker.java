@@ -14,6 +14,8 @@ import sproj.yolo.YOLOModelContainer;
 
 import javax.swing.*;
 import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +44,7 @@ public class SinglePlateTracker extends Tracker {
 
 //    private int numb_of_anmls;
 
+    private String dataSaveNamePrefix;
     private Rect cropRect;
     private int[] cropDimensions;       // array of four ints, of the form:  [center_x, center_y, width, height]
     private int videoFrameWidth;
@@ -55,7 +58,7 @@ public class SinglePlateTracker extends Tracker {
 
 
     public SinglePlateTracker(final int n_objs, final boolean drawShapes,
-                              final int[] crop, String videoPath) throws IOException {
+                              final int[] crop, String videoPath, String saveDataFilePrefix) throws IOException {
 
         this.numb_of_anmls = n_objs;
         this.DRAW_ANML_TRACKS = drawShapes;
@@ -73,6 +76,7 @@ public class SinglePlateTracker extends Tracker {
         initializeFrameGrabber(videoPath);      // test if video file is valid and readable first
 //        logger.info("creating animal objects");
         createAnimalObjects();
+        createAnimalFiles(saveDataFilePrefix);
 //        logger.info("warming up model");
         yoloModelContainer = new YOLOModelContainer();  // load model
     }
@@ -99,7 +103,7 @@ public class SinglePlateTracker extends Tracker {
         List<DetectedObject> detectedObjects = yoloModelContainer.runInference(frameImg);                   // TODO: 9/10/18  pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), run again with lower confidence?
         List<BoundingBox> boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
-        updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
+        updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp() / 1000L);
 
         return frameConverter.convert(frameImg);
 
@@ -135,6 +139,19 @@ public class SinglePlateTracker extends Tracker {
                     new AnimalWithFilter(x, y, positionBounds, new Scalar(clr[0],clr[1], clr[2], 1.0),  //colors[i],
                             filterBuilder.getNewKalmanFilter(x, y, 0.0, 0.0))
             );
+        }
+    }
+
+    @Override
+    protected void createAnimalFiles(String baseFilePrefix) throws IOException {
+
+        this.dataSaveNamePrefix = baseFilePrefix;
+
+        for (AnimalWithFilter a : animals) {
+            try (FileWriter writer = new FileWriter(baseFilePrefix + "_anml" + animals.indexOf(a) + ".dat")) {
+                writer.write(String.format("Animal Number %d | BGRA color label: %s\n", animals.indexOf(a), a.color.toString()));
+
+            }
         }
     }
 
@@ -201,6 +218,12 @@ public class SinglePlateTracker extends Tracker {
         // int proximityCounter
 
 
+
+        // todo    figure out a way to prevent swapping when the cost of non assignment gets really high
+        // todo    from missing many frames in a row
+
+
+        // todo calculate the confidence of how true each position update is, and write that to file too
 
 
         double dt = 1.0 / videoFrameRate;
@@ -299,13 +322,13 @@ public class SinglePlateTracker extends Tracker {
 //        grabber.start();    // open video file
 
         try {
-            track(cropRect);
+            track();
         } finally {
             tearDown();
         }
     }
 
-    private void track(Rect cropRect) throws InterruptedException, IOException {
+    private void track() throws InterruptedException, IOException {
 
         CanvasFrame canvasFrame = new CanvasFrame("Raw Frame");
         canvasFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -330,6 +353,7 @@ public class SinglePlateTracker extends Tracker {
 
         long time1;
         int frameNo;
+        int saveFrequency = 150;    // save data every 150 frames (5 seconds)
         int totalFrames = grabber.getLengthInVideoFrames();
 
         boolean exitLoop = false;
@@ -347,7 +371,7 @@ public class SinglePlateTracker extends Tracker {
 
             cvtColor(frameImg, frameImg, COLOR_RGB2GRAY);
 //            enhanceImageMethod2(frameImg);
-            enhanceImageMethod3(frameImg);
+            //enhanceImageMethod3(frameImg);
             cvtColor(frameImg, frameImg, COLOR_GRAY2RGB);
 
             cvtColor(trackingOnly, trackingOnly, COLOR_RGB2GRAY);
@@ -355,8 +379,6 @@ public class SinglePlateTracker extends Tracker {
             enhanceImageMethod3(trackingOnly);
             cvtColor(trackingOnly, trackingOnly, COLOR_GRAY2RGB);
 //            resize(trackingOnly, trackingOnly, new Size(IMG_WIDTH, IMG_HEIGHT));
-
-
 
 
 
@@ -370,7 +392,7 @@ public class SinglePlateTracker extends Tracker {
 
             boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
-            updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp());
+            updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp() / 1000L);
 
 //            System.out.println("Loop time: " + (System.currentTimeMillis() - time1) / 1000.0 + "s");
 
@@ -401,6 +423,11 @@ public class SinglePlateTracker extends Tracker {
             frameNo = grabber.getFrameNumber();
 
             // todo System.out.print("\r" + (frameNo + 1) + " of " + totalFrames + " frames processed");
+
+            // todo: calculate uncertainty of each point / assignment and write that value to file for each point
+            if (frameNo % saveFrequency == 0) {
+                writeAnimalPointsToFile(this.animals, dataSaveNamePrefix, true, true);
+            }
 
         }
         canvasFrame.dispose();
@@ -444,9 +471,12 @@ public class SinglePlateTracker extends Tracker {
         //***** Note that x + width must be <= original image width, and y + height must be <= original image height**//
         int[] cropDims = new int[]{245,30,660,660};//230,10,700,700};//
 
-        SinglePlateTracker tracker = new SinglePlateTracker(n_objs, true,  cropDims, testVideo);
+        String dataSaveName = "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/data/tracking_data/motionData/trackingData";
+
+
+        SinglePlateTracker tracker = new SinglePlateTracker(n_objs, true,  cropDims, testVideo, dataSaveName);
         tracker.trackVideo();
 
-        writeAnimalPointsToFile(tracker.animals, "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/data/tracking_data/motionData/trackingData.dat", false);
+//        writeAnimalPointsToFile(tracker.animals, "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/data/tracking_data/motionData/trackingData.dat", false);
     }
 }

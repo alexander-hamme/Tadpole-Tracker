@@ -34,6 +34,7 @@ import sproj.tracking.AnimalWithFilter;
 import java.io.*;
 import java.lang.reflect.Array;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -112,9 +113,8 @@ public abstract class IOUtils {
         return path.substring(path.lastIndexOf("/") + 1, path.length());
     }
 
-
-    public static void writeAnimalPointsToFile
-            (List<AnimalWithFilter> animals, String fileName, boolean appendIfFileExists) throws IOException  {
+    public static void writeAnimalsToSingleFile(List<AnimalWithFilter> animals, String fileName,
+                                               boolean appendIfFileExists, boolean clearPoints) throws IOException  {
 
         // TODO: put timestamp with each point
 
@@ -134,7 +134,39 @@ public abstract class IOUtils {
                 if (animals.indexOf(animal) < animals.size()-1) {    // add newline after all but the last animal
                     writer.write("\n");
                 }
+
+                if (clearPoints) {
+                    animal.clearPoints();
+                }
+
             }
+        }
+    }
+
+    public static void writeAnimalPointsToFile(List<AnimalWithFilter> animals, String filePrefix,
+                                               boolean appendIfFileExists, boolean clearPoints) throws IOException {
+
+        for (AnimalWithFilter animal : animals) {
+
+            String saveName = filePrefix + "_anml" + animals.indexOf(animal) + ".dat";
+
+            try (FileWriter writer = new FileWriter(saveName, appendIfFileExists)) {
+
+                Iterator<double[]> pointsIterator = animal.getDataPointsIterator();
+
+                //writer.write(String.format("Animal Number %d, RGBA color label: %s\n", animals.indexOf(animal)+1, animal.color.toString()));
+                while (pointsIterator.hasNext()) {
+                    double[] point = pointsIterator.next();
+                    writer.write(point[0] + "," + point[1] + "," + point[2] + "\n");
+//                    writer.write(String.join(",", point) + "\n");
+                }
+
+                if (clearPoints) {
+                    animal.clearPoints();
+                }
+
+            }
+
         }
     }
 

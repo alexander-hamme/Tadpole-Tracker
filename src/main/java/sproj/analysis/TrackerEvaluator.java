@@ -19,4 +19,9 @@ public class TrackerEvaluator extends Tracker {
     protected void createAnimalObjects() {
 
     }
+
+    @Override
+    protected void createAnimalFiles(String baseFilePrefix) throws IOException {
+
+    }
 }

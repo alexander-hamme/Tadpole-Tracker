@@ -69,6 +69,9 @@ public class AnimalWithFilter {
         return currCostNonAssignnmnt;
     }
 
+    public void clearPoints() {
+        this.dataPoints.clear();
+    }
 
     public void updateLocation(int x, int y, double dt, long timePos, boolean isPredicted) {
 
