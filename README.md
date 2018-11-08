@@ -14,7 +14,7 @@ Approaches:
 
   * Detection: Convolutional neural networks form the tadpole detection component of the overall system. I trained deep neural networks for xenopus tadpole detection and localization using the [YOLOv2](https://pjreddie.com/darknet/yolov2/) architecture.
 
-  * Tracking (specifically, trajectory prediction): I am currently looking at Kalman filters for trajectory estimation, and the Munkres implementation of the Hungarian optimal assignment algorithms for maintaining unique identities across frames.
+  * Tracking (specifically, trajectory prediction): I have implemented linear Kalman filters for trajectory estimation, and a modified version of the Munkres Hungarian optimal assignment algorithm for maintaining unique object identities across frames.
 
 -----
 
