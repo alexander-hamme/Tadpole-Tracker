@@ -29,12 +29,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.IUpdater;
 import sproj.tracking.Animal;
-import sproj.tracking.AnimalWithFilter;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -113,14 +110,14 @@ public abstract class IOUtils {
         return path.substring(path.lastIndexOf("/") + 1, path.length());
     }
 
-    public static void writeAnimalsToSingleFile(List<AnimalWithFilter> animals, String fileName,
-                                               boolean appendIfFileExists, boolean clearPoints) throws IOException  {
+    public static void writeAnimalsToSingleFile(List<Animal> animals, String fileName,
+                                                boolean appendIfFileExists, boolean clearPoints) throws IOException  {
 
         // TODO: put timestamp with each point
 
         try (FileWriter writer = new FileWriter(fileName, appendIfFileExists)) {
 
-            for (AnimalWithFilter animal : animals) {
+            for (Animal animal : animals) {
 
                 Iterator<double[]> pointsIterator = animal.getDataPointsIterator();
 
@@ -143,10 +140,10 @@ public abstract class IOUtils {
         }
     }
 
-    public static void writeAnimalPointsToFile(List<AnimalWithFilter> animals, String filePrefix,
+    public static void writeAnimalPointsToFile(List<Animal> animals, String filePrefix,
                                                boolean appendIfFileExists, boolean clearPoints) throws IOException {
 
-        for (AnimalWithFilter animal : animals) {
+        for (Animal animal : animals) {
 
             String saveName = filePrefix + "_anml" + animals.indexOf(animal) + ".dat";
 

@@ -1,6 +1,6 @@
 package sproj.assignment;
 
-import sproj.tracking.AnimalWithFilter;
+import sproj.tracking.Animal;
 import sproj.util.BoundingBox;
 
 import java.text.DecimalFormat;
@@ -44,10 +44,10 @@ public class OptimalAssigner {
 
     public static class Assignment {
 
-        public AnimalWithFilter animal;
+        public Animal animal;
         public BoundingBox box;
 
-        public Assignment(AnimalWithFilter anml, BoundingBox box) {
+        public Assignment(Animal anml, BoundingBox box) {
             this.animal = anml;
             this.box = box;
         }
@@ -63,16 +63,16 @@ public class OptimalAssigner {
      * @param boxes
      * @return
      */
-    public List<Assignment> getOptimalAssignments(final List<AnimalWithFilter> anmls, final List<BoundingBox> boxes) {
+    public List<Assignment> getOptimalAssignments(final List<Animal> anmls, final List<BoundingBox> boxes) {
 
         // Note: Animals are on rows, Bounding Boxes are on columns.
 
         this.foundOptimalSolution = false;
 
-        final List<AnimalWithFilter> animals = new ArrayList<>(anmls.size() * 2);
+        final List<Animal> animals = new ArrayList<>(anmls.size() * 2);
         final List<BoundingBox> boundingBoxes = new ArrayList<>(boxes.size() * 2);
 
-        for (AnimalWithFilter a : anmls) {
+        for (Animal a : anmls) {
             animals.add(a);
             animals.add(null);
         }
@@ -121,14 +121,14 @@ public class OptimalAssigner {
         return maskMatrix;
     }
 
-    private double costOfAssignment(AnimalWithFilter anml, BoundingBox box) {
+    private double costOfAssignment(Animal anml, BoundingBox box) {
         if (anml == null) { return DEFAULT_COST_OF_NON_ASSIGNMENT; }
         else if (box == null) { return anml.getCurrNonAssignmentCost(); }
         return  Math.pow(Math.pow(anml.x - box.centerX, 2) + Math.pow(anml.y - box.centerY, 2), 0.5);
     }
 
 
-    private List<Assignment> parseSolvedMatrix(final int[][] solvedMatrix, final List<AnimalWithFilter> animals,
+    private List<Assignment> parseSolvedMatrix(final int[][] solvedMatrix, final List<Animal> animals,
                                                final List<BoundingBox> boundingBoxes) {
 
         ArrayList<Assignment> assignments = new ArrayList<>();
@@ -155,7 +155,7 @@ public class OptimalAssigner {
         //        if (assignments.size() < animals.size()) {
 
         // TODO get rid of this    (it shouldn't ever be called?
-        for (AnimalWithFilter anml : animals) {
+        for (Animal anml : animals) {
 
             if (anml == null) {continue;}
 
@@ -199,7 +199,7 @@ public class OptimalAssigner {
      * @return
      */
     public List<Assignment> getOptimalAssignmentsWithoutExtraNulls(
-            final List<AnimalWithFilter> animals, final List<BoundingBox> boundingBoxes) {
+            final List<Animal> animals, final List<BoundingBox> boundingBoxes) {
 
         // Note: Animals are on rows, Bounding Boxes are on columns.
 
@@ -706,7 +706,7 @@ public class OptimalAssigner {
 
 
 
-    private List<Assignment> parseSolvedMatrixORIGINAL(final int[][] solvedMatrix, final List<AnimalWithFilter> animals,
+    private List<Assignment> parseSolvedMatrixORIGINAL(final int[][] solvedMatrix, final List<Animal> animals,
                                                        final List<BoundingBox> boundingBoxes) {
 
         ArrayList<Assignment> assignments = new ArrayList<>();
@@ -734,7 +734,7 @@ public class OptimalAssigner {
 
         //        if (assignments.size() < animals.size()) {
 
-        for (AnimalWithFilter anml : animals) {
+        for (Animal anml : animals) {
 
             for (Assignment assignment : assignments) {
 

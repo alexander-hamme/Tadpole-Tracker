@@ -8,8 +8,6 @@ import org.bytedeco.javacv.*;
 import sproj.util.Logger;
 import sproj.yolo.YOLOModelContainer;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Iterator;
 
@@ -83,7 +81,7 @@ public abstract class Tracker {          //  TODO make this an interface?
      * @param videoFrameMat Mat object
      * @param animal Animal object
      */
-    protected void traceAnimalOnFrame(opencv_core.Mat videoFrameMat, AnimalWithFilter animal, double scaleMultiplier) {
+    protected void traceAnimalOnFrame(opencv_core.Mat videoFrameMat, Animal animal, double scaleMultiplier) {
         // info : http://bytedeco.org/javacpp-presets/opencv/apidocs/org/bytedeco/javacpp/opencv_imgproc.html#method.detail
 
         opencv_core.Scalar circleColor = animal.color; //new Scalar(0,255,0,1);

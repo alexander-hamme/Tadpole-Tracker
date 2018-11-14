@@ -1,10 +1,9 @@
 package sproj.assignment;
 
 import org.junit.jupiter.api.Test;
-import sproj.tracking.AnimalWithFilter;
+import sproj.tracking.Animal;
 import sproj.util.BoundingBox;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -116,11 +115,11 @@ class OptimalAssignerTest {
         boxes.add(new BoundingBox(new int[]{205,205}, 1, 1));
         boxes.add(new BoundingBox(new int[]{300,300}, 1, 1));
 
-        List<AnimalWithFilter> animals = new ArrayList<>();
-        animals.add(new AnimalWithFilter(0, 0, null, null, null));
-        animals.add(new AnimalWithFilter(100, 100, null, null, null));
-        animals.add(new AnimalWithFilter(200, 200, null, null, null));
-        animals.add(new AnimalWithFilter(215, 215, null, null, null));
+        List<Animal> animals = new ArrayList<>();
+        animals.add(new Animal(0, 0, null, null, null));
+        animals.add(new Animal(100, 100, null, null, null));
+        animals.add(new Animal(200, 200, null, null, null));
+        animals.add(new Animal(215, 215, null, null, null));
 
         List<OptimalAssigner.Assignment> expectedAssignments = new ArrayList<>();
 
@@ -168,10 +167,10 @@ class OptimalAssignerTest {
         boxes.add(new BoundingBox(new int[]{205,205}, 5, 5));
 
 
-        List<AnimalWithFilter> animals = new ArrayList<>(numbOfBoxes - numbMissingAnimals);
-        animals.add(new AnimalWithFilter(0, 0, null, null, null));
-        animals.add(new AnimalWithFilter(100, 100, null, null, null));
-        animals.add(new AnimalWithFilter(200, 200, null, null, null));
+        List<Animal> animals = new ArrayList<>(numbOfBoxes - numbMissingAnimals);
+        animals.add(new Animal(0, 0, null, null, null));
+        animals.add(new Animal(100, 100, null, null, null));
+        animals.add(new Animal(200, 200, null, null, null));
 
         List<OptimalAssigner.Assignment> expectedAssignments = new ArrayList<>(numbOfBoxes - numbMissingAnimals);
         expectedAssignments.add(new OptimalAssigner.Assignment(animals.get(0), boxes.get(0)));
@@ -194,11 +193,11 @@ class OptimalAssignerTest {
         int numbOfAnimals = 4;
         int numberMissingBoxes = 2;
 
-        List<AnimalWithFilter> animals = new ArrayList<>(numbOfAnimals);
-        animals.add(new AnimalWithFilter(0, 0, null, null, null));
-        animals.add(new AnimalWithFilter(50, 50, null, null, null));
-        animals.add(new AnimalWithFilter(100, 100, null, null, null));
-        animals.add(new AnimalWithFilter(150, 150, null, null, null));
+        List<Animal> animals = new ArrayList<>(numbOfAnimals);
+        animals.add(new Animal(0, 0, null, null, null));
+        animals.add(new Animal(50, 50, null, null, null));
+        animals.add(new Animal(100, 100, null, null, null));
+        animals.add(new Animal(150, 150, null, null, null));
 
         List<BoundingBox> boxes = new ArrayList<>(numbOfAnimals - numberMissingBoxes);
         boxes.add(new BoundingBox(new int[]{45,45}, 5, 5));
@@ -226,13 +225,13 @@ class OptimalAssignerTest {
         double multiplier = 10.0;
 
 
-        List<AnimalWithFilter> animals = new ArrayList<>(numberOfObjects);
+        List<Animal> animals = new ArrayList<>(numberOfObjects);
         List<BoundingBox> boxes = new ArrayList<>(numberOfObjects);
         List<OptimalAssigner.Assignment> expectedAssignments = new ArrayList<>(numberOfObjects);
 
         for (int i=0; i<numberOfObjects; i++) {
 
-            AnimalWithFilter anml = new AnimalWithFilter(
+            Animal anml = new Animal(
                     (int) (multiplier * i), (int) (multiplier * i),
                     null, null, null);
 

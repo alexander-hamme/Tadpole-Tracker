@@ -2,7 +2,6 @@ package sproj.tracking;
 
 import org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacv.CanvasFrame;
-import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
@@ -14,7 +13,6 @@ import sproj.yolo.YOLOModelContainer;
 
 import javax.swing.*;
 import java.awt.event.KeyEvent;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,7 +33,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  */
 public class SinglePlateTracker extends Tracker {
 
-    private ArrayList<AnimalWithFilter> animals = new ArrayList<>();
+    private ArrayList<Animal> animals = new ArrayList<>();
     private DetectionsParser detectionsParser = new DetectionsParser();
     private OptimalAssigner optimalAssigner = new OptimalAssigner();
     private OpenCVFrameConverter frameConverter = new OpenCVFrameConverter.ToMat();
@@ -136,7 +134,7 @@ public class SinglePlateTracker extends Tracker {
             y = (int) ((i + 1) / ((double) numb_of_anmls * videoFrameHeight));
             clr = colors[i];
             this.animals.add(
-                    new AnimalWithFilter(x, y, positionBounds, new Scalar(clr[0],clr[1], clr[2], 1.0),  //colors[i],
+                    new Animal(x, y, positionBounds, new Scalar(clr[0],clr[1], clr[2], 1.0),  //colors[i],
                             filterBuilder.getNewKalmanFilter(x, y, 0.0, 0.0))
             );
         }
@@ -147,7 +145,7 @@ public class SinglePlateTracker extends Tracker {
 
         this.dataSaveNamePrefix = baseFilePrefix;
 
-        for (AnimalWithFilter a : animals) {
+        for (Animal a : animals) {
             try (FileWriter writer = new FileWriter(baseFilePrefix + "_anml" + animals.indexOf(a) + ".dat")) {
                 writer.write(String.format("Animal Number %d | BGRA color label: %s\n", animals.indexOf(a), a.color.toString()));
 
@@ -155,7 +153,7 @@ public class SinglePlateTracker extends Tracker {
         }
     }
 
-    private boolean assignmentIsReasonable(AnimalWithFilter anml, BoundingBox box, int frameNumber) {
+    private boolean assignmentIsReasonable(Animal anml, BoundingBox box, int frameNumber) {
 
         if (frameNumber <= NUMB_FRAMES_FOR_INIT) { return true; }
 
@@ -205,7 +203,7 @@ public class SinglePlateTracker extends Tracker {
 
             int prox_start_val = (int) Math.round(Math.sqrt(Math.pow(frameImage.rows(), 2) + Math.pow(frameImage.cols(), 2)));
 
-            for (AnimalWithFilter anml : animals) {
+            for (Animal anml : animals) {
                 anml.setCurrCostNonAssignnmnt(prox_start_val);
             }
 
@@ -231,7 +229,7 @@ public class SinglePlateTracker extends Tracker {
         /*optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = prox_start_val;
             optimalAssigner.ADD_NULL_FOR_EACH_ANIMAL = false;
         } else {
-            optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = AnimalWithFilter.DEFAULT_COST_OF_NON_ASSIGNMENT;
+            optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = Animal.DEFAULT_COST_OF_NON_ASSIGNMENT;
             optimalAssigner.ADD_NULL_FOR_EACH_ANIMAL = true;
         }*/
 
@@ -261,7 +259,7 @@ public class SinglePlateTracker extends Tracker {
         }
 
         if (DRAW_ANML_TRACKS) {
-            for (AnimalWithFilter animal : animals) {
+            for (Animal animal : animals) {
                 traceAnimalOnFrame(frameImage, animal, 1.0);             // call this here so that this.animals doesn't have to be iterated through again
             }
         }
@@ -412,7 +410,7 @@ public class SinglePlateTracker extends Tracker {
 
             if (DRAW_ANML_TRACKS) {
                 double scaleMultiplier = trackingOnly.rows() / (double) frameImg.rows();
-                for (AnimalWithFilter animal : animals) {
+                for (Animal animal : animals) {
                     traceAnimalOnFrame(trackingOnly, animal, scaleMultiplier);             // call this here so that this.animals doesn't have to be iterated through again
                 }
             }
