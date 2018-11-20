@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
 import sproj.util.IOUtils;
+import sproj.util.MissingDataHandeler;
 import sproj.yolo.YOLOModelContainer;
 
 import static org.bytedeco.javacpp.opencv_imgproc.CV_AA;
@@ -308,55 +309,6 @@ public class TrackerAccuracyEvaluator {
         );
     }
 
-
-    private List<List<Integer[]>> loadLabeledData(File file, int trueNumbAnmls) throws IOException {
-
-        // TODO: 11/20/18 handle missing values using trueNumbAnmls to check, then extrapolating
-
-
-        List<String> lines = IOUtils.readLinesFromFile(file);
-        List<List<Integer[]>> uniquePoints = new ArrayList<>(lines.size());
-
-        // [211, 88],[257, 76],[279, 60],[421, 66],[0]
-        for (String l : lines) {
-
-            String[] split = l.split(",");
-
-            List<Integer[]> points = new ArrayList<>(split.length);
-
-            Set<String> temp = new LinkedHashSet<>(Arrays.asList(split));       // remove duplicate elements
-            split = temp.toArray(new String[0]);
-
-            for (int i=0; i<split.length; i++) {
-                if (i<split.length-1 && split[i].contains("[") && split[i+1].contains("]")) {
-
-                    points.add(new Integer[]{
-                            Integer.valueOf(CharMatcher.javaDigit().retainFrom(split[i])),
-                            Integer.valueOf(CharMatcher.javaDigit().retainFrom(split[i+1])),
-                    });
-
-                    //points.add(split[i] + split[i+1]);
-                } else if (split[i].contains("[") && split[i].contains("]")) {
-                    points.add(new Integer[]{
-                            Integer.valueOf(CharMatcher.javaDigit().retainFrom(split[i]))
-                    });
-                    //points.add(split[i]);
-                }
-            }
-            uniquePoints.add(points);
-        }
-
-        for (List<Integer[]> lst : uniquePoints) {
-            for (Integer[] arr : lst) {
-                System.out.print(Arrays.toString(arr));
-                System.out.print("\t");
-            }
-            System.out.println();
-        }
-
-        return uniquePoints;
-    }
-
     public static void main(String[] args) throws IOException {
 
         TrackerAccuracyEvaluator evaluator = new TrackerAccuracyEvaluator();
@@ -364,8 +316,17 @@ public class TrackerAccuracyEvaluator {
 //        evaluator.loadLabeledData(new File("/home/ah2166/Documents/sproj/java/" +
 //                "Tadpole-Tracker/data/labeledVideoPoints/4tads/IMG_5193_pts.dat"), 4);
 
-        evaluator.loadLabeledData(new File("/home/alex/Downloads/4tads/IMG_5193_pts.dat"), 4);
+        // note that in IMG_5193_pts.dat the data had two fake starts from beginning, after the 40 and the 390 ms marks,
+        // which have since been removed
 
 
+        System.out.println("\n--------------------------------\n");
+
+        MissingDataHandeler dataHandeler = new MissingDataHandeler();
+        List<List<Double[]>> fixedPoints = dataHandeler.fillInData(
+"/home/ah2166/Documents/sproj/java/Tadpole-Tracker/data/labeledVideoPoints/4tads/IMG_5193_pts.dat", 4
+        );
+
+        // todo add labeled file paths to eval_list files, parse them, then run tracker against the points
     }
 }

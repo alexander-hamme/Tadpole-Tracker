@@ -73,21 +73,33 @@ public class Animal {
         this.dataPoints.clear();
     }
 
+    /**
+     * Note that the order of parameters to this function does not match
+     * the order in which the data points are written to file
+     *
+     * @param x
+     * @param y
+     * @param dt
+     * @param timePos
+     * @param isPredicted
+     */
     public void updateLocation(int x, int y, double dt, long timePos, boolean isPredicted) {
 
         if (isPredicted) {
             timeStepsPredicted++;
             currCostNonAssignnmnt = (currCostNonAssignnmnt + timeStepsPredicted) % MAXCOST; // todo % some value
 //            currCostNonAssignnmnt = (DEFAULT_COST_OF_NON_ASSIGNMENT + timeStepsPredicted) % MAXCOST; // todo % some value
-            System.out.println("Current cost: " + currCostNonAssignnmnt);
+            if (DEBUG) {System.out.println("Current cost: " + currCostNonAssignnmnt);}
         } else {
             timeStepsPredicted = 0;
             currCostNonAssignnmnt = DEFAULT_COST_OF_NON_ASSIGNMENT;
         }
 
+        int predicted = isPredicted ? 1 : 0;
+
         this.x = x; this.y = y;
         applyBoundsConstraints();
-        dataPoints.add(new double[]{timePos, this.x, this.y});
+        dataPoints.add(new double[]{timePos, this.x, this.y, predicted});
         linePoints.add(new int[]{this.x, this.y});   // calls the addFirst() method, adds to front of Deque
         updateVelocity(dt);
         updateKFilter();

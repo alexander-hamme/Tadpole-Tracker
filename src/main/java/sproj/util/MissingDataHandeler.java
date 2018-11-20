@@ -1,44 +1,205 @@
 package sproj.util;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.google.common.base.CharMatcher;
+import sproj.analysis.TrackerAccuracyEvaluator;
+import sproj.assignment.OptimalAssigner;
+import sproj.prediction.KalmanFilterBuilder;
+import sproj.tracking.Animal;
+import sproj.tracking.Tracker;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 public class MissingDataHandeler {
 
+    private final boolean DEBUG = true;
 
-    // TODO: 11/20/18 you also need to check to make sure the data isn't started over 
-    // TODO: 11/20/18   eg in IMG_5193_pts.dat the data starts over again over the 40 ms mark
 
-    private class Node {
+    public List<List<Double[]>> fillInData(String fileName, int numbAnimals) throws IOException {
+        List<List<Integer[]>> points = loadLabeledData(new File(fileName), numbAnimals);
+        return fillInData(points, numbAnimals);
+    }
 
-        Node prev;
-        Node next;
-        Integer[] data;
+    public List<List<Double[]>> fillInData(List<List<Integer[]>> dataPoints, int numbAnimals) {
 
-        private Node(Integer[] d) {
-            this.prev = null;
-            this.next = null;
-            this.data = d;
+        List<List<Double[]>> groupedData = groupDataPoints(dataPoints, numbAnimals);
+
+        for (List<Double[]> group : groupedData) {
+            extrapolateMissingData(group);
         }
 
-        private double proximityTo(Node n) {
-            return Math.pow(
-                    Math.pow(n.data[0] - this.data[0], 2) + Math.pow(n.data[1] - this.data[1], 2), 2
-            );
+        if (DEBUG) {
+            for (List<Double[]> group : groupedData) {
+                for (Double[] pt : group) {
+                    System.out.print(Arrays.toString(pt));
+                    System.out.print("\t");
+                }
+                System.out.println();
+            }
+        }
+
+        return groupedData;
+    }
+
+    private double mean(double a, double b) {
+        return ((a+b) / 2.0);
+    }
+
+    private void extrapolateMissingData(List<Double[]> points) {
+
+        int size = points.size();
+        for (int i=1; i<size; i++) {       //  relies on assumption that first point will always be true
+            Double[] pt = points.get(i);
+            if (pt[2] == 1.0) {   // point is predicted
+                if (i < size - 1) {
+
+                    Double[] prevPt = points.get(i - 1);
+                    Double[] nextPt = points.get(i + 1);
+
+                    pt[0] = (double) Math.round(mean(prevPt[0], nextPt[0]));
+                    pt[1] = (double) Math.round(mean(prevPt[1], nextPt[1]));
+
+                } else {
+                    Double[] prevPt = points.get(i - 1);
+                    pt[0] = pt[0] + (pt[0]-prevPt[0]);
+                    pt[1] = pt[1] + (pt[1]-prevPt[1]);
+                }
+            }
         }
     }
 
-    private List<List<Integer[]>> fillInData(List<List<Integer[]>> dataPoints, int numbAnimals) {
+    private List<List<Double[]>> groupDataPoints(List<List<Integer[]>> dataPoints, int numbAnimals) {
 
-        List<Integer[]> startingPoints = dataPoints.get(0);
+        List<List<Double[]>> finalPoints = new ArrayList<>();
 
-        assert startingPoints.size() == numbAnimals + 1;   // +1 for time stamp
+        OptimalAssigner assigner = new OptimalAssigner();
+        OptimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = 500;
 
-        List<Node> headNodes = new ArrayList<>(numbAnimals);
-        for (int i=0; i<numbAnimals; i++) {
-            headNodes.add(new Node(startingPoints.get(i)));
+        KalmanFilterBuilder filterBuilder = new KalmanFilterBuilder();
+        List<Animal> fakeAnimals = new ArrayList<>(numbAnimals);
+
+        for (int i = 0; i < numbAnimals; i++) {
+            fakeAnimals.add(new Animal(i, i, new int[]{0, 700, 0,700}, null,
+                    filterBuilder.getNewKalmanFilter(i, i, 0.0, 0.0)));
+
+            finalPoints.add(new ArrayList<>());
         }
 
+
+        for (List<Integer[]> points : dataPoints) {
+
+            long timePos = -1L;
+
+            List<BoundingBox> fakeBoxes = new ArrayList<>(points.size() - 1);
+            for (Integer[] pt : points) {
+                if (pt.length > 1) {
+                    fakeBoxes.add(new BoundingBox(new int[]{pt[0], pt[1]}, 1, 1));
+                } else {
+                    timePos = (long) pt[0];
+                }
+            }
+            List<OptimalAssigner.Assignment> assignments = assigner.getOptimalAssignments(fakeAnimals, fakeBoxes);
+
+            for (OptimalAssigner.Assignment assignment : assignments) {
+
+                if (assignment.animal == null) {
+                    if (assignment.box != null) {
+                        System.out.println("No assignment for" + assignment.box.toString());
+                    }
+                    continue;
+                }
+
+                if (assignment.box == null) {       // no assignment
+                    assignment.animal.predictTrajectory(0.01, timePos);
+                } else {
+                    assignment.animal.updateLocation(
+                            assignment.box.centerX, assignment.box.centerY, 0.01, timePos, false
+                    );
+                }
+            }
+
+        }
+
+
+        List<Iterator<double[]>> anmlIterators = new ArrayList<>(numbAnimals);
+
+        for (Animal anml : fakeAnimals) {
+            anmlIterators.add(anml.getDataPointsIterator());
+        }
+
+        for (int i = 0; i < dataPoints.size(); i++) {
+
+            double[] points = null;
+
+            int idx = 0;
+
+            for (Iterator<double[]> iterator : anmlIterators) {
+
+                 if (iterator.hasNext()) {
+                    points = iterator.next();
+                    //System.out.print("[" + points[1] + ", " + points[2] + ", " + points[3] + "]");
+                    //System.out.print("\t");
+
+                    finalPoints.get(idx++).add(new Double[]{
+                            points[1], points[2], points[3], points[0]
+                    });
+                }
+            }
+            if (points!=null) {
+                //System.out.print(points[0]);
+            }
+            //System.out.println();
+
+        }
+        return finalPoints;
     }
 
+    private List<List<Integer[]>> loadLabeledData(File file, int trueNumbAnmls) throws IOException {
+
+        // TODO: 11/20/18 handle missing values using trueNumbAnmls to check, then extrapolating
+
+
+        List<String> lines = IOUtils.readLinesFromFile(file);
+        List<List<Integer[]>> uniquePoints = new ArrayList<>(lines.size());
+
+        // [211, 88],[257, 76],[279, 60],[421, 66],[0]
+        for (String l : lines) {
+
+            String[] split = l.split(",");
+
+            List<Integer[]> points = new ArrayList<>(split.length);
+
+            Set<String> temp = new LinkedHashSet<>(Arrays.asList(split));       // remove duplicate elements
+            split = temp.toArray(new String[0]);
+
+            for (int i=0; i<split.length; i++) {
+                if (i<split.length-1 && split[i].contains("[") && split[i+1].contains("]")) {
+
+                    points.add(new Integer[]{
+                            Integer.valueOf(CharMatcher.javaDigit().retainFrom(split[i])),
+                            Integer.valueOf(CharMatcher.javaDigit().retainFrom(split[i+1])),
+                    });
+
+                    //points.add(split[i] + split[i+1]);
+                } else if (split[i].contains("[") && split[i].contains("]")) {
+                    points.add(new Integer[]{
+                            Integer.valueOf(CharMatcher.javaDigit().retainFrom(split[i]))
+                    });
+                    //points.add(split[i]);
+                }
+            }
+            uniquePoints.add(points);
+        }
+
+        for (List<Integer[]> lst : uniquePoints) {
+            for (Integer[] arr : lst) {
+                System.out.print(Arrays.toString(arr));
+                System.out.print("\t");
+            }
+            System.out.println();
+        }
+
+        return uniquePoints;
+    }
 }

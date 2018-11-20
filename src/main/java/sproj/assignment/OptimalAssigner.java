@@ -22,7 +22,8 @@ public class OptimalAssigner {
     private final int PRIMED = 2;
     private final int UNPRIMED = 0;
 
-    public static final double DEFAULT_COST_OF_NON_ASSIGNMENT = 30.0;     // this should be high enough to not be a minimum value in a row or col,
+//    public static final double DEFAULT_COST_OF_NON_ASSIGNMENT = 30.0;     // this should be high enough to not be a minimum value in a row or col,
+    public static double DEFAULT_COST_OF_NON_ASSIGNMENT = 30.0;     // this should be high enough to not be a minimum value in a row or col,
                                                             // but not high enough that it's worse than giving an assignment a value across the screen
                                                             // TODO:       find out the highest (true) distance that tadpoles can cover in a frame or two and
                                                             // todo        multiply  this by number of frames skipped
