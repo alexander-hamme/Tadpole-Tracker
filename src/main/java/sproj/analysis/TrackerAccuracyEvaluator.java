@@ -5,6 +5,7 @@ import java.util.*;
 import java.io.File;
 import java.io.IOException;
 
+import com.google.common.base.CharMatcher;
 import org.bytedeco.javacpp.avutil;
 import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.*;
@@ -50,10 +51,11 @@ public class TrackerAccuracyEvaluator {
         this.SHOW_LIVE_EVAL_DISPLAY = showVisualStream;
     }
 
-    private List<Double> evaluateModelOnVideo(File videoFile, int numbAnimals,
-                                              opencv_core.Rect cropRectangle) throws IOException {
+    private List<Double> evaluateModelOnVideo(File videoFile, int numbAnimals, opencv_core.Rect cropRectangle,
+                                              File truthFile) throws IOException {
         initializeGrabber(videoFile);
-        return evaluateOnVideo(numbAnimals, cropRectangle);
+        List<List<Integer[]>> truthPoints = loadLabeledData(truthFile, numbAnimals);
+        return evaluateOnVideo(numbAnimals, cropRectangle, truthFile);
     }
 
 
@@ -70,7 +72,7 @@ public class TrackerAccuracyEvaluator {
      * @return
      * @throws IOException
      */
-    private List<Double> evaluateOnVideo(int numbAnimals, opencv_core.Rect cropRect) throws IOException {
+    private List<Double> evaluateOnVideo(int numbAnimals, opencv_core.Rect cropRect, File truthFile) throws IOException {
 
         int frameNo = 0;
         int totalFrames = grabber.getLengthInVideoFrames();
@@ -186,7 +188,7 @@ public class TrackerAccuracyEvaluator {
     /**
      * metaVideoList is a meta list of lists of videos. Each string is a path to a text file,
      * which contains line separated video descriptions, which are
-     * comma separated as follows:  full video path,number of animals in video, crop dimensions
+     * comma separated as follows:  full/video/path,number of animals in video, crop dimensions,path/to/labeled/truth/file
      * eg:  /home/Videos/video1.mp4,5,230 10 720 720
      *
      * In addition, files should be organized such that each path in metaVideoList represents the complete set
@@ -230,9 +232,12 @@ public class TrackerAccuracyEvaluator {
                 }
 
                 int numbAnimals;
-                File videoFile;
+                File videoFile, truthLabelsFile;
                 opencv_core.Rect cropRect;
                 List<Integer> cropDims = new ArrayList<>();
+
+                // TODO: 11/20/18 add labeled truth files to meta video list file
+
 
                 try {
 
@@ -251,6 +256,9 @@ public class TrackerAccuracyEvaluator {
                             cropDims.get(0), cropDims.get(1), cropDims.get(2), cropDims.get(3)
                     );
 
+                    truthLabelsFile = new File(split[3]);
+                    assert truthLabelsFile.exists() && !truthLabelsFile.isDirectory();
+
                 } catch (AssertionError | NumberFormatException ignored) {
 
                     System.out.println(String.format("Skipping invalid video path or incorrectly formatted line: '%s'", individualVideo));
@@ -259,7 +267,7 @@ public class TrackerAccuracyEvaluator {
 
                 System.out.println(String.format("\nVideo %d of %d", textLines.indexOf(individualVideo) + 1, textLines.size()));
 
-                List<Double> dataPoints = evaluateModelOnVideo(videoFile, numbAnimals, cropRect);
+                List<Double> dataPoints = evaluateModelOnVideo(videoFile, numbAnimals, cropRect, truthLabelsFile);
 
                 // one point for each video
                 videoEvals.add(
@@ -301,32 +309,49 @@ public class TrackerAccuracyEvaluator {
     }
 
 
-    private List<List<String>> loadLabeledData(String fileName, int trueNumbAnmls) throws IOException {
-        List<String> lines = IOUtils.readLinesFromFile(new File(fileName));
-        List<List<String>> uniquePoints = new ArrayList<>(lines.size());
+    private List<List<Integer[]>> loadLabeledData(File file, int trueNumbAnmls) throws IOException {
+
+        // TODO: 11/20/18 handle missing values using trueNumbAnmls to check, then extrapolating
+
+
+        List<String> lines = IOUtils.readLinesFromFile(file);
+        List<List<Integer[]>> uniquePoints = new ArrayList<>(lines.size());
 
         // [211, 88],[257, 76],[279, 60],[421, 66],[0]
         for (String l : lines) {
 
             String[] split = l.split(",");
 
-            List<String> points = new ArrayList<>(split.length);
+            List<Integer[]> points = new ArrayList<>(split.length);
 
-            Set<String> temp = new LinkedHashSet<>(Arrays.asList(split));
+            Set<String> temp = new LinkedHashSet<>(Arrays.asList(split));       // remove duplicate elements
             split = temp.toArray(new String[0]);
 
             for (int i=0; i<split.length; i++) {
                 if (i<split.length-1 && split[i].contains("[") && split[i+1].contains("]")) {
-                    points.add(split[i] + split[i+1]);
+
+                    points.add(new Integer[]{
+                            Integer.valueOf(CharMatcher.javaDigit().retainFrom(split[i])),
+                            Integer.valueOf(CharMatcher.javaDigit().retainFrom(split[i+1])),
+                    });
+
+                    //points.add(split[i] + split[i+1]);
                 } else if (split[i].contains("[") && split[i].contains("]")) {
-                    points.add(split[i]);
+                    points.add(new Integer[]{
+                            Integer.valueOf(CharMatcher.javaDigit().retainFrom(split[i]))
+                    });
+                    //points.add(split[i]);
                 }
             }
             uniquePoints.add(points);
         }
 
-        for (List<String> lst : uniquePoints) {
-            System.out.println(lst.toString());
+        for (List<Integer[]> lst : uniquePoints) {
+            for (Integer[] arr : lst) {
+                System.out.print(Arrays.toString(arr));
+                System.out.print("\t");
+            }
+            System.out.println();
         }
 
         return uniquePoints;
@@ -336,7 +361,11 @@ public class TrackerAccuracyEvaluator {
 
         TrackerAccuracyEvaluator evaluator = new TrackerAccuracyEvaluator();
 
-        evaluator.loadLabeledData("/home/ah2166/Documents/sproj/java/" +
-                "Tadpole-Tracker/data/labeledVideoPoints/4tads/IMG_5193_pts.dat", 4);
+//        evaluator.loadLabeledData(new File("/home/ah2166/Documents/sproj/java/" +
+//                "Tadpole-Tracker/data/labeledVideoPoints/4tads/IMG_5193_pts.dat"), 4);
+
+        evaluator.loadLabeledData(new File("/home/alex/Downloads/4tads/IMG_5193_pts.dat"), 4);
+
+
     }
 }
