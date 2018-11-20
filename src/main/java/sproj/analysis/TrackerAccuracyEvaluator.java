@@ -55,7 +55,7 @@ public class TrackerAccuracyEvaluator {
     private List<Double> evaluateModelOnVideo(File videoFile, int numbAnimals, opencv_core.Rect cropRectangle,
                                               File truthFile) throws IOException {
         initializeGrabber(videoFile);
-        List<List<Integer[]>> truthPoints = loadLabeledData(truthFile, numbAnimals);
+        //List<List<Double[]>> truthPoints = new MissingDataHandeler().fillInData(truthFile.toString(), numbAnimals);
         return evaluateOnVideo(numbAnimals, cropRectangle, truthFile);
     }
 
