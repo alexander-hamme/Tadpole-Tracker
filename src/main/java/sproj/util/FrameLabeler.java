@@ -232,6 +232,9 @@ public class FrameLabeler {
                 System.out.println(Arrays.toString(pt));
             }
         }*/
+
+        // TODO fix this so it doesn't put commas between the x & y coordinates of each point ->
+        // todo     makes it hard to read and parse data from file automatically
         if (! labeledPoints.isEmpty()) {
             IOUtils.writeNestedObjArraysToFile(labeledPoints, saveName, ",", true);
         }

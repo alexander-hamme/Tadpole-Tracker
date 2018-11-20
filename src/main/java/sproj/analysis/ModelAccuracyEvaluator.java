@@ -221,8 +221,6 @@ public class ModelAccuracyEvaluator {
     private void evaluateModel(File modelPath, HashMap<Integer, String> metaVideoList,
                                String dataSaveName) throws IOException {
 
-
-
         initalizeModelContainer(modelPath);
 
         List<List<Double>> anmlGroupAccuracies = new ArrayList<>(metaVideoList.size()); // each inner list contains points for all videos for animal number
