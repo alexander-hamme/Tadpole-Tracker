@@ -210,6 +210,12 @@ public class SinglePlateTracker extends Tracker {
         }
 
 
+        // TODO you have to figure out how to prevent the dynamic cost from just making them swap every few frames
+
+        // todo   --> check for whether box has overlap with an animal already and then increase that cost?
+
+
+
         // TODO:   DECREASE Model confidence threshold and INCREASE NMS threshold
         // todo    when lots of tadpoles are close together
 
@@ -463,18 +469,35 @@ public class SinglePlateTracker extends Tracker {
 //        String testVideo = "data/videos/IMG_5126.MOV";
 //        int n_objs = 4;
 
-        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/6tads/IMG_5214.MOV";
-        int n_objs = 6;
-
-        //***** Note that x + width must be <= original image width, and y + height must be <= original image height**//
-        int[] cropDims = new int[]{245,30,660,660};//230,10,700,700};//
-
-        String dataSaveName = "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/data/tracking_data/motionData/trackingData";
+        String videoPath = "/home/ah2166/Videos/tad_test_vids/trialVids/4tads/";
 
 
-        SinglePlateTracker tracker = new SinglePlateTracker(n_objs, true,  cropDims, testVideo, dataSaveName);
-        tracker.trackVideo();
+        String[] testVideos = new String[]{
+                "IMG_5193", "IMG_5194", "IMG_5195", "IMG_5196", "IMG_5197", "IMG_5198", "IMG_5199",
+                "IMG_5200", "IMG_5201", "IMG_5202", "IMG_5203", "IMG_5204", "IMG_5205", "IMG_5206",
+                "IMG_5207", "IMG_5208", "IMG_5209", "IMG_5210", "IMG_5211", "IMG_5212",
+        };
 
-//        writeAnimalPointsToFile(tracker.animals, "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/data/tracking_data/motionData/trackingData.dat", false);
+        for (String vid : testVideos) {
+
+            String fullPath = videoPath + vid + ".MOV";
+            int n_objs = 4;
+
+            //***** Note that x + width must be <= original image width, and y + height must be <= original image height**//
+            int[] cropDims = new int[]{245, 30, 660, 660};//230,10,700,700};//
+
+            if (vid.equals("IMG_5212")) {
+                cropDims = new int[]{290, 60, 600, 600};
+            }
+
+            String dataSaveName = String.format("/home/ah2166/Documents/sproj/java/Tadpole-Tracker" +
+                    "/data/tracking_data/%s_data/", vid);
+
+
+            SinglePlateTracker tracker = new SinglePlateTracker(n_objs, true, cropDims, fullPath, dataSaveName);
+            tracker.trackVideo();
+
+        }
     }
 }
+

@@ -5,7 +5,6 @@ import java.util.*;
 import java.io.File;
 import java.io.IOException;
 
-import com.google.common.base.CharMatcher;
 import org.bytedeco.javacpp.avutil;
 import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.*;
@@ -16,9 +15,7 @@ import sproj.util.IOUtils;
 import sproj.util.MissingDataHandeler;
 import sproj.yolo.YOLOModelContainer;
 
-import static org.bytedeco.javacpp.opencv_imgproc.CV_AA;
-import static org.bytedeco.javacpp.opencv_imgproc.rectangle;
-import static org.bytedeco.javacpp.opencv_imgproc.resize;
+import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 public class TrackerAccuracyEvaluator {
 
@@ -52,15 +49,37 @@ public class TrackerAccuracyEvaluator {
         this.SHOW_LIVE_EVAL_DISPLAY = showVisualStream;
     }
 
+
+    private List<Double[]> scalePoints(List<Double[]> points, int origWidth, int origHeight) {
+
+        double widthMultiplier = (YOLOModelContainer.IMG_WIDTH / (double) origWidth);
+        double heightMultiplier = (YOLOModelContainer.IMG_HEIGHT / (double) origHeight);
+
+        List<Double[]> scaled = new ArrayList<>(points.size());
+
+        // Double arrays are in the form of:
+        for (int i=0; i<points.size(); i++) {
+            Double[] pt = points.get(i);
+            Double[] scaledPt = new Double[]{
+                    pt[0] * widthMultiplier,
+                    pt[1] * heightMultiplier,
+                    pt[2], pt[3]
+            };
+
+            scaled.add(scaledPt);
+        }
+        return scaled;
+    }
+
     private List<Double> evaluateModelOnVideo(File videoFile, int numbAnimals, opencv_core.Rect cropRectangle,
                                               File truthFile) throws IOException {
         initializeGrabber(videoFile);
         MissingDataHandeler handeler = new MissingDataHandeler();
-        List<List<Double[]>> fixed = handeler.fillInData(truthFile, numbAnimals);
+        List<List<Double[]>> fixed = handeler.fillInMissingData(truthFile, numbAnimals);
         List<List<Double[]>> rearranged = handeler.rearrangeData(fixed, numbAnimals);
 
 
-        return evaluateOnVideo(numbAnimals, cropRectangle, fixed);
+        return evaluateOnVideo(numbAnimals, cropRectangle, rearranged);
     }
 
 
@@ -99,16 +118,95 @@ public class TrackerAccuracyEvaluator {
 
         long startTime = System.currentTimeMillis();
 
+        int trthIndx = 0;   // current index in truth points list
+
         while ((frame = grabber.grabImage()) != null && !exitLoop) {
 
+            frameNo = grabber.getFrameNumber();
             frameImg = new opencv_core.Mat(frameConverter.convertToMat(frame), cropRect);
 
-            //todo test effects on accuracy of different frame filter algorithms
+            // frameImg is now of dimensions cropRect.width() x cropRect.height()
 
             detectedObjects = yoloModelContainer.runInference(frameImg);
-            double accuracy = detectedObjects.size() / (double) numbAnimals;
 
-            accuracy = Math.min(1.0, accuracy);
+            // yolo automatically resizes image, bounding boxes are relative to 416x416 dimensions
+
+            List<BoundingBox> boundingBoxes = detectionsParser.parseDetections(detectedObjects);
+
+
+
+
+            // TODO:   use SinglePlateTracker.timeStep()  here  and test animal locations
+
+
+
+
+            double accuracy = 0.0;
+
+            // TODO:  extrapolate data to cover all frames?
+            if (trthIndx >= truthPoints.size()) {
+                System.out.println("Reached end of truth data");
+                break;
+            }
+
+            List<Double[]> truthCoordinates = truthPoints.get(trthIndx);
+
+            if (SHOW_LIVE_EVAL_DISPLAY) {
+                for (Double[] pt : truthCoordinates) {
+
+                    if (pt == null) {
+                        continue;
+                    }
+                    circle(frameImg, new opencv_core.Point(
+                                    (int) Math.round(pt[0]), (int) Math.round(pt[1])
+                            ),
+                            3, opencv_core.Scalar.RED, -1, 8, 0);       // -1 is CV_FILLED, to fill the circle
+                }
+            }
+
+            truthCoordinates = scalePoints(truthCoordinates, cropRect.width(), cropRect.height());
+
+            int frameNumbStamp = (int) Math.round(truthCoordinates.get(0)[3]);
+
+//                if (frameNo == frameNumbStamp) {
+            if (frameNo != frameNumbStamp) {
+                continue;
+            }
+
+            accuracy = 0.0;
+
+            for (Double[] pt : truthCoordinates) {
+
+                /*if (pt == null) {
+                    continue;
+                }
+                circle(frameImg, new opencv_core.Point(
+                                (int) Math.round(pt[0]), (int) Math.round(pt[1])
+                        ),
+                        3, opencv_core.Scalar.RED, -1, 8, 0);       // -1 is CV_FILLED, to fill the circle
+                */
+
+
+                // todo exclude already "assigned" boxes?
+                for (BoundingBox box : boundingBoxes) {
+                    if (box.contains(pt)) {
+                        /*System.out.println(String.format(
+                                "True: %s is within %s",
+                                Arrays.toString(pt), box.toString())
+                        );*/
+                        accuracy += 1.0 / numbAnimals;   // e.g. if there are 4 animals, each correct one adds 0.25
+                    }
+                }
+                accuracy = Math.min(1.0, accuracy);
+            }
+
+            System.out.println("Accuracy: " + accuracy);
+            trthIndx++;
+
+
+            /*double accuracy = detectedObjects.size() / (double) numbAnimals;
+
+            accuracy = Math.min(1.0, accuracy);*/
 
             /*
             if (COUNT_EXTRA_DETECTIONS_NEGATIVELY) {
@@ -117,12 +215,9 @@ public class TrackerAccuracyEvaluator {
 
             detectionAccuracies.add(accuracy);
 
-            frameNo = grabber.getFrameNumber();
             System.out.print("\r" + (frameNo + 1) + " of " + totalFrames + " frames processed");
 
             if (SHOW_LIVE_EVAL_DISPLAY && canvasFrame != null) {
-
-                List<BoundingBox> boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
                 resize(frameImg, frameImg, new opencv_core.Size(
                         YOLOModelContainer.IMG_WIDTH, YOLOModelContainer.IMG_HEIGHT)
@@ -150,9 +245,11 @@ public class TrackerAccuracyEvaluator {
 
                     char keyChar = keyEvent.getKeyChar();
 
-                    switch(keyChar) {
+                    switch (keyChar) {
 
-                        case KeyEvent.VK_ESCAPE: exitLoop = true; break;      // hold escape key or 'q' to quit
+                        case KeyEvent.VK_ESCAPE:
+                            exitLoop = true;
+                            break;      // hold escape key or 'q' to quit
 
                         case KeyEvent.VK_Q: {       // shift q to quit entirely
                             canvasFrame.dispose();
@@ -270,7 +367,8 @@ public class TrackerAccuracyEvaluator {
                     continue;
                 }
 
-                System.out.println(String.format("\nVideo %d of %d", textLines.indexOf(individualVideo) + 1, textLines.size()));
+                System.out.println(String.format("\nVideo %d of %d: %s",
+                        textLines.indexOf(individualVideo) + 1, textLines.size(), videoFile.toString()));
 
                 List<Double> dataPoints = evaluateModelOnVideo(videoFile, numbAnimals, cropRect, truthLabelsFile);
 

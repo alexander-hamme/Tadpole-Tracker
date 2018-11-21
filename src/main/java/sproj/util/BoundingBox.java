@@ -28,6 +28,16 @@ public class BoundingBox {
         this.botRightY = this.centerY + (int) Math.round(height / 2.0);
     }
 
+    public boolean contains(Integer[] point) {
+        return point[0] >= this.topleftX && point[0] <= this.botRightX
+                && point[1] >= this.topleftY && point[1] <= this.botRightY;
+    }
+
+    public boolean contains(Double[] point) {
+        return point[0] >= this.topleftX && point[0] <= this.botRightX
+                && point[1] >= this.topleftY && point[1] <= this.botRightY;
+    }
+
     public String toString() {
         return String.format(
                 "Top Left: (%d, %d), Bottom Right:(%d, %d)",

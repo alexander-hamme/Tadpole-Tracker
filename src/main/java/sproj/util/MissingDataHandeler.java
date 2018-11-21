@@ -1,11 +1,9 @@
 package sproj.util;
 
 import com.google.common.base.CharMatcher;
-import sproj.analysis.TrackerAccuracyEvaluator;
 import sproj.assignment.OptimalAssigner;
 import sproj.prediction.KalmanFilterBuilder;
 import sproj.tracking.Animal;
-import sproj.tracking.Tracker;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,7 +11,7 @@ import java.util.*;
 
 public class MissingDataHandeler {
 
-    private final boolean DEBUG = false;
+    private final boolean DEBUG = true;
 
     /**
      * Expects data in the form of a list of N lists, each of which is a list of single coordinates,
@@ -62,12 +60,12 @@ public class MissingDataHandeler {
         return rearranged;
     }
 
-    public List<List<Double[]>> fillInData(File file, int numbAnimals) throws IOException {
+    public List<List<Double[]>> fillInMissingData(File file, int numbAnimals) throws IOException {
         List<List<Integer[]>> points = loadLabeledData(file, numbAnimals);
-        return fillInData(points, numbAnimals);
+        return fillInMissingData(points, numbAnimals);
     }
 
-    public List<List<Double[]>> fillInData(List<List<Integer[]>> dataPoints, int numbAnimals) {
+    public List<List<Double[]>> fillInMissingData(List<List<Integer[]>> dataPoints, int numbAnimals) {
 
         List<List<Double[]>> groupedData = groupDataPoints(dataPoints, numbAnimals);
 
@@ -90,6 +88,22 @@ public class MissingDataHandeler {
 
     private double mean(double a, double b) {
         return ((a+b) / 2.0);
+    }
+
+    /**
+     *
+     * @param points
+     * @param numbToAdd  number of points to extrapolate between each current point
+     */
+    private List<List<Double[]>> extrapolateExtraPoints(List<List<Double[]>> points, int numbToAdd) {
+
+        for (List<Double[]> lst : points) {
+
+
+
+        }
+
+        return null;
     }
 
     private void extrapolateMissingData(List<Double[]> points) {
