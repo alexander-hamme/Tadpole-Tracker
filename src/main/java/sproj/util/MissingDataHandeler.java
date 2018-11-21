@@ -13,11 +13,57 @@ import java.util.*;
 
 public class MissingDataHandeler {
 
-    private final boolean DEBUG = true;
+    private final boolean DEBUG = false;
 
+    /**
+     * Expects data in the form of a list of N lists, each of which is a list of single coordinates,
+     * one for each video frame / timestep from the start to the end of the video
+     *
+     * The rearranged format is also a list of N lists, but now each list represents
+     * all the coordinates for a given frame / timestep of the video
+     *
+     * @param data
+     * @return
+     */
+    public List<List<Double[]>> rearrangeData(List<List<Double[]>> data, int numbAnmls) {
 
-    public List<List<Double[]>> fillInData(String fileName, int numbAnimals) throws IOException {
-        List<List<Integer[]>> points = loadLabeledData(new File(fileName), numbAnimals);
+        int numbLists = data.size();
+        assert numbLists == numbAnmls;
+
+        List<List<Double[]>> rearranged = new ArrayList<>(numbLists);
+
+        int numbPoints = data.get(0).size();
+
+        for (List<Double[]> lst : data) {
+            assert lst.size() == numbPoints;        // all lists should have same number of points
+        }
+
+        for (int n=0; n<numbPoints; n++) {  // iterate through all frames/timesteps of video
+
+            List<Double[]> lst = new ArrayList<>(numbLists);
+
+            for (int i = 0; i < numbLists; i++) {   // iterate through the nested lists at each timestep
+                lst.add(data.get(i).get(n));
+            }
+            rearranged.add(lst);
+        }
+
+        if (DEBUG) {
+            System.out.println("Rearranged data:");
+            for (List<Double[]> lst : rearranged) {
+                for (Double[] pt : lst) {
+                    System.out.print(Arrays.toString(pt));
+                    System.out.print("\t");
+                }
+                System.out.println();
+            }
+        }
+
+        return rearranged;
+    }
+
+    public List<List<Double[]>> fillInData(File file, int numbAnimals) throws IOException {
+        List<List<Integer[]>> points = loadLabeledData(file, numbAnimals);
         return fillInData(points, numbAnimals);
     }
 
