@@ -90,17 +90,17 @@ public class TrackerAccuracyEvaluator extends ModelEvaluator {
             // dont check against ground truth, but tracker has still updated with detections on current frame
             if (frameNo == frameNumbStamp) {
 
+                List<Double[]> scaled = scalePoints(groundTruth, cropRect.width(), cropRect.height());
+
                 if (SHOW_LIVE_EVAL_DISPLAY) {   // draw first before scaling to Yolo dimensions
 
-                    for (Double[] pt : groundTruth) {
+                    for (Double[] pt : scaled) {
                         circle(mat, new opencv_core.Point(
                                         (int) Math.round(pt[0]), (int) Math.round(pt[1])
                                 ),
                                 3, opencv_core.Scalar.RED, -1, 8, 0);       // -1 is CV_FILLED, to fill the circle
                     }
                 }
-
-                List<Double[]> scaled = scalePoints(groundTruth, cropRect.width(), cropRect.height());
 
                 for (Animal anml : animals) {
 
@@ -117,12 +117,8 @@ public class TrackerAccuracyEvaluator extends ModelEvaluator {
 
                             System.out.println("Animal corresponds to point : " + Arrays.toString(pt));
                         }
-
-
                     }
-
                 }
-
                 truthIdx++;
             }
 

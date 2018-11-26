@@ -38,7 +38,7 @@ public class YOLOModelContainer {
 //    private final String modelFilePath = "src/main/resources/inference/yolov2_10000its.zip";
     private static final String DEFAULT_MODEL_PATH = "src/main/resources/inference/yolov2_19000.zip";
 
-    private final Logger logger = TrackerApp.getLogger();   //  LogManager.getLogger("YOLOModelContainer");   // Todo don't create new instance, share one logger object, eg from Main
+    private final Logger logger = new Logger();//TrackerApp.getLogger();   //  LogManager.getLogger("YOLOModelContainer");   // Todo don't create new instance, share one logger object, eg from Main
 
 //    Logger logger = LoggerFactory.getLogger(YOLOModelContainer.class);
 
