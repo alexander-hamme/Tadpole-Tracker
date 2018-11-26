@@ -61,6 +61,11 @@ public class Animal {
         );*/
     }
 
+    @Override
+    public String toString() {
+        return String.format("animal at [%d,%d] with color %s", this.x, this.y, this.color.toString());
+    }
+
     public void setCurrCostNonAssignnmnt(final double val) {
         currCostNonAssignnmnt = val;
     }

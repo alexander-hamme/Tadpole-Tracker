@@ -51,6 +51,8 @@ public class SinglePlateTracker extends Tracker {
 
     private final int COST_OF_NON_ASSIGNMENT = 50;
 
+
+    private boolean SAVE_TO_FILE;
 //    private List<BoundingBox> boundingBoxes;
 //    private List<DetectedObject> detectedObjects;
 
@@ -74,9 +76,19 @@ public class SinglePlateTracker extends Tracker {
         initializeFrameGrabber(videoPath);      // test if video file is valid and readable first
 //        logger.info("creating animal objects");
         createAnimalObjects();
-        createAnimalFiles(saveDataFilePrefix);
+
+        if (saveDataFilePrefix == null) {
+            SAVE_TO_FILE = false;
+        } else {
+            this.dataSaveNamePrefix = saveDataFilePrefix;
+            createAnimalFiles(saveDataFilePrefix);
+        }
 //        logger.info("warming up model");
         yoloModelContainer = new YOLOModelContainer();  // load model
+    }
+
+    public int getFrameNumb() {
+        return grabber.getFrameNumber();
     }
 
 
@@ -105,6 +117,10 @@ public class SinglePlateTracker extends Tracker {
 
         return frameConverter.convert(frameImg);
 
+    }
+
+    public final List<Animal> getAnimals() {
+        return this.animals;
     }
 
 
@@ -142,8 +158,6 @@ public class SinglePlateTracker extends Tracker {
 
     @Override
     protected void createAnimalFiles(String baseFilePrefix) throws IOException {
-
-        this.dataSaveNamePrefix = baseFilePrefix;
 
         for (Animal a : animals) {
             try (FileWriter writer = new FileWriter(baseFilePrefix + "_anml" + animals.indexOf(a) + ".dat")) {
@@ -429,7 +443,7 @@ public class SinglePlateTracker extends Tracker {
             // todo System.out.print("\r" + (frameNo + 1) + " of " + totalFrames + " frames processed");
 
             // todo: calculate uncertainty of each point / assignment and write that value to file for each point
-            if (frameNo % saveFrequency == 0) {
+            if (SAVE_TO_FILE && frameNo % saveFrequency == 0) {
                 writeAnimalPointsToFile(this.animals, dataSaveNamePrefix, true, true);
             }
 

@@ -434,15 +434,18 @@ public abstract class IOUtils {
 
 //        int its = 10000;
 //        while (its <= 18000) {
-        int minModel = 19000;
-        int maxModel = 19000;
+        int minModel = 40000;
+        int maxModel = 40000;
 
         for (int its = minModel; its <= maxModel; ) {
 
-            System.out.println("Converting model " + (its  % minModel / 1000 + 1) + " of " + (maxModel - minModel + 1) / 1000);
-
 //            String yoloModelFile = String.format("%s/%dits/yolov2_%d.h5", modelDir, its, its);
             String yoloModelFile = String.format("%s/yolo-obj_%d.h5", modelDir, its);
+
+            System.out.println("Converting model " + (its  % minModel / 1000 + 1) + " of " + (maxModel - minModel + 1) / 1000
+            + " " + yoloModelFile);
+
+
             double[][] priorBoxes = {{1.3221, 1.73145}, {3.19275, 4.00944}, {5.05587, 8.09892}, {9.47112, 4.84053}, {11.2364, 10.0071}};
 
             convertYAD2KWeights(yoloModelFile,

@@ -11,7 +11,7 @@ import java.util.*;
 
 public class MissingDataHandeler {
 
-    private final boolean DEBUG = true;
+    private final boolean DEBUG = false;
 
     /**
      * Expects data in the form of a list of N lists, each of which is a list of single coordinates,
@@ -139,8 +139,10 @@ public class MissingDataHandeler {
         KalmanFilterBuilder filterBuilder = new KalmanFilterBuilder();
         List<Animal> fakeAnimals = new ArrayList<>(numbAnimals);
 
+        int center = 350;       // approximate center of image --> to help with snapping to first assignments
+
         for (int i = 0; i < numbAnimals; i++) {
-            fakeAnimals.add(new Animal(i, i, new int[]{0, 700, 0,700}, null,
+            fakeAnimals.add(new Animal(center + i, center + i, new int[]{0, 700, 0, 700}, null,
                     filterBuilder.getNewKalmanFilter(i, i, 0.0, 0.0)));
 
             finalPoints.add(new ArrayList<>());
@@ -165,7 +167,7 @@ public class MissingDataHandeler {
 
                 if (assignment.animal == null) {
                     if (assignment.box != null) {
-                        System.out.println("No assignment for" + assignment.box.toString());
+                        System.out.println("Could not provide assignment for " + assignment.box.toString());
                     }
                     continue;
                 }
@@ -252,12 +254,17 @@ public class MissingDataHandeler {
             uniquePoints.add(points);
         }
 
-        for (List<Integer[]> lst : uniquePoints) {
-            for (Integer[] arr : lst) {
-                System.out.print(Arrays.toString(arr));
-                System.out.print("\t");
+        if (DEBUG) {
+
+            System.out.println("Loaded:");
+
+            for (List<Integer[]> lst : uniquePoints) {
+                for (Integer[] arr : lst) {
+                    System.out.print(Arrays.toString(arr));
+                    System.out.print("\t");
+                }
+                System.out.println();
             }
-            System.out.println();
         }
 
         return uniquePoints;

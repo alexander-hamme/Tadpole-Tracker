@@ -9,6 +9,8 @@ import org.bytedeco.javacpp.avutil;
 import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.*;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
+import sproj.tracking.Animal;
+import sproj.tracking.SinglePlateTracker;
 import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
 import sproj.util.IOUtils;
@@ -32,14 +34,106 @@ public class TrackerAccuracyEvaluator extends ModelEvaluator {
     }
 
     @Override
-    protected List<Double> evaluateModelOnVideo(File videoFile, int numbAnimals, opencv_core.Rect cropRectangle,
-                                              File truthFile) throws IOException {
-        initializeGrabber(videoFile);
+    protected List<Double> evaluateModelOnVideoWithTruth(File videoFile, int numbAnimals, opencv_core.Rect cropRectangle,
+                                                         File truthFile) throws IOException {
+        //initializeGrabber(videoFile);
+        int[] crop = new int[] {cropRectangle.x(), cropRectangle.y(), cropRectangle.width(), cropRectangle.height()};
+
+        SinglePlateTracker tracker = new SinglePlateTracker(numbAnimals, true, crop,
+                videoFile.toString(), null);
+
         MissingDataHandeler handeler = new MissingDataHandeler();
+
         List<List<Double[]>> fixed = handeler.fillInMissingData(truthFile, numbAnimals);
         List<List<Double[]>> rearranged = handeler.rearrangeData(fixed, numbAnimals);
 
-        return evaluateOnVideo(numbAnimals, cropRectangle, rearranged);
+        return evaluateOnVideo(tracker, cropRectangle, rearranged);
+    }
+
+
+
+    protected List<Double> evaluateOnVideo(SinglePlateTracker tracker, opencv_core.Rect cropRect,
+                                            List<List<Double[]>> truthPoints) throws IOException {
+
+        List<Double> accuracies = new ArrayList<>();
+
+        CanvasFrame canvas = new CanvasFrame("Tracker Evaluator");
+        Frame frame;
+
+        int truthIdx = 0;  // current index in truth points list
+        int frameNo;
+        final List<Animal> animals = tracker.getAnimals();  // not to be modified within this function
+
+        while (true) {
+
+            frame = tracker.timeStep();
+            frameNo = tracker.getFrameNumb();
+
+
+            if (frame == null) {    // end of video reached
+                canvas.dispose();
+                tracker.tearDown();
+                break;
+            }
+
+            opencv_core.Mat mat = frameConverter.convertToMat(frame);
+
+            if (truthIdx >= truthPoints.size()) {
+                System.out.println("Reached end of truth data");
+                break;      // todo does this break out of while loop
+            }
+
+            List<Double[]> groundTruth = truthPoints.get(truthIdx);
+
+            int frameNumbStamp = (int) Math.round(groundTruth.get(0)[3]);
+
+            // dont check against ground truth, but tracker has still updated with detections on current frame
+            if (frameNo == frameNumbStamp) {
+
+                if (SHOW_LIVE_EVAL_DISPLAY) {   // draw first before scaling to Yolo dimensions
+
+                    for (Double[] pt : groundTruth) {
+                        circle(mat, new opencv_core.Point(
+                                        (int) Math.round(pt[0]), (int) Math.round(pt[1])
+                                ),
+                                3, opencv_core.Scalar.RED, -1, 8, 0);       // -1 is CV_FILLED, to fill the circle
+                    }
+                }
+
+                List<Double[]> scaled = scalePoints(groundTruth, cropRect.width(), cropRect.height());
+
+                for (Animal anml : animals) {
+
+                    for (Double[] pt : scaled) {    // x, y, isPredicted, timeStamp
+
+                        System.out.println(Arrays.toString(pt));
+
+                        if (pt == null) {
+                            continue;
+                        }
+
+                        if (Math.pow(Math.pow(anml.x - pt[0], 2) +
+                                Math.pow(anml.y - pt[1], 2), 0.5) <= 10) {
+
+                            System.out.println("Animal corresponds to point : " + Arrays.toString(pt));
+                        }
+
+
+                    }
+
+                }
+
+                truthIdx++;
+            }
+
+            if (SHOW_LIVE_EVAL_DISPLAY) {
+                canvas.showImage(frameConverter.convert(mat));
+
+            }
+
+        }
+
+        return accuracies;
     }
 
 
@@ -56,7 +150,8 @@ public class TrackerAccuracyEvaluator extends ModelEvaluator {
      * @return
      * @throws IOException
      */
-    private List<Double> evaluateOnVideo(int numbAnimals, opencv_core.Rect cropRect,
+    //@Override
+    protected List<Double> evaluateOnVideoOLD(int numbAnimals, opencv_core.Rect cropRect,
                                          List<List<Double[]>> truthPoints) throws IOException {
 
         int frameNo = 0;

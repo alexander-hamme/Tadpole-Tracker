@@ -11,6 +11,8 @@ import sproj.yolo.YOLOModelContainer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 public abstract class ModelEvaluator {
@@ -73,12 +75,17 @@ public abstract class ModelEvaluator {
         return null;
     }
 
-    protected List<Double> evaluateModelOnVideo(File videoFile, int numbAnimals,
-                                               opencv_core.Rect cropRectangle, File truthFile) throws IOException{
+    protected List<Double> evaluateModelOnVideoWithTruth(File videoFile, int numbAnimals,
+                                                         opencv_core.Rect cropRectangle, File truthFile) throws IOException{
         return null;
     }
 
     protected List<Double> evaluateOnVideo(int numbAnimals, opencv_core.Rect cropRect) throws IOException {
+        return null;
+    }
+
+    protected List<Double> evaluateOnVideo(int numbAnimals, opencv_core.Rect cropRect,
+                                           List<List<Double[]>> truthPoints) throws IOException {
         return null;
     }
 
@@ -105,27 +112,26 @@ public abstract class ModelEvaluator {
 
         Set<Integer> anmlGroupNumbs = metaVideoList.keySet();
 
-        if (CHECK_TO_RESUME_PROGRESS) {
-            if (new File(dataSaveName).exists() ||
-                    new File(dataSaveName.split("\\.")[0] + anmlGroupNumbs.toArray()[0].toString() + ".eval").exists()) {
-                System.out.println("Model already evaluated for current group");
-                return;
-            }
-        }
-//        for (String videosList : metaVideoList) {
         for (Integer anmlNumb : anmlGroupNumbs) {
+
+            if (CHECK_TO_RESUME_PROGRESS) {
+                if (new File(dataSaveName.split("\\.")[0] + anmlNumb + ".eval").exists()) {
+                    //System.out.println("\nModel already evaluated for current group");
+                    continue;
+                }
+            }
 
             List<String> textLines = IOUtils.readInLargeFile(new File(metaVideoList.get(anmlNumb)));
             List<Double> videoEvals = new ArrayList<>();       // each individual point represents accuracy over an entire video
 
             System.out.println("\nGroup " + anmlNumb + " videos");
 
-            for (String individualVideo : textLines) {     // individual video file to evaluate on
+            for (String individualLine : textLines) {     // individual video file to evaluate on
 
-                String[] split = individualVideo.split(",");
+                String[] split = individualLine.split(",");
 
                 if (split.length < 2) {
-                    System.out.println(String.format("Skipping incorrectly formatted line: '%s'", individualVideo));
+                    System.out.println(String.format("Skipping incorrectly formatted line: '%s'", individualLine));
                     continue;
                 }
 
@@ -159,14 +165,14 @@ public abstract class ModelEvaluator {
 
                 } catch (AssertionError | NumberFormatException ignored) {
 
-                    System.out.println(String.format("Skipping invalid video path or incorrectly formatted line: '%s'", individualVideo));
+                    System.out.println(String.format("Skipping invalid video path or incorrectly formatted line: '%s'", individualLine));
                     continue;
                 }
 
                 System.out.println(String.format("\nVideo %d of %d: %s",
-                        textLines.indexOf(individualVideo) + 1, textLines.size(), videoFile.toString()));
+                        textLines.indexOf(individualLine) + 1, textLines.size(), videoFile.toString()));
 
-                List<Double> dataPoints = evaluateModelOnVideo(videoFile, numbAnimals, cropRect, truthLabelsFile);
+                List<Double> dataPoints = evaluateModelOnVideoWithTruth(videoFile, numbAnimals, cropRect, truthLabelsFile);
 
                 // one point for each video
                 videoEvals.add(
@@ -174,10 +180,10 @@ public abstract class ModelEvaluator {
                 );
 
 
-                System.out.println(String.format("\nAverage tracking accuracy: %.5f", dataPoints.stream().reduce(0.0, Double::sum) / dataPoints.size()));
+                System.out.println(String.format("\nDetection accuracy: %.4f", dataPoints.stream().reduce(0.0, Double::sum) / dataPoints.size()));
 
                 /* todo : if save data for all individual videos
-                saveName = String.format("%s_%d.dat", savePrefix, textLines.indexOf(individualVideo) + 1);
+                saveName = String.format("%s_%d.dat", savePrefix, textLines.indexOf(individualLine) + 1);
 
                 if (saveName == null) {
                     saveName = videoFile.toPath().getParent() + "/" + videoFile.getName().substring(0, videoFile.getName().length() - 4) + ".dat";
@@ -188,7 +194,7 @@ public abstract class ModelEvaluator {
             if (WRITE_TO_FILE) {
 //                for (List<Double> points : anmlGroupAccuracies) {
                 IOUtils.writeDataToFile(videoEvals,
-                        dataSaveName.split("\\.")[0] + anmlNumb.toString() + ".eval", "\n", true);
+                        dataSaveName + "_" + anmlNumb.toString() + ".eval", "\n", true);
 //                }
             }
         }
@@ -199,8 +205,9 @@ public abstract class ModelEvaluator {
             }
         }*/
 
+        System.out.println();
         anmlGroupAccuracies.forEach(lst ->
-                System.out.println(String.format("Average tracking accuracy on groups of %d: %.4f",
+                System.out.println(String.format("Average detection accuracy on groups of %d: %.4f",
                         (Integer) anmlGroupNumbs.toArray()[anmlGroupAccuracies.indexOf(lst)],
                         lst.stream().reduce(0.0, Double::sum) / lst.size())
                 )
@@ -215,11 +222,11 @@ public abstract class ModelEvaluator {
      * the java.io listFiles() function
      *
      * @param modelPaths
-     * @param anmlGroupsMetaList
+     * @param metaVideoList
      * @param evalsSaveDir
      * @throws IOException
      */
-    public void evaluateMultipleModels(File[] modelPaths, HashMap<Integer,String> anmlGroupsMetaList,
+    public void evaluateMultipleModels(File[] modelPaths, HashMap<Integer,String> metaVideoList,
                                        String evalsSaveDir) throws IOException {
 
 //        ModelAccuracyEvaluator evaluator = new ModelAccuracyEvaluator();
@@ -234,7 +241,7 @@ public abstract class ModelEvaluator {
         } else {
             avgTimePerFrame = 0.0257;
         }
-        double estTime = modelPaths.length * anmlGroupsMetaList.size()
+        double estTime = modelPaths.length * metaVideoList.size()
                 * numbVideosPerGroup * videoLength * fps * avgTimePerFrame;
 
         System.out.println(String.format(
@@ -256,17 +263,35 @@ public abstract class ModelEvaluator {
 
             System.out.println("Evaluating model: " + modelPath.toString());
 
-            String dataSaveName = evalsSaveDir + baseName + ".dat";
+            String baseSaveName = evalsSaveDir + baseName;
 
             if (CHECK_TO_RESUME_PROGRESS) {
-                if (new File(dataSaveName).exists()) {
+
+                Integer[] keySet = new Integer[metaVideoList.keySet().size()];
+                keySet = metaVideoList.keySet().toArray(keySet);
+
+                boolean allExist = false;
+
+                // Strangely, assert (new File(path).exists) does not raise an AssertionError for invalid paths
+                try {
+                    for (Integer i : keySet) {
+                        if (! Files.exists(Paths.get(baseSaveName + "_" + i + ".eval"))) {
+                            throw new AssertionError();
+                        }
+                    }
+                    allExist = true;
+
+                } catch (AssertionError ignored) {
+                    allExist = false;
+                }
+
+                if (allExist) {
                     System.out.println("Model already evaluated");
                     continue;
                 }
             }
 
-            evaluateModel(modelPath, anmlGroupsMetaList,
-                    evalsSaveDir + baseName + ".eval");
+            evaluateModel(modelPath, metaVideoList, baseSaveName);
 
             long endTime = System.currentTimeMillis() - startTime;
             System.out.println(String.format("Total evaluation time of model: %d (%dm %.3fs)",

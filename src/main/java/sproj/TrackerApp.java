@@ -8,17 +8,12 @@ import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.KeyCombination;
 import javafx.stage.Stage;
-
-//import org.apache.logging.log4j.LogManager;
-//import org.apache.logging.log4j.Logger;
-import sproj.util.Logger;
-
 import org.bytedeco.javacv.Java2DFrameConverter;
 import sproj.tracking.MultiPlateTracker;
 import sproj.tracking.SinglePlateTracker;
 import sproj.tracking.Tracker;
+import sproj.util.Logger;
 
 import java.io.IOException;
 
@@ -116,24 +111,24 @@ public class TrackerApp extends Application {
 //
 //        GraphicsContext gc = canvas.getGraphicsContext2D();
 
-
 //        final long startNanoTime = System.nanoTime();
 
+        //Image imageFrame;
 
         // todo Click Start button to call a function to do this?
         AnimationTimer timer = new AnimationTimer() {
-
-//            Image imageFrame = new Image(new File("src/main/resources/images/test_image.png").toURI().toString());
 
             @Override
             public void handle(long currentNanoTime) {
 
                 try {
                     imageFrame = convert(trackerProgram.timeStep());  // new Image(new File("src/main/resources/images/test_image.png").toURI().toString());  //
-                    if (imageFrame == null) {/* logger.info("Reached end of video")*/
+                    if (imageFrame != null) {/* logger.info("Reached end of video")*/
+                        imageView.setImage(imageFrame);
+                    } else {
                         trackerProgram.tearDown();
-                        stop(); }
-                    imageView.setImage(imageFrame);
+                        stop();
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                     trackerProgram.tearDown();
