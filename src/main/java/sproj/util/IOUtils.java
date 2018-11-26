@@ -308,7 +308,7 @@ public abstract class IOUtils {
     }
 
 
-    public static List<String> readLinesFromFile(File file) throws IOException {
+    public static List<String> readInLargeFile(File file) throws IOException {
 
         List<String> lines = new ArrayList<>();
 
@@ -316,6 +316,15 @@ public abstract class IOUtils {
             while (it.hasNext()) {
                 lines.add(it.nextLine());
             }
+        }
+        return lines;
+    }
+
+
+    protected List<String> readTextFile(String textFile) throws IOException {
+        List<String> lines = new ArrayList<>();
+        try (Stream<String> stream = Files.lines(Paths.get(textFile))) {
+            stream.forEach(lines::add);
         }
         return lines;
     }

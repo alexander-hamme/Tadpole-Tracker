@@ -221,7 +221,7 @@ public class KalmanFilterBuilder {
 
         KalmanFilter filter = new KalmanFilterBuilder().getNewKalmanFilter(0.0,0.0,0.0, 0.0);
 
-        List<String> lines = IOUtils.readLinesFromFile("/home/ah2166/Documents/sproj/tracking_data/motionData/testData1.dat");
+        List<String> lines = IOUtils.readInLargeFile("/home/ah2166/Documents/sproj/tracking_data/motionData/testData1.dat");
         List<double[]> dataPoints = new ArrayList<>(lines.size());
 
         for (String line : lines) {

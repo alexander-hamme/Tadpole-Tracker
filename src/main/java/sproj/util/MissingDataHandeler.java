@@ -220,7 +220,7 @@ public class MissingDataHandeler {
         // TODO: 11/20/18 handle missing values using trueNumbAnmls to check, then extrapolating
 
 
-        List<String> lines = IOUtils.readLinesFromFile(file);
+        List<String> lines = IOUtils.readInLargeFile(file);
         List<List<Integer[]>> uniquePoints = new ArrayList<>(lines.size());
 
         // [211, 88],[257, 76],[279, 60],[421, 66],[0]

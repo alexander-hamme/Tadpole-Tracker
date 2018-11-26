@@ -17,28 +17,8 @@ import sproj.yolo.YOLOModelContainer;
 
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 
-public class TrackerAccuracyEvaluator {
+public class TrackerAccuracyEvaluator extends ModelEvaluator {
 
-    private final boolean CHECK_TO_RESUME_PROGRESS = true;      // for resuming evaluation instead of restarting from beginning
-
-    private boolean WRITE_TO_FILE;
-    private boolean SHOW_LIVE_EVAL_DISPLAY;
-
-    private FFmpegFrameGrabber grabber;
-    private YOLOModelContainer yoloModelContainer;
-    private DetectionsParser detectionsParser = new DetectionsParser();
-    private OpenCVFrameConverter frameConverter = new OpenCVFrameConverter.ToMat();
-
-
-    private void initializeGrabber(File videoFile) throws FrameGrabber.Exception {
-        avutil.av_log_set_level(avutil.AV_LOG_QUIET);           // Suppress verbose FFMPEG metadata output to console
-        grabber = new FFmpegFrameGrabber(videoFile);
-        grabber.start();        // open video file
-    }
-
-    private void initalizeModelContainer(File modelPath) throws IOException{
-        yoloModelContainer = new YOLOModelContainer(modelPath);
-    }
 
     public TrackerAccuracyEvaluator() {
         this(true, true);
@@ -47,37 +27,17 @@ public class TrackerAccuracyEvaluator {
     public TrackerAccuracyEvaluator(boolean writeResultsToFile, boolean showVisualStream) {
         this.WRITE_TO_FILE = writeResultsToFile;
         this.SHOW_LIVE_EVAL_DISPLAY = showVisualStream;
+        this.detectionsParser = new DetectionsParser();
+        this.frameConverter = new OpenCVFrameConverter.ToMat();
     }
 
-
-    private List<Double[]> scalePoints(List<Double[]> points, int origWidth, int origHeight) {
-
-        double widthMultiplier = (YOLOModelContainer.IMG_WIDTH / (double) origWidth);
-        double heightMultiplier = (YOLOModelContainer.IMG_HEIGHT / (double) origHeight);
-
-        List<Double[]> scaled = new ArrayList<>(points.size());
-
-        // Double arrays are in the form of:
-        for (int i=0; i<points.size(); i++) {
-            Double[] pt = points.get(i);
-            Double[] scaledPt = new Double[]{
-                    pt[0] * widthMultiplier,
-                    pt[1] * heightMultiplier,
-                    pt[2], pt[3]
-            };
-
-            scaled.add(scaledPt);
-        }
-        return scaled;
-    }
-
-    private List<Double> evaluateModelOnVideo(File videoFile, int numbAnimals, opencv_core.Rect cropRectangle,
+    @Override
+    protected List<Double> evaluateModelOnVideo(File videoFile, int numbAnimals, opencv_core.Rect cropRectangle,
                                               File truthFile) throws IOException {
         initializeGrabber(videoFile);
         MissingDataHandeler handeler = new MissingDataHandeler();
         List<List<Double[]>> fixed = handeler.fillInMissingData(truthFile, numbAnimals);
         List<List<Double[]>> rearranged = handeler.rearrangeData(fixed, numbAnimals);
-
 
         return evaluateOnVideo(numbAnimals, cropRectangle, rearranged);
     }
@@ -280,201 +240,6 @@ public class TrackerAccuracyEvaluator {
         return detectionAccuracies;
     }
 
-    private void closeGrabber() {
-        try {
-            grabber.close();
-        } catch (FrameGrabber.Exception ignored) {
-        }
-    }
-
-    /**
-     * metaVideoList is a meta list of lists of videos. Each string is a path to a text file,
-     * which contains line separated video descriptions, which are
-     * comma separated as follows:  full/video/path,number of animals in video, crop dimensions,path/to/labeled/truth/file
-     * eg:  /home/Videos/video1.mp4,5,230 10 720 720,/home/data/video1_pts.dat
-     *
-     * In addition, files should be organized such that each path in metaVideoList represents the complete set
-     * of testing videos for a number group of animals.
-     *
-     * @param modelPath
-     * @param metaVideoList
-     * @param dataSaveName
-     */
-    private void evaluateModel(File modelPath, HashMap<Integer, String> metaVideoList,
-                               String dataSaveName) throws IOException {
-
-        initalizeModelContainer(modelPath);
-
-        List<List<Double>> anmlGroupAccuracies = new ArrayList<>(metaVideoList.size()); // each inner list contains points for all videos for animal number
-
-        Set<Integer> anmlGroupNumbs = metaVideoList.keySet();
-
-        if (CHECK_TO_RESUME_PROGRESS) {
-            if (new File(dataSaveName).exists() ||
-                    new File(dataSaveName.split("\\.")[0] + anmlGroupNumbs.toArray()[0].toString() + ".eval").exists()) {
-                System.out.println("Model already evaluated for current group");
-                return;
-            }
-        }
-//        for (String videosList : metaVideoList) {
-        for (Integer anmlNumb : anmlGroupNumbs) {
-
-            List<String> textLines = IOUtils.readLinesFromFile(new File(metaVideoList.get(anmlNumb)));
-            List<Double> videoEvals = new ArrayList<>();       // each individual point represents accuracy over an entire video
-
-            System.out.println("\nGroup " + anmlNumb + " videos");
-
-            for (String individualVideo : textLines) {     // individual video file to evaluate on
-
-                String[] split = individualVideo.split(",");
-
-                if (split.length < 2) {
-                    System.out.println(String.format("Skipping incorrectly formatted line: '%s'", individualVideo));
-                    continue;
-                }
-
-                int numbAnimals;
-                File videoFile, truthLabelsFile;
-                opencv_core.Rect cropRect;
-                List<Integer> cropDims = new ArrayList<>();
-
-                // TODO: 11/20/18 add labeled truth files to meta video list file
-
-
-                try {
-
-                    videoFile = new File(split[0]);
-                    assert videoFile.exists() && !videoFile.isDirectory();
-
-                    numbAnimals = Integer.parseInt(split[1]);
-
-                    // convert third string argument to 4 integers; the crop dimensions
-                    Arrays.asList(split[2].split(" ")).forEach(s ->
-                            cropDims.add(Integer.valueOf(s)));
-
-                    assert cropDims.size() == 4;
-
-                    cropRect = new opencv_core.Rect(
-                            cropDims.get(0), cropDims.get(1), cropDims.get(2), cropDims.get(3)
-                    );
-
-                    truthLabelsFile = new File(split[3]);
-                    assert truthLabelsFile.exists() && !truthLabelsFile.isDirectory();
-
-                } catch (AssertionError | NumberFormatException ignored) {
-
-                    System.out.println(String.format("Skipping invalid video path or incorrectly formatted line: '%s'", individualVideo));
-                    continue;
-                }
-
-                System.out.println(String.format("\nVideo %d of %d: %s",
-                        textLines.indexOf(individualVideo) + 1, textLines.size(), videoFile.toString()));
-
-                List<Double> dataPoints = evaluateModelOnVideo(videoFile, numbAnimals, cropRect, truthLabelsFile);
-
-                // one point for each video
-                videoEvals.add(
-                        dataPoints.stream().reduce(0.0, Double::sum) / dataPoints.size() // average
-                );
-
-
-                System.out.println(String.format("\nAverage tracking accuracy: %.5f", dataPoints.stream().reduce(0.0, Double::sum) / dataPoints.size()));
-
-                /* todo : if save data for all individual videos
-                saveName = String.format("%s_%d.dat", savePrefix, textLines.indexOf(individualVideo) + 1);
-
-                if (saveName == null) {
-                    saveName = videoFile.toPath().getParent() + "/" + videoFile.getName().substring(0, videoFile.getName().length() - 4) + ".dat";
-                }*/
-            }
-            anmlGroupAccuracies.add(videoEvals);
-
-            if (WRITE_TO_FILE) {
-//                for (List<Double> points : anmlGroupAccuracies) {
-                IOUtils.writeDataToFile(videoEvals,
-                        dataSaveName.split("\\.")[0] + anmlNumb.toString() + ".eval", "\n", true);
-//                }
-            }
-        }
-
-        /*if (WRITE_TO_FILE) {
-            for (List<Double> points : anmlGroupAccuracies) {
-                IOUtils.writeDataToFile(points, dataSaveName, "\n", true);
-            }
-        }*/
-
-        anmlGroupAccuracies.forEach(lst ->
-                System.out.println(String.format("Average tracking accuracy on groups of %d: %.4f",
-                        (Integer) anmlGroupNumbs.toArray()[anmlGroupAccuracies.indexOf(lst)],
-                        lst.stream().reduce(0.0, Double::sum) / lst.size())
-                )
-        );
-    }
-
-    /**
-     * All File objects in modelPaths array should be valid paths, as they are generated by
-     * the java.io listFiles() function
-     *
-     * @param modelPaths
-     * @param anmlGroupsMetaList
-     * @param evalsSaveDir
-     * @throws IOException
-     */
-    public void evaluateMultipleModels(File[] modelPaths, HashMap<Integer,String> anmlGroupsMetaList,
-                                       String evalsSaveDir) throws IOException {
-
-//        ModelAccuracyEvaluator evaluator = new ModelAccuracyEvaluator();
-
-        int numbVideosPerGroup = 20;
-        int videoLength = 30; // each video is 30 seconds long
-        int fps = 30;
-        double avgTimePerFrame; // in seconds
-
-        if (SHOW_LIVE_EVAL_DISPLAY) {
-            avgTimePerFrame = 0.0312;
-        } else {
-            avgTimePerFrame = 0.0257;
-        }
-        double estTime = modelPaths.length * anmlGroupsMetaList.size()
-                * numbVideosPerGroup * videoLength * fps * avgTimePerFrame;
-
-        System.out.println(String.format(
-                "Estimated time of evaluation: %dh %dm %ds",
-                (int) Math.floor(estTime / 60 / 60), (int) Math.floor(estTime / 60 % 60),
-                (int) Math.round(estTime % 60.0)
-                )
-        );
-
-        for (File modelPath : modelPaths) {
-
-            if (!(modelPath.exists() && modelPath.isFile())) {
-                System.out.println("Invalid model path: " + modelPath.toString());
-                continue;
-            }
-            String baseName = modelPath.getName().split("\\.")[0];
-
-            long startTime = System.currentTimeMillis();
-
-            System.out.println("Evaluating model: " + modelPath.toString());
-
-            String dataSaveName = evalsSaveDir + baseName + ".dat";
-
-            if (CHECK_TO_RESUME_PROGRESS) {
-                if (new File(dataSaveName).exists()) {
-                    System.out.println("Model already evaluated");
-                    continue;
-                }
-            }
-
-            evaluateModel(modelPath, anmlGroupsMetaList,
-                    evalsSaveDir + baseName + ".eval");
-
-            long endTime = System.currentTimeMillis() - startTime;
-            System.out.println(String.format("Total evaluation time of model: %d (%dm %.3fs)",
-                    endTime,
-                    (int) Math.floor((int) (endTime / 1000) / 60d), endTime / 1000.0 % 60));
-        }
-    }
 
 
     public static void main(String[] args) throws IOException {

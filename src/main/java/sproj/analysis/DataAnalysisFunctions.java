@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-import static sproj.util.IOUtils.readLinesFromFile;
+import static sproj.util.IOUtils.readInLargeFile;
 
 
 public abstract class DataAnalysisFunctions {
@@ -102,7 +102,7 @@ public abstract class DataAnalysisFunctions {
         for (File f : files) {
 
             List<Double> data = stringsToDoubles(
-                    readLinesFromFile(f)
+                    readInLargeFile(f)
             );
 
             double mean = computeMean(data);
@@ -128,7 +128,7 @@ public abstract class DataAnalysisFunctions {
 
         // TODO   plot this as:   for any given frame, detector has an XYZ% probability of finding 100% of the tadpoles, with (0.95) confidence intervals
 
-//        List<Double> data = stringsToDoubles(readLinesFromFile("/home/ah2166/Videos/tad_test_vids/data_line_separated/1_tad_1.dat"));
+//        List<Double> data = stringsToDoubles(readInLargeFile("/home/ah2166/Videos/tad_test_vids/data_line_separated/1_tad_1.dat"));
 
 
 
@@ -190,7 +190,7 @@ public abstract class DataAnalysisFunctions {
         /*
 
         List<Double> data = stringsToDoubles(
-                readLinesFromFile(new File("/home/alex/Documents/coding/java/Sproj/src/main/resources/data/raw/evaluationData_1t/1tadpole_1.dat"))
+                readInLargeFile(new File("/home/alex/Documents/coding/java/Sproj/src/main/resources/data/raw/evaluationData_1t/1tadpole_1.dat"))
         );
 
         System.out.println(String.format("Mean: %.5f  StDev: %.5f ", computeMean(data), standardDeviation(data, null))
