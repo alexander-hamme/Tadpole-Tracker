@@ -91,6 +91,9 @@ public class SinglePlateTracker extends Tracker {
         return grabber.getFrameNumber();
     }
 
+    public int getTotalFrames() {
+        return grabber.getLengthInVideoFrames();
+    }
 
     /**
      * Called from the main JavaFX application with each call to the Animation Timer's update() function

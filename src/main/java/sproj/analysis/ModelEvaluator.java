@@ -207,7 +207,7 @@ public abstract class ModelEvaluator {
 
         System.out.println();
         anmlGroupAccuracies.forEach(lst ->
-                System.out.println(String.format("Average detection accuracy on groups of %d: %.4f",
+                System.out.println(String.format("Average accuracy on groups of %d: %.4f",
                         (Integer) anmlGroupNumbs.toArray()[anmlGroupAccuracies.indexOf(lst)],
                         lst.stream().reduce(0.0, Double::sum) / lst.size())
                 )

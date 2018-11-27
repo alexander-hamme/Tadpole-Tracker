@@ -15,6 +15,9 @@ import static org.bytedeco.javacpp.opencv_imgproc.circle;
 import static org.bytedeco.javacpp.opencv_imgproc.line;
 import static org.opencv.imgproc.Imgproc.LINE_AA;
 
+/**
+ * To be subclassed by SinglePlateTracker and MultiPlateTracker
+ */
 public abstract class Tracker {          //  TODO make this an interface?
 
     static final Logger logger = new Logger();   // LogManager.getLogger("SinglePlateTracker");

@@ -5,6 +5,7 @@ import java.util.*;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.commons.collections4.map.HashedMap;
 import org.bytedeco.javacpp.avutil;
 import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.*;
@@ -21,6 +22,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 public class TrackerAccuracyEvaluator extends ModelEvaluator {
 
+    private final boolean DEBUG = true;
 
     public TrackerAccuracyEvaluator() {
         this(true, true);
@@ -55,20 +57,29 @@ public class TrackerAccuracyEvaluator extends ModelEvaluator {
     protected List<Double> evaluateOnVideo(SinglePlateTracker tracker, opencv_core.Rect cropRect,
                                             List<List<Double[]>> truthPoints) throws IOException {
 
-        List<Double> accuracies = new ArrayList<>();
+        List<Double> accuracyPoints = new ArrayList<>();
 
         CanvasFrame canvas = new CanvasFrame("Tracker Evaluator");
         Frame frame;
 
         int truthIdx = 0;  // current index in truth points list
         int frameNo;
-        final List<Animal> animals = tracker.getAnimals();  // not to be modified within this function
+        int totalFrames = tracker.getTotalFrames();
+
+        final List<Animal> animals = tracker.getAnimals();  // not to be modified in this function
+        int numbAnimals = animals.size();
+
+        // record of frames that each animal was accurately tracking
+        HashedMap<Animal, List<Double>> accuracyRecords = new HashedMap<>();
+
+        for (Animal a : animals) {
+            accuracyRecords.put(a, new ArrayList<>());
+        }
 
         while (true) {
 
             frame = tracker.timeStep();
             frameNo = tracker.getFrameNumb();
-
 
             if (frame == null) {    // end of video reached
                 canvas.dispose();
@@ -102,23 +113,35 @@ public class TrackerAccuracyEvaluator extends ModelEvaluator {
                     }
                 }
 
+                double accuracy = 0.0;
+
                 for (Animal anml : animals) {
 
-                    for (Double[] pt : scaled) {    // x, y, isPredicted, timeStamp
+                    boolean assigned = false;
 
-                        System.out.println(Arrays.toString(pt));
+                    for (Double[] pt : scaled) {    // x, y, isPredicted, timeStamp
 
                         if (pt == null) {
                             continue;
                         }
 
                         if (Math.pow(Math.pow(anml.x - pt[0], 2) +
-                                Math.pow(anml.y - pt[1], 2), 0.5) <= 10) {
+                                Math.pow(anml.y - pt[1], 2), 0.5) <= 7) {
 
-                            System.out.println("Animal corresponds to point : " + Arrays.toString(pt));
+                            //System.out.println("Animal corresponds to point : " + Arrays.toString(pt));
+                            assigned = true;
+                            accuracy += 1.0 / numbAnimals;
+                            break;
                         }
                     }
+
+                    if (assigned) {
+                        accuracyRecords.get(anml).add(1.0);
+                    } else {
+                        accuracyRecords.get(anml).add(0.0);
+                    }
                 }
+                accuracyPoints.add(accuracy);
                 truthIdx++;
             }
 
@@ -127,9 +150,20 @@ public class TrackerAccuracyEvaluator extends ModelEvaluator {
 
             }
 
+            System.out.print("\r" + (frameNo + 1) + " of " + totalFrames + " frames processed");
+
         }
 
-        return accuracies;
+        if (DEBUG) {
+            System.out.println(String.format("\nTracking Accuracy: %.4f",
+                    accuracyPoints.stream().reduce(0.0, Double::sum) / accuracyPoints.size())
+            );
+            for (Animal a : animals) {
+                System.out.println(Arrays.toString(accuracyRecords.get(a).toArray()));
+            }
+        }
+
+        return accuracyPoints;
     }
 
 
