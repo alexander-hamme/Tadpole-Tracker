@@ -17,11 +17,12 @@ public class Animal {
     // but not high enough that it's worse than giving an assignment a value across the screen
     // TODO: find out the highest (true) distance that tadpoles can cover in a frame or two and make this a bit higher than that
 
-    public final Scalar color;
+    public Scalar color;
     public final int LINE_THICKNESS = 2;
     public final int CIRCLE_RADIUS = 15;
     public final int LINE_POINTS_SIZE = 16;
-    public final static int DATA_BUFFER_ARRAY_SIZE = 60;
+
+    public static final int DATA_BUFFER_ARRAY_SIZE = 60;
 
     private ArrayList<double[]> dataPoints;
     private CircularFifoQueue<int[]> linePoints;
@@ -40,8 +41,8 @@ public class Animal {
 
     private boolean PREDICT_WITH_VELOCITY = false;
 
-    public Animal(int x, int y, final int[] positionBounds, final Scalar clr, KalmanFilter kFilter) {
-        this.x = x; this.y = y;
+    public Animal(int _x, int _y, final int[] positionBounds, final Scalar clr, KalmanFilter kFilter) {
+        this.x = _x; this.y = _y;
         this.positionBounds = positionBounds;
         currentHeading = 0;
         color = clr; // new Scalar(clr[0], clr[1], clr[2], 1.0);
@@ -82,13 +83,13 @@ public class Animal {
      * Note that the order of parameters to this function does not match
      * the order in which the data points are written to file
      *
-     * @param x
-     * @param y
+     * @param _x
+     * @param _y
      * @param dt
      * @param timePos
      * @param isPredicted
      */
-    public void updateLocation(int x, int y, double dt, long timePos, boolean isPredicted) {
+    public void updateLocation(int _x, int _y, double dt, long timePos, boolean isPredicted) {
 
         if (isPredicted) {
             timeStepsPredicted++;
@@ -102,7 +103,7 @@ public class Animal {
 
         int predicted = isPredicted ? 1 : 0;
 
-        this.x = x; this.y = y;
+        this.x = _x; this.y = _y;
         applyBoundsConstraints();
         dataPoints.add(new double[]{timePos, this.x, this.y, predicted});
         linePoints.add(new int[]{this.x, this.y});   // calls the addFirst() method, adds to front of Deque

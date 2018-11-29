@@ -1,6 +1,7 @@
 package sproj.util;
 
 import org.bytedeco.javacpp.avutil;
+import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacv.*;
 import org.bytedeco.javacv.Frame;
@@ -10,6 +11,8 @@ import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -67,7 +70,47 @@ public class TrainingImageGenerator {
         }
     }
 
-    private void enhanceImageMethod1(Mat img) {
+    private void saveImage(BufferedImage img, String fileName) throws IOException {
+        ImageIO.write(img, "jpg", new File(fileName));
+        System.out.println(String.format("Saved image to %s", fileName));
+    }
+
+
+    public static void main2(String[] args) throws IOException{
+        TrainingImageGenerator generator = new TrainingImageGenerator();
+
+        BufferedImage img = ImageIO.read(new File("/home/ah2166/Pictures/exampleTrainingImage1.png"));
+
+        Mat blurred = generator.frameConverter.convertToMat(generator.converterToImg.convert(deepCopy(img)));
+        generator.gaussianBlur(blurred);
+        generator.saveImage(generator.converterToImg.convert(generator.frameConverter.convert(blurred)), "/home/ah2166/Pictures/image2.jpg");
+
+        opencv_core.Mat eh = generator.frameConverter.convertToMat(generator.converterToImg.convert(deepCopy(img)));
+        cvtColor(eh, eh, COLOR_RGB2GRAY);
+        generator.eqHist(eh);
+        generator.saveImage(generator.converterToImg.convert(generator.frameConverter.convert(eh)), "/home/ah2166/Pictures/image3.jpg");
+
+        Mat cl = generator.frameConverter.convertToMat(generator.converterToImg.convert(deepCopy(img)));
+        cvtColor(cl, cl, COLOR_RGB2GRAY);
+        generator.clahe(cl);
+        generator.saveImage(generator.converterToImg.convert(generator.frameConverter.convert(cl)), "/home/ah2166/Pictures/image4.jpg");
+
+        Mat adaptThresh = generator.frameConverter.convertToMat(generator.converterToImg.convert(deepCopy(img)));
+        cvtColor(adaptThresh, adaptThresh, COLOR_RGB2GRAY);
+        generator.adaptiveThresh(adaptThresh);
+        generator.saveImage(generator.converterToImg.convert(generator.frameConverter.convert(adaptThresh)), "/home/ah2166/Pictures/image5.jpg");
+
+
+    }
+
+    public static BufferedImage deepCopy(BufferedImage bi) {
+        ColorModel cm = bi.getColorModel();
+        boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
+        WritableRaster raster = bi.copyData(bi.getRaster().createCompatibleWritableRaster());
+        return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
+    }
+
+    private void adaptiveThresh(Mat img) {
 
         GaussianBlur(img, img, new Size(3,3), 0.0);
 
@@ -82,25 +125,23 @@ public class TrainingImageGenerator {
             dilate(toThreshold, toThreshold, element);*/
     }
 
-    private void enhanceImageMethod2(Mat img) {
+    private void eqHist(Mat img) {
         equalizeHist(img, img);
     }
 
-    private void enhanceImageMethod3(Mat img) {
-        CLAHE clahe = createCLAHE(2.0, new Size(5,5));
-        clahe.apply(img, img);
+    private void clahe(Mat img) {
+        CLAHE cl = createCLAHE(2.0, new Size(5,5));
+        cl.apply(img, img);
     }
 
-    private void enhanceImageMethod5(Mat img) {
+    private void gaussianBlur(Mat img) {
         GaussianBlur(img, img, new Size(3,3), 0.0);
-        CLAHE clahe = createCLAHE(2.0, new Size(5,5));
-        clahe.apply(img, img);
     }
 
     private BufferedImage randomRotate(BufferedImage img) {
 
-        double angle = randGen.nextInt(271);
-        angle = Math.round(angle / 90) * 90.0;
+        double angle = randGen.nextInt(4) * 90.0;//randGen.nextInt(271);
+        //angle = Math.round(angle / 90) * 90.0;
 
         AffineTransform affineTransform = new AffineTransform();
 
@@ -148,11 +189,6 @@ public class TrainingImageGenerator {
 
         while (x + width > imgWidth){x--;}
         while (y + height > imgHeight){y--;}
-
-        /*System.out.println(String.format(
-                "Orig width, height: %d, %d, \nNew dims: %d %d %d %d",
-                imgWidth, imgHeight, x, y, width, height
-        ));*/
 
         return img.getSubimage(x, y, width, height);
 
@@ -237,15 +273,15 @@ public class TrainingImageGenerator {
 
             switch (filterMethod) {
                 case 0: {
-                    enhanceImageMethod1(frameImg);
+                    adaptiveThresh(frameImg);
                     break;
                 }
                 case 1: {
-                    enhanceImageMethod2(frameImg);
+                    eqHist(frameImg);
                     break;
                 }
                 case 2: {
-                    enhanceImageMethod3(frameImg);
+                    clahe(frameImg);
                     break;
                 }
                 case 3: {
@@ -335,7 +371,7 @@ public class TrainingImageGenerator {
         this.imageNumber = n;
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main1(String[] args) throws IOException, InterruptedException {
         ///*
         final String saveDir = "/home/ah2166/Documents/tadpole_dataset/NO_TAILS/new_images_10-30-18";
         int[] numbersOfTadpoles = {1, 2, 4, 6};
