@@ -49,6 +49,8 @@ public class TrackerAccuracyEvaluator extends ModelEvaluator {
         List<List<Double[]>> fixed = handeler.fillInMissingData(truthFile, numbAnimals);
         List<List<Double[]>> rearranged = handeler.rearrangeData(fixed, numbAnimals);
 
+
+
         return evaluateOnVideo(tracker, cropRectangle, rearranged);
     }
 

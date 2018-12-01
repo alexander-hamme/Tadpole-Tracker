@@ -6,6 +6,8 @@ import sproj.prediction.KalmanFilterBuilder;
 import sproj.tracking.Animal;
 
 import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
@@ -16,7 +18,7 @@ public class MissingDataHandeler {
     /**
      * Expects data in the form of a list of N lists, each of which is a list of single coordinates,
      * one for each video frame / timestep from the start to the end of the video
-     *
+     * <p>
      * The rearranged format is also a list of N lists, but now each list represents
      * all the coordinates for a given frame / timestep of the video
      *
@@ -36,7 +38,7 @@ public class MissingDataHandeler {
             assert lst.size() == numbPoints;        // all lists should have same number of points
         }
 
-        for (int n=0; n<numbPoints; n++) {  // iterate through all frames/timesteps of video
+        for (int n = 0; n < numbPoints; n++) {  // iterate through all frames/timesteps of video
 
             List<Double[]> lst = new ArrayList<>(numbLists);
 
@@ -87,18 +89,16 @@ public class MissingDataHandeler {
     }
 
     private double mean(double a, double b) {
-        return ((a+b) / 2.0);
+        return ((a + b) / 2.0);
     }
 
     /**
-     *
      * @param points
-     * @param numbToAdd  number of points to extrapolate between each current point
+     * @param numbToAdd number of points to extrapolate between each current point
      */
     private List<List<Double[]>> extrapolateExtraPoints(List<List<Double[]>> points, int numbToAdd) {
 
         for (List<Double[]> lst : points) {
-
 
 
         }
@@ -109,7 +109,7 @@ public class MissingDataHandeler {
     private void extrapolateMissingData(List<Double[]> points) {
 
         int size = points.size();
-        for (int i=1; i<size; i++) {       //  relies on assumption that first point will always be true
+        for (int i = 1; i < size; i++) {       //  relies on assumption that first point will always be true
             Double[] pt = points.get(i);
             if (pt[2] == 1.0) {   // point is predicted
                 if (i < size - 1) {
@@ -122,8 +122,8 @@ public class MissingDataHandeler {
 
                 } else {
                     Double[] prevPt = points.get(i - 1);
-                    pt[0] = pt[0] + (pt[0]-prevPt[0]);
-                    pt[1] = pt[1] + (pt[1]-prevPt[1]);
+                    pt[0] = pt[0] + (pt[0] - prevPt[0]);
+                    pt[1] = pt[1] + (pt[1] - prevPt[1]);
                 }
             }
         }
@@ -198,7 +198,7 @@ public class MissingDataHandeler {
 
             for (Iterator<double[]> iterator : anmlIterators) {
 
-                 if (iterator.hasNext()) {
+                if (iterator.hasNext()) {
                     points = iterator.next();
                     //System.out.print("[" + points[1] + ", " + points[2] + ", " + points[3] + "]");
                     //System.out.print("\t");
@@ -208,7 +208,7 @@ public class MissingDataHandeler {
                     });
                 }
             }
-            if (points!=null) {
+            if (points != null) {
                 //System.out.print(points[0]);
             }
             //System.out.println();
@@ -235,12 +235,12 @@ public class MissingDataHandeler {
             Set<String> temp = new LinkedHashSet<>(Arrays.asList(split));       // remove duplicate elements
             split = temp.toArray(new String[0]);
 
-            for (int i=0; i<split.length; i++) {
-                if (i<split.length-1 && split[i].contains("[") && split[i+1].contains("]")) {
+            for (int i = 0; i < split.length; i++) {
+                if (i < split.length - 1 && split[i].contains("[") && split[i + 1].contains("]")) {
 
                     points.add(new Integer[]{
                             Integer.valueOf(CharMatcher.javaDigit().retainFrom(split[i])),
-                            Integer.valueOf(CharMatcher.javaDigit().retainFrom(split[i+1])),
+                            Integer.valueOf(CharMatcher.javaDigit().retainFrom(split[i + 1])),
                     });
 
                     //points.add(split[i] + split[i+1]);
@@ -268,5 +268,42 @@ public class MissingDataHandeler {
         }
 
         return uniquePoints;
+    }
+
+
+    public static void main(String[] args) throws IOException {
+
+        for (int i = 5193; i <= 5212; i++) {
+
+            String fileName = String.format("/home/ah2166/Documents/sproj/java/Tadpole-Tracker" +
+                    "/data/labeledVideoPoints/4tads/rawPoints/IMG_%d_pts.dat", i);
+
+            int numbAnimals = 4;
+            File truthFile = new File(fileName);
+
+            MissingDataHandeler handeler = new MissingDataHandeler();
+
+            List<List<Double[]>> fixed = handeler.fillInMissingData(truthFile, numbAnimals);
+            List<List<Double[]>> rearranged = handeler.rearrangeData(fixed, numbAnimals);
+
+            File outFile = new File(String.format("/home/ah2166/Documents/sproj/java/Tadpole-Tracker" +
+                    "/data/labeledVideoPoints/4tads/fixed/IMG_%d_pts.dat", i));
+
+
+            try (FileWriter writer = new FileWriter(outFile, true)) {
+
+                for (List<Double[]> lst : rearranged) {
+                    for (Double[] arr : lst) {
+                        writer.write(Arrays.toString(arr));
+                        writer.write("\n");
+                    }
+                }
+            }
+
+
+
+
+        }
+
     }
 }
