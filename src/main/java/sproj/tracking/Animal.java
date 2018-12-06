@@ -20,7 +20,7 @@ public class Animal {
     public Scalar color;
     public final int LINE_THICKNESS = 2;
     public final int CIRCLE_RADIUS = 15;
-    public final int LINE_POINTS_SIZE = 16;
+    public final int LINE_POINTS_SIZE = 64;
 
     public static final int DATA_BUFFER_ARRAY_SIZE = 60;
 
@@ -39,7 +39,7 @@ public class Animal {
     private double currCostNonAssignnmnt;
     private final double MAXCOST = 1000.0;  // better value?
 
-    private boolean PREDICT_WITH_VELOCITY = false;
+    private boolean PREDICT_WITH_VELOCITY = true; //false;
 
     public Animal(int _x, int _y, final int[] positionBounds, final Scalar clr, KalmanFilter kFilter) {
         this.x = _x; this.y = _y;
@@ -135,26 +135,25 @@ public class Animal {
         double vy = predictedState[3];
 
         int newx, newy;
-        // Simplest method
         if (PREDICT_WITH_VELOCITY) {
-            // todo use predX and predY with predicted velocities
+
+            /* TODO if movementstate.stationary: just use predicted x & y */
+
+            double displThresh = 10.0;
+
             newx = (int) Math.round(this.x + (vx * dt));
             newy = (int) Math.round(this.y - (vy * dt));
-        } else {
-            newx = (int) Math.round(predictedState[0]);
-            newy = (int) Math.round(predictedState[1]);
+            newx = (Math.abs(newx - predX) > displThresh) ? (int) Math.round(predX) : newx;
+            newy = (Math.abs(newy - predY) > displThresh) ? (int) Math.round(predY) : newy;
+
+        } else {         // Simplest method
+            newx = (int) Math.round(predX);
+            newy = (int) Math.round(predY);
         }
-
-
-//        int newx = (int) Math.round((predX + (this.x + (vx * dt))) / 2);    // average the predicted position with calculated position from predicted velocity
-//        int newy = (int) Math.round((predY + (this.y + (vy * dt))) / 2);
-
 
         if (DEBUG) {System.out.println(String.format("new coordinates: (%d, %d)", newx, newy));}
 
-
-        // todo method 3:  use predicted position to calculate heading, and then factor in velocity to predict position?
-
+        // alternative method:  use predicted position to calculate heading, and then factor in velocity to predict new position
 
         updateLocation(newx, newy, dt, timePos, true);
     }

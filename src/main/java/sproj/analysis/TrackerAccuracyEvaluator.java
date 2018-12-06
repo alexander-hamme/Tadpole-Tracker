@@ -49,8 +49,6 @@ public class TrackerAccuracyEvaluator extends ModelEvaluator {
         List<List<Double[]>> fixed = handeler.fillInMissingData(truthFile, numbAnimals);
         List<List<Double[]>> rearranged = handeler.rearrangeData(fixed, numbAnimals);
 
-
-
         return evaluateOnVideo(tracker, cropRectangle, rearranged);
     }
 
@@ -164,6 +162,11 @@ public class TrackerAccuracyEvaluator extends ModelEvaluator {
                 System.out.println(Arrays.toString(accuracyRecords.get(a).toArray()));
             }
         }
+
+        /** TODO REMOVE **/
+        System.out.println("Total identity swaps: " + tracker.identitySwitches);
+        /** TODO REMOVE **/
+
 
         return accuracyPoints;
     }
