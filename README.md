@@ -4,11 +4,11 @@ A computational system that applies computer vision and deep learning to record 
 -----
 Notes: 
 
---- recent work is on the "dev" branch of this project.
+- recent work is on the "dev" branch of this project.
 
---- the research paper for this project is also available [in this repository](/paper/senior_thesis.pdf).
+- the research paper for this project is also available [in this repository](/paper/senior_thesis.pdf).
 
---- While I am primarily conducting my research in Java at the moment, I will eventually translate it to Python as well, to allow wider access for biology researchers and developers to use and hack in the future. The Python code is functional but requires more work before it can be fully released. Some of it is available [here](https://github.com/alexander-hamme/Tadpole-Tracker-Python).
+- While I am primarily conducting my research in Java at the moment, I will eventually translate it to Python as well, to allow wider access for biology researchers and developers to use and hack in the future. The Python code is functional but requires more work before it can be fully released. Some of it is available [here](https://github.com/alexander-hamme/Tadpole-Tracker-Python).
 
 
 -----
