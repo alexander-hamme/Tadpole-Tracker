@@ -18,11 +18,9 @@ import sproj.util.Logger;
 import java.io.IOException;
 
 
-/** TODO: Check out https://github.com/bytedeco/javacv/blob/master/samples/JavaFxPlayVideoAndAudio.java
- *
- *
+/**
+ * The main app to be run, from which the other classes are called
  */
-
 public class TrackerApp extends Application {
 
     private static final Logger logger = new Logger(); //LogManager.getLogger("TrackerApplication");
