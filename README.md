@@ -16,7 +16,7 @@ Notes:
 There are two major components of this tracker program: **Detection** and **Tracking**.
   * detection is the process of finding regions of interest (ROI) in each frame (image) from the video input stream
   * tracking is the process of connecting where each animal was in previous frames to its new position in sequential frames, 
-    i.e. connecting ROIs to the corresponding tadpoles. This becomes complicated when tracking multiple animals, because of the potential for collisions and collusions. Therefore, trajectory prediction and identity assignment algorithms are necessary.
+    i.e. connecting ROIs to the corresponding tadpoles. This becomes complicated when tracking multiple animals, because of the potential for collisions and collusions. Therefore, trajectory prediction and identity assignment algorithms are implemented.
 
 Approaches:
 
