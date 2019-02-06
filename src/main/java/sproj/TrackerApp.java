@@ -20,7 +20,7 @@ import java.io.IOException;
 
 /** TODO: Check out https://github.com/bytedeco/javacv/blob/master/samples/JavaFxPlayVideoAndAudio.java
  *
- *
+ *  Also: https://www.callicoder.com/javafx-desktop-application-development-tutorial/
  */
 
 public class TrackerApp extends Application {
@@ -58,6 +58,11 @@ public class TrackerApp extends Application {
         return logger;
     }
 
+    /*@Override
+    public void init() throws Exception {
+        super.init();
+        // perform any necessary initializations here
+    }*/
 
     private void selectTrackerProgram() throws IOException {
         // input from user todo
@@ -142,6 +147,13 @@ public class TrackerApp extends Application {
     }
 
 
+    /*@Override
+    public void stop() throws Exception {
+        super.stop();
+        // destroy resources, perform cleanup
+    }*/
+
+    // TODO: make this take a Mat instead of a Frame to avoid one conversion step?
     private Image convert(org.bytedeco.javacv.Frame frame) {
         if (frame == null) return null;
         return SwingFXUtils.toFXImage(paintConverter.convert(frame), null);

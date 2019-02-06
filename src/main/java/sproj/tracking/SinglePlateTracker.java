@@ -1,5 +1,6 @@
 package sproj.tracking;
 
+import org.apache.commons.collections4.map.HashedMap;
 import org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.Frame;
@@ -52,6 +53,11 @@ public class SinglePlateTracker extends Tracker {
     private final int COST_OF_NON_ASSIGNMENT = 50;
 
 
+    /** TODO REMOVE **/
+    HashedMap<Animal, int[]> prevpoints = new HashedMap<>();
+    public int identitySwitches = 0;
+    /** TODO REMOVE **/
+
     private boolean SAVE_TO_FILE;
 //    private List<BoundingBox> boundingBoxes;
 //    private List<DetectedObject> detectedObjects;
@@ -80,6 +86,7 @@ public class SinglePlateTracker extends Tracker {
         if (saveDataFilePrefix == null) {
             SAVE_TO_FILE = false;
         } else {
+            SAVE_TO_FILE = true;
             this.dataSaveNamePrefix = saveDataFilePrefix;
             createAnimalFiles(saveDataFilePrefix);
         }
@@ -116,7 +123,36 @@ public class SinglePlateTracker extends Tracker {
         List<DetectedObject> detectedObjects = yoloModelContainer.runInference(frameImg);                   // TODO: 9/10/18  pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), run again with lower confidence?
         List<BoundingBox> boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
+
+
+
+
+
+        /** TODO REMOVE **/
+        for (Animal anml : animals) {
+            prevpoints.put(anml, new int[]{anml.x, anml.y});
+        }
+        /** TODO REMOVE **/
+
         updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp() / 1000L);
+
+        /** TODO REMOVE **/
+
+        double displaceThresh = 45.0;
+        for (Animal anml : animals) {
+            int[] prevPoint = prevpoints.get(anml);
+            double disp = Math.pow(
+                    Math.pow(anml.x-prevPoint[0], 2) +
+                            Math.pow(anml.y-prevPoint[1], 2), 0.5
+            );
+            if (disp >= displaceThresh) {
+                // System.out.println("Identity swap");
+                identitySwitches++;
+            }
+        }
+
+        /** TODO REMOVE **/
+
 
         return frameConverter.convert(frameImg);
 
@@ -232,12 +268,10 @@ public class SinglePlateTracker extends Tracker {
         // todo   --> check for whether box has overlap with an animal already and then increase that cost?
 
 
-
         // TODO:   DECREASE Model confidence threshold and INCREASE NMS threshold
         // todo    when lots of tadpoles are close together
 
         // int proximityCounter
-
 
 
         // todo    figure out a way to prevent swapping when the cost of non assignment gets really high
@@ -266,11 +300,51 @@ public class SinglePlateTracker extends Tracker {
             }
         }
 
+        /* LEGACY ASSIGNMENT METHOD.  FOR ACCURACY COMPARISONS ONLY
+
+        List<BoundingBox> assignedBoxes = new ArrayList<>();
+
+        double maxProx = 200;
+
+        for (Animal anml : animals) {
+
+            BoundingBox closestBox = null;
+            double minProx = Double.MAX_VALUE;
+
+            for (BoundingBox box : boundingBoxes) {
+                if (assignedBoxes.contains(box)) {
+                    continue;
+                }
+                double prox = Math.pow(
+                        Math.pow(box.centerX - anml.x, 2) + Math.pow(box.centerY - anml.y, 2), 0.5);
+                if (prox < minProx) {
+                    if (frameNumber > 30 && prox > maxProx) {
+                        continue;
+                    }
+                    closestBox = box;
+                    minProx = prox;
+                }
+            }
+
+            if (closestBox != null) {
+                anml.updateLocation(
+                        closestBox.centerX, closestBox.centerY, dt, timePos, false
+                );
+                assignedBoxes.add(closestBox);
+            } else {
+                anml.predictTrajectory(dt, timePos);
+            }
+        }
+        //*/
+
+
         final List<OptimalAssigner.Assignment> assignments = optimalAssigner.getOptimalAssignments(animals, boundingBoxes);
 
         for (OptimalAssigner.Assignment assignment : assignments) {
 
-            if (assignment.animal == null) { continue; }
+            if (assignment.animal == null) {
+                continue;
+            }
 
             if (assignment.box == null) {       // no assignment
                 assignment.animal.predictTrajectory(dt, timePos);
@@ -281,69 +355,40 @@ public class SinglePlateTracker extends Tracker {
             }
         }
 
+
         if (DRAW_ANML_TRACKS) {
             for (Animal animal : animals) {
                 traceAnimalOnFrame(frameImage, animal, 1.0);             // call this here so that this.animals doesn't have to be iterated through again
             }
+
         }
     }
 
-
-
-    private void enhanceImageMethod1(Mat img) {
-
-        GaussianBlur(img, img, new Size(3,3), 0.0);
-
-        adaptiveThreshold(img, img, 220, ADAPTIVE_THRESH_MEAN_C,//ADAPTIVE_THRESH_MEAN_C,   //ADAPTIVE_THRESH_GAUSSIAN_C,//
-                THRESH_BINARY, 5, 7);
-
-        GaussianBlur(img, img, new Size(3,3), 0.0);
-
-        /*Mat element = getStructuringElement(MORPH_RECT,
-                    new Size(2*1 + 1, 2*1+1 ),
-                    new Point(1, 1) );
-            dilate(toThreshold, toThreshold, element);*/
-    }
-
-    private void enhanceImageMethod2(Mat img) {
+    private void eqHist(Mat img) {
         equalizeHist(img, img);
     }
 
-    private void enhanceImageMethod3(Mat img) {
+    private void clahe(Mat img) {
+        GaussianBlur(img, img, new Size(3,3), 0.0);
         CLAHE clahe = createCLAHE(2.0, new Size(3,3));
         clahe.apply(img, img);
     }
 
-    private void enhanceImageMethod4(Mat img) {
-        GaussianBlur(img, img, new Size(3,3), 0.0);
-        CLAHE clahe = createCLAHE(2.0, new Size(5,5));
-        clahe.apply(img, img);
-    }
-
-
-
 
     /**
-     * OLD CODE    for quick testing purposes only
+     * OLD CODE  for quick testing purposes only
+     *
+     * Note that grabber has been initialized by the time this function is called
      *
      * @throws IOException
      * @throws InterruptedException
      */
 
-
-    /**
-     * Grabber has been initialized by the time this function is called
-     * @throws IOException
-     * @throws InterruptedException
-     */
-//    public void trackVideo(String videoPath) throws IOException, InterruptedException {
     public void trackVideo() throws IOException, InterruptedException {
-
-//        grabber = new FFmpegFrameGrabber(videoPath);
-//        grabber.start();    // open video file
 
         try {
             track();
+        // allow exceptions to be raised
         } finally {
             tearDown();
         }
@@ -391,13 +436,13 @@ public class SinglePlateTracker extends Tracker {
 
 
             cvtColor(frameImg, frameImg, COLOR_RGB2GRAY);
-//            enhanceImageMethod2(frameImg);
-            //enhanceImageMethod3(frameImg);
+//            eqHist(frameImg);
+            //clahe(frameImg);
             cvtColor(frameImg, frameImg, COLOR_GRAY2RGB);
 
             cvtColor(trackingOnly, trackingOnly, COLOR_RGB2GRAY);
-//            enhanceImageMethod2(trackingOnly);
-            enhanceImageMethod3(trackingOnly);
+//            eqHist(trackingOnly);
+            clahe(trackingOnly);
             cvtColor(trackingOnly, trackingOnly, COLOR_GRAY2RGB);
 //            resize(trackingOnly, trackingOnly, new Size(IMG_WIDTH, IMG_HEIGHT));
 
@@ -413,7 +458,32 @@ public class SinglePlateTracker extends Tracker {
 
             boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
+            /** TODO REMOVE **/
+            for (Animal anml : animals) {
+                prevpoints.put(anml, new int[]{anml.x, anml.y});
+            }
+            /** TODO REMOVE **/
+
+
             updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp() / 1000L);
+
+            /** TODO REMOVE **/
+
+            double displaceThresh = 60.0;
+            for (Animal anml : animals) {
+                int[] prevPoint = prevpoints.get(anml);
+                double disp = Math.pow(
+                        Math.pow(anml.x-prevPoint[0], 2) +
+                        Math.pow(anml.y-prevPoint[1], 2), 0.5
+                );
+                if (disp >= displaceThresh) {
+                    System.out.println("Identity swap");
+                    identitySwitches++;
+                }
+            }
+
+            /** TODO REMOVE **/
+
 
 //            System.out.println("Loop time: " + (System.currentTimeMillis() - time1) / 1000.0 + "s");
 
@@ -451,6 +521,7 @@ public class SinglePlateTracker extends Tracker {
             }
 
         }
+
         canvasFrame.dispose();
         tracking.dispose();
         grabber.release();

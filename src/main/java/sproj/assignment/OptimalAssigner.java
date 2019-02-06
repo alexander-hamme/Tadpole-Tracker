@@ -100,7 +100,9 @@ public class OptimalAssigner {
 
         for (int i=0; i<anmlsSize; i++) {
             for (int j=0; j<boxesSize; j++) {
-                costMatrix[i][j] = Double.parseDouble(df.format(costOfAssignment(animals.get(i), boundingBoxes.get(j))));
+                costMatrix[i][j] = Double.parseDouble(df.format(
+                        costOfAssignment(animals.get(i), boundingBoxes.get(j))
+                ));
             }
         }
 
@@ -249,17 +251,17 @@ public class OptimalAssigner {
     }
 
 
-    private void fillBlanks(int rws, int cls) {
+    private void fillBlanks(int rows, int cols) {
 
-        if (cls < rws) {                      // rows = animals.size,   cols = boundingboxes.size
-            for (int r=0; r<rws; r++) {
-                for (int c = cls; c < rws; c++) {
+        if (cols < rows) {                      // rows = animals.size,   cols = boundingboxes.size
+            for (int r=0; r<rows; r++) {
+                for (int c = cols; c < rows; c++) {
                     costMatrix[r][c] = DEFAULT_COST_OF_NON_ASSIGNMENT;
                 }
             }
-        } else if (rws < cls) {
-            for (int r = rws; r < cls; r++) {
-                for (int c = 0; c < cls; c++) {
+        } else if (rows < cols) {
+            for (int r = rows; r < cols; r++) {
+                for (int c = 0; c < cols; c++) {
                     costMatrix[r][c] = DEFAULT_COST_OF_NON_ASSIGNMENT;
                 }
             }
@@ -442,6 +444,8 @@ public class OptimalAssigner {
 
 
     /** Step four
+     *
+     * Prime cells in the matrix that contain zeros
      *
      * @return
      */
