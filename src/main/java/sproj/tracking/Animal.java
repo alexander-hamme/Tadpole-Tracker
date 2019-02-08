@@ -101,7 +101,8 @@ public class Animal {
             currCostNonAssignnmnt = DEFAULT_COST_OF_NON_ASSIGNMENT;
         }
 
-        int predicted = isPredicted ? 1 : 0;
+        // todo calculate a probability of correctness instead of binary value
+        double predicted = isPredicted ? 1 : 0;
 
         this.x = _x; this.y = _y;
         applyBoundsConstraints();

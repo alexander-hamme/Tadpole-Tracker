@@ -163,9 +163,9 @@ public class TrackerAccuracyEvaluator extends ModelEvaluator {
             }
         }
 
-        /** TODO REMOVE **/
+        /** TODO REMOVE *
         System.out.println("Total identity swaps: " + tracker.identitySwitches);
-        /** TODO REMOVE **/
+        * TODO REMOVE **/
 
 
         return accuracyPoints;

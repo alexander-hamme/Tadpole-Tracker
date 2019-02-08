@@ -17,31 +17,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
-//import org.apache.logging.log4j.LogManager;
-//import org.apache.logging.log4j.Logger;
-
-
-//import org.apache.logging.log4j.LogManager;
-//import org.apache.logging.log4j.Logger;
-import sproj.TrackerApp;
-
-
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
-
 /**
- *
+ * Container class for Yolov2 Model
  */
-
 public class YOLOModelContainer {
 
-//    private final String modelFilePath = "src/main/resources/inference/yolov2_10000its.zip";
-    //private static final String DEFAULT_MODEL_PATH = "src/main/resources/inference/yolov2_19000.zip";
     private static final String DEFAULT_MODEL_PATH = "src/main/resources/inference/yolov2_80000.zip";
 
-    private final Logger logger = new Logger();//TrackerApp.getLogger();   //  LogManager.getLogger("YOLOModelContainer");   // Todo don't create new instance, share one logger object, eg from Main
-
-//    Logger logger = LoggerFactory.getLogger(YOLOModelContainer.class);
+    private final Logger logger = new Logger();//  LogManager.getLogger("YOLOModelContainer");
 
     public static final int IMG_WIDTH = 416;        // reshaping constraints to apply to input images
     public static final int IMG_HEIGHT = 416;
@@ -91,7 +74,7 @@ public class YOLOModelContainer {
 
         try {
 //            logger.info("Loading model...");
-            System.out.print("Loading model...");
+            System.out.println("Loading model...");
             yoloModel = ModelSerializer.restoreComputationGraph(modelFilePath);
         } catch (FileNotFoundException e) {
             throw new IOException("Invalid file path to model: " + modelFilePath, e);
@@ -100,7 +83,7 @@ public class YOLOModelContainer {
         }
 
 //        logger.info("Loaded.");
-        System.out.print("\rModel loaded.");
+        System.out.println("Model loaded.");
         warmupModel(WARMUP_ITERATIONS);
         outputLayer = (Yolo2OutputLayer) yoloModel.getOutputLayer(0);
     }

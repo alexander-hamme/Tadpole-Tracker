@@ -15,11 +15,13 @@ import javax.swing.*;
 import java.awt.event.KeyEvent;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static sproj.util.IOUtils.writeAnimalPointsToFile;
+import static sproj.util.IOUtils.writeAnimalPointsToSeparateFiles;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
+import static sproj.util.IOUtils.writeAnimalsToCSV;
 
 //import org.apache.logging.log4j.LogManager;
 //import org.apache.logging.log4j.Logger;
@@ -38,9 +40,6 @@ public class SinglePlateTracker extends Tracker {
     private OptimalAssigner optimalAssigner = new OptimalAssigner();
     private OpenCVFrameConverter frameConverter = new OpenCVFrameConverter.ToMat();
     private YOLOModelContainer yoloModelContainer;
-//    private FFmpegFrameGrabber grabber;
-
-//    private int numb_of_anmls;
 
     private String dataSaveNamePrefix;
     private Rect cropRect;
@@ -49,18 +48,7 @@ public class SinglePlateTracker extends Tracker {
     private int videoFrameHeight;
     private int[] positionBounds;       // x1, x2, y1, y2
 
-    private final int COST_OF_NON_ASSIGNMENT = 50;
-
-
-    /** TODO REMOVE
-    HashedMap<Animal, int[]> prevpoints = new HashedMap<>();
-    public int identitySwitches = 0;
-    TODO REMOVE **/
-
     private boolean SAVE_TO_FILE;
-//    private List<BoundingBox> boundingBoxes;
-//    private List<DetectedObject> detectedObjects;
-
 
     public SinglePlateTracker(final int n_objs, final boolean drawShapes,
                               final int[] crop, String videoPath, String saveDataFilePrefix) throws IOException {
@@ -78,8 +66,8 @@ public class SinglePlateTracker extends Tracker {
         this.positionBounds = new int[]{0, videoFrameWidth, 0, videoFrameHeight};  // x1, x2, y1, y2
 
         logger.info("initializing tracker...");
-        initializeFrameGrabber(videoPath);      // test if video file is valid and readable first
-//        logger.info("creating animal objects");
+        initializeFrameGrabber(videoPath);      // tests if video file is valid and readable first
+
         createAnimalObjects();
 
         if (saveDataFilePrefix == null) {
@@ -87,10 +75,11 @@ public class SinglePlateTracker extends Tracker {
         } else {
             SAVE_TO_FILE = true;
             this.dataSaveNamePrefix = saveDataFilePrefix;
-            createAnimalFiles(saveDataFilePrefix);
+            //createAnimalFiles(saveDataFilePrefix);
+            createAnimalDataCSV(saveDataFilePrefix);
         }
-//        logger.info("warming up model");
-        yoloModelContainer = new YOLOModelContainer();  // load model
+        logger.info("warming up model");
+        yoloModelContainer = new YOLOModelContainer();  // loads the model from file in its constructor
     }
 
     public int getFrameNumb() {
@@ -201,41 +190,38 @@ public class SinglePlateTracker extends Tracker {
         }
     }
 
-    private boolean assignmentIsReasonable(Animal anml, BoundingBox box, int frameNumber) {
+    /**
+     *
+     * Create CSV files with headers: Timestamp, Animal 1, Animal 2, etc
+     * instead of numbering animals, which is not useful,
+     * the identification label is their color, in BGRA format
+     * @param baseFileName
+     * @throws IOException
+     */
+    private void createAnimalDataCSV(String baseFileName) throws IOException {
 
-        if (frameNumber <= NUMB_FRAMES_FOR_INIT) { return true; }
+        // try with resources automatically closes Writer objects
+        try (PrintWriter writer = new PrintWriter(new FileWriter(baseFileName + ".csv"))) {
 
-        double displacementThreshMultiplier = 5.0;
-        double dt = 1.0 / videoFrameRate;
-        // todo use predicted position / velocity values?
+            StringBuilder sb = new StringBuilder();
+            sb.append("Timestamp,");
 
-        double proximity = Math.pow(Math.pow((anml.x - box.centerX),2) + Math.pow((anml.y - box.centerY), 2), 0.5);
+            for (Animal a : animals) {
 
+                int r = (int) Math.round(a.color.red());
+                int g = (int) Math.round(a.color.green());
+                int b = (int) Math.round(a.color.blue());
 
+                sb.append(String.format("Anml-RGB-(%d-%d-%d)", r,g,b));
 
-        // is this is across the 416 x 416 image or the full image?
-        double minDispl = 5.0;      // use average velocity
-
-        double maxDispl = 25.0;     // todo use actual data for these...  e.g. calculate using mean/the max of displacement values over time
-
-        double reasonableDisplacement = displacementThreshMultiplier * Math.pow(Math.pow(anml.vx * dt, 2) + Math.pow(anml.vy * dt, 2), 0.5);
-
-
-        reasonableDisplacement = (reasonableDisplacement >= minDispl) ? reasonableDisplacement : minDispl;
-        reasonableDisplacement = (reasonableDisplacement <= maxDispl) ? reasonableDisplacement : minDispl;
-
-        System.out.println("reasonable displacement = " + reasonableDisplacement + "For reference, max prox is " +
-                (int) Math.round(Math.sqrt(Math.pow(416, 2) + Math.pow(416, 2))));
-
-        // todo also check the animal's heading & the angle to the assignment & if it seems reasonable
-
-        if (proximity >= maxDispl) System.out.println("NOPE: " + proximity);
-
-//        return proximity <= reasonableDisplacement;
-        return proximity <= maxDispl;
-
+                if (animals.indexOf(a) != animals.size()-1) {
+                    sb.append(",");
+                }
+            }
+            writer.write(sb.toString());
+            writer.println();  // cross-platform compatible
+        }
     }
-
 
     /**
      * Runs once with each frame
@@ -246,9 +232,9 @@ public class SinglePlateTracker extends Tracker {
      */
     private void updateObjectTracking(List<BoundingBox> boundingBoxes, Mat frameImage, int frameNumber, long timePos) {
 
-        // the length of the diagonal across the frame--> the largest possible displacement distance for an object in the image
         if (frameNumber <= NUMB_FRAMES_FOR_INIT) {
 
+            // the length of the diagonal across the frame--> the largest possible displacement distance for an object in the image
             int prox_start_val = (int) Math.round(Math.sqrt(Math.pow(frameImage.rows(), 2) + Math.pow(frameImage.cols(), 2)));
 
             for (Animal anml : animals) {
@@ -289,48 +275,11 @@ public class SinglePlateTracker extends Tracker {
         // each animal has its own dynamic COST_OF_NON_ASSIGNMENT
         for (BoundingBox box : boundingBoxes) {
             if (DRAW_RECTANGLES) {
-                // this rectangle drawing will be removed later  (?)
+                // this rectangle drawing will be removed later
                 rectangle(frameImage, new Point(box.topleftX, box.topleftY),
                         new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
             }
         }
-
-        /* LEGACY ASSIGNMENT METHOD.  FOR ACCURACY COMPARISONS ONLY
-
-        List<BoundingBox> assignedBoxes = new ArrayList<>();
-
-        double maxProx = 200;
-
-        for (Animal anml : animals) {
-
-            BoundingBox closestBox = null;
-            double minProx = Double.MAX_VALUE;
-
-            for (BoundingBox box : boundingBoxes) {
-                if (assignedBoxes.contains(box)) {
-                    continue;
-                }
-                double prox = Math.pow(
-                        Math.pow(box.centerX - anml.x, 2) + Math.pow(box.centerY - anml.y, 2), 0.5);
-                if (prox < minProx) {
-                    if (frameNumber > 30 && prox > maxProx) {
-                        continue;
-                    }
-                    closestBox = box;
-                    minProx = prox;
-                }
-            }
-
-            if (closestBox != null) {
-                anml.updateLocation(
-                        closestBox.centerX, closestBox.centerY, dt, timePos, false
-                );
-                assignedBoxes.add(closestBox);
-            } else {
-                anml.predictTrajectory(dt, timePos);
-            }
-        }
-        //*/
 
 
         final List<OptimalAssigner.Assignment> assignments = optimalAssigner.getOptimalAssignments(animals, boundingBoxes);
@@ -512,7 +461,12 @@ public class SinglePlateTracker extends Tracker {
 
             // todo: calculate uncertainty of each point / assignment and write that value to file for each point
             if (SAVE_TO_FILE && frameNo % saveFrequency == 0) {
-                writeAnimalPointsToFile(this.animals, dataSaveNamePrefix, true, true);
+                //writeAnimalPointsToSeparateFiles(this.animals, dataSaveNamePrefix, true, true);
+                writeAnimalsToCSV(this.animals, dataSaveNamePrefix, true);
+                for (Animal animal : animals) {
+                    animal.clearPoints();
+                }
+                System.out.println("Saved to CSV file");
             }
 
         }
@@ -543,10 +497,12 @@ public class SinglePlateTracker extends Tracker {
             int[] cropDims = new int[]{245, 30, 660, 660};//230,10,700,700};//
 
             String dataSaveName = String.format("/home/ah2166/Documents/sproj/java/Tadpole-Tracker" +
-                    "/data/tracking_data/%s_data/", vid);
+                    "/data/tracking_data/%s_data", vid);
 
 
-            SinglePlateTracker tracker = new SinglePlateTracker(n_objs, true, cropDims, fullPath, dataSaveName);
+            SinglePlateTracker tracker = new SinglePlateTracker(
+                    n_objs, true, cropDims, fullPath, dataSaveName
+            );
             tracker.trackVideo();
 
         }

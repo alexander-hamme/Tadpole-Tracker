@@ -1,5 +1,6 @@
 package sproj.util;
 
+import com.google.common.base.Joiner;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -110,38 +111,66 @@ public abstract class IOUtils {
         return path.substring(path.lastIndexOf("/") + 1, path.length());
     }
 
-    public static void writeAnimalsToSingleFile(List<Animal> animals, String fileName,
-                                                boolean appendIfFileExists, boolean clearPoints) throws IOException  {
+    /**
+     *
+     * @param animals list of animal objects
+     * @param baseFileName  String, filename without ".csv" extension
+     * @param appendIfFileExists boolean
+     * @throws IOException
+     */
+    public static void writeAnimalsToCSV(List<Animal> animals, String baseFileName,
+                        boolean appendIfFileExists) throws IOException  {
 
         // TODO: put timestamp with each point
 
-        try (FileWriter writer = new FileWriter(fileName, appendIfFileExists)) {
+        try (PrintWriter writer = new PrintWriter(
+                new FileWriter(baseFileName + ".csv", appendIfFileExists))
+        ) {
+
+            // Create list of iterators so that points can be added in
+            // adjacent columns in the CSV file
+            List<Iterator<double[]>> anmlPtsIterators = new ArrayList<>();
 
             for (Animal animal : animals) {
+                anmlPtsIterators.add(animal.getDataPointsIterator());
+            }
 
-                Iterator<double[]> pointsIterator = animal.getDataPointsIterator();
+            StringBuilder sb = new StringBuilder();
 
-                //writer.write(String.format("Animal Number %d, RGBA color label: %s\n", animals.indexOf(animal)+1, animal.color.toString()));
-                writer.write(String.format("Animal Number %d|BGRA color label: %s\n", animals.indexOf(animal)+1, animal.color.toString()));
-                while (pointsIterator.hasNext()) {
-                    double[] point = pointsIterator.next();
-                    writer.write(point[0] + "," + point[1] + "," + point[2] + "\n");
-//                    writer.write(String.join(",", point) + "\n");
+            boolean empty = false;  // animal iterators have the exact same number of data points,
+                                    // so if one is empty, they are all empty
+            while (! empty) {
+
+                for (Iterator<double[]> it : anmlPtsIterators) {
+
+                    if (it.hasNext()) {
+                        // Arrays.toString() uses commas to delimit array elements,
+                        // which is a problem for writing to CSV values.
+                        // this separates the values using a vertical bar
+                        double[] pt = it.next();
+                        //                 time position (ms), x, y, calculated data correctness
+                        sb.append(String.format("%f|%f|%f|%f,",pt[0], pt[1], pt[2], pt[3]));
+                    } else {
+                        empty = true;
+                        break;
+                    }
                 }
-                if (animals.indexOf(animal) < animals.size()-1) {    // add newline after all but the last animal
-                    writer.write("\n");
-                }
 
-                if (clearPoints) {
-                    animal.clearPoints();
-                }
+                sb.append("\n");
 
+                writer.write(sb.toString());
+
+                // clear the buffer for reuse instead of reallocating memory with `new StringBuilder()`
+                // since the size of each string will be almost exactly the same, there is little risk
+                // of memory leakage, and this method is far more efficient, because garbage collection
+                // doesn't need to clean the discarded StringBuilder memory each iteration of the loop
+                sb.setLength(0);
             }
         }
     }
 
-    public static void writeAnimalPointsToFile(List<Animal> animals, String filePrefix,
-                                               boolean appendIfFileExists, boolean clearPoints) throws IOException {
+    public static void writeAnimalPointsToSeparateFiles(List<Animal> animals, String filePrefix,
+                                                        boolean appendIfFileExists, boolean clearPoints) throws IOException {
 
         for (Animal animal : animals) {
 
