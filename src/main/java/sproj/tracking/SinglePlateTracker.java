@@ -1,6 +1,5 @@
 package sproj.tracking;
 
-import org.apache.commons.collections4.map.HashedMap;
 import org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.Frame;
@@ -53,10 +52,10 @@ public class SinglePlateTracker extends Tracker {
     private final int COST_OF_NON_ASSIGNMENT = 50;
 
 
-    /** TODO REMOVE **/
+    /** TODO REMOVE
     HashedMap<Animal, int[]> prevpoints = new HashedMap<>();
     public int identitySwitches = 0;
-    /** TODO REMOVE **/
+    TODO REMOVE **/
 
     private boolean SAVE_TO_FILE;
 //    private List<BoundingBox> boundingBoxes;
@@ -124,19 +123,15 @@ public class SinglePlateTracker extends Tracker {
         List<BoundingBox> boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
 
-
-
-
-
-        /** TODO REMOVE **/
+        /** TODO REMOVE *
         for (Animal anml : animals) {
             prevpoints.put(anml, new int[]{anml.x, anml.y});
         }
-        /** TODO REMOVE **/
+        * TODO REMOVE **/
 
         updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp() / 1000L);
 
-        /** TODO REMOVE **/
+        /** TODO REMOVE
 
         double displaceThresh = 45.0;
         for (Animal anml : animals) {
@@ -151,7 +146,7 @@ public class SinglePlateTracker extends Tracker {
             }
         }
 
-        /** TODO REMOVE **/
+         TODO REMOVE **/
 
 
         return frameConverter.convert(frameImg);
@@ -458,16 +453,16 @@ public class SinglePlateTracker extends Tracker {
 
             boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
-            /** TODO REMOVE **/
+            /** TODO REMOVE *
             for (Animal anml : animals) {
                 prevpoints.put(anml, new int[]{anml.x, anml.y});
             }
-            /** TODO REMOVE **/
+            * TODO REMOVE **/
 
 
             updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp() / 1000L);
 
-            /** TODO REMOVE **/
+            /** TODO REMOVE *
 
             double displaceThresh = 60.0;
             for (Animal anml : animals) {
@@ -482,7 +477,7 @@ public class SinglePlateTracker extends Tracker {
                 }
             }
 
-            /** TODO REMOVE **/
+            * TODO REMOVE **/
 
 
 //            System.out.println("Loop time: " + (System.currentTimeMillis() - time1) / 1000.0 + "s");
@@ -529,41 +524,14 @@ public class SinglePlateTracker extends Tracker {
 
 
     public static void main(String[] args) throws IOException, InterruptedException {
-//        String testVideo = "/home/ah2166/Videos/tad_test_vids/1_tad_3.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
-//        int n_objs = 1;
-//        String testVideo = "/home/ah2166/Videos/tad_test_vids/2_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
-//        int n_objs = 2;
-//        String testVideo = "/home/ah2166/Videos/tad_test_vids/3_tad_1.MOV"; //"src/main/resources/videos/IMG_4881.MOV";
-//        int n_objs = 3;
-//        int[] cropDims = new int[]{130,10,670,670};   // {230,10,700,700};//
-
-//        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/1_tadpole/IMG_4972.MOV";
-//        int n_objs = 1;
-
-//        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/2_tadpoles/IMG_4994.MOV";
-//        int n_objs = 2;
-
-//        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/4_tadpoles/IMG_5014.MOV";
-//        int n_objs = 4;
-
-//        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/8_tadpoles/IMG_5054.MOV";
-//        int n_objs = 8;
-//        {235,0,720,720};
-
-//        String testVideo = "/home/ah2166/Videos/tad_test_vids/trialVids/2_tadpoles/IMG_5005.MOV";
-//        int[] cropDims = new int[]{280,0,720,720};//230,10,700,700};//
-//        int n_objs = 2;
-
-//        String testVideo = "data/videos/IMG_5126.MOV";
-//        int n_objs = 4;
 
         String videoPath = "/home/ah2166/Videos/tad_test_vids/trialVids/4tads/";
 
 
         String[] testVideos = new String[]{
                 "IMG_5193", "IMG_5194", "IMG_5195", "IMG_5196", "IMG_5197", "IMG_5198", "IMG_5199",
-                "IMG_5200", "IMG_5201", "IMG_5202", "IMG_5203", "IMG_5204", "IMG_5205", "IMG_5206",
-                "IMG_5207", "IMG_5208", "IMG_5209", "IMG_5210", "IMG_5211", "IMG_5212",
+                "IMG_5200", "IMG_5201", "IMG_5202", "IMG_5203", "IMG_5204", "IMG_5205",
+                "IMG_5206", "IMG_5207", "IMG_5208", "IMG_5209", "IMG_5210", "IMG_5211",
         };
 
         for (String vid : testVideos) {
@@ -573,10 +541,6 @@ public class SinglePlateTracker extends Tracker {
 
             //***** Note that x + width must be <= original image width, and y + height must be <= original image height**//
             int[] cropDims = new int[]{245, 30, 660, 660};//230,10,700,700};//
-
-            if (vid.equals("IMG_5212")) {
-                cropDims = new int[]{290, 60, 600, 600};
-            }
 
             String dataSaveName = String.format("/home/ah2166/Documents/sproj/java/Tadpole-Tracker" +
                     "/data/tracking_data/%s_data/", vid);
