@@ -10,6 +10,8 @@ Notes:
 
 - While I am primarily conducting my research in Java at the moment, I will eventually translate it to Python as well, to allow wider access for biology researchers and developers to use and hack in the future. The Python code is functional but requires more work before it can be fully released. Some of it is available [here](https://github.com/alexander-hamme/Tadpole-Tracker-Python).
 
+I am also currently working on translating my system to C++ now, in [this respository](https://github.com/alexander-hamme/Tadpole-Tracker-Cpp).
+
 
 -----
 
