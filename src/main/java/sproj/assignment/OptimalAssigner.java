@@ -8,41 +8,68 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * A modified implementation of the Munkres Hungarian optimal assignment algorithm
+ * implementation coded by Robert A. Pilgrim at Murray State University
+ * <a href="http://csclab.murraystate.edu/~bob.pilgrim/445/munkres.html">(link)</a>.
+ *
+ * See the following resources for detailed explanations of the algorithm:
+ *
+ * https://brilliant.org/wiki/hungarian-matching/
+ * http://www.math.harvard.edu/archive/20_spring_05/handouts/assignment_overheads.pdf
+ * http://www.mathcs.emory.edu/~cheung/Courses/323/Syllabus/Assignment/algorithm.html
+ * http://www.hungarianalgorithm.com/solve.php
+ *
+ * Note that this implementation is different from the version in the link above,
+ * in that it uses (both predetermined and dynamically calculated) non-assignment cost values
+ * to fill in missing cells in the matrix at each time step.
+ */
 public class OptimalAssigner {
-
-
-    /* TODO  make sure there are never ZEROS in the starting cost matrix */
 
     private final boolean DEBUG = false;
 
+    // see above resources for explanations of how the algorithm
+    // "covers" and "stars" columns to solve the cost matrix
+
     private final int COVERED = 1;
     private final int UNCOVERED = 0;
+
     private final int STARRED = 1;
     private final int UNSTARRED = 0;
+
+    // some explanations do not mention priming, however this implementation uses it.
+    // it serves a similar purpose as starring.
     private final int PRIMED = 2;
     private final int UNPRIMED = 0;
 
-//    public static final double DEFAULT_COST_OF_NON_ASSIGNMENT = 30.0;     // this should be high enough to not be a minimum value in a row or col,
-    public static double DEFAULT_COST_OF_NON_ASSIGNMENT = 30.0;     // this should be high enough to not be a minimum value in a row or col,
-                                                            // but not high enough that it's worse than giving an assignment a value across the screen
-                                                            // TODO:       find out the highest (true) distance that tadpoles can cover in a frame or two and
-                                                            // todo        multiply  this by number of frames skipped
+    /*
+     * this value is solely used for matrix cells where the BoundingBox instance
+     * exists but the corresponding Animal instance is null.
+     *
+     * The value of 30.0 was determined to be a good threshold through trial and error,
+     * as it is high enough to rarely be a minimum value in a row or col,
+     * but not high enough that the algorithm considered it to be worse
+     * than giving a grossly erroneous assignment across the screen
+     */
+    public static double DEFAULT_COST_OF_NON_ASSIGNMENT = 30.0;
+
 
     private DecimalFormat df = new DecimalFormat("#.###");
+
     private boolean foundOptimalSolution;
+
     private double[][] costMatrix;
     private int[][] maskMatrix;
-    private int[][] pathMatrix;
+    private int[][] pathMatrix;     // todo:     explain
     private int[] rowCover;
     private int[] colCover;
     private int rows, cols;
 
+    public OptimalAssigner() {}
 
-    public OptimalAssigner() {
-
-    }
-
-
+    /**
+     * Simple class to contain paired Animal-BoundingBox instances
+     */
     public static class Assignment {
 
         public Animal animal;
@@ -56,13 +83,60 @@ public class OptimalAssigner {
 
 
     /**
-     * The length of the animals and boundingBoxes may be different at certain points in time.
-     * However, when adding fake values to make the matrix square, it should be kept in mind that
+     * The key function for setting cell values in the cost matrix.
+     *
+     * If both `anml` and `box` are not null, the matrix cell will be set
+     * to the euclidean distance between them.
+     *
+     * Otherwise, a cost of non-assignment value will be returned.
+     *
+     * If the Animal instance is null, the default non-assignment cost value is used,
+     * because the box will most likely be assigned in another cell.
+     *
+     * however if the Animal instance is not null, but the BoundingBox instance is,
+     * the animal's current cost-of-non-assignment value is used, which is determined
+     * by how many frames this Animal instance has not received an assignment.
+     *
+     * The longer an Animal does not receive an assignment, the larger its individual
+     * cost-of-non-assignment value gets, which incentivizes the Hungarian algorithm
+     * to assign it to a BoundingBox, even if it is outside the "normal"
+     * euclidean range of assignment.
+     *
+     * @param anml Animal instance, may be null
+     * @param box BoundingBox instance, may be null
+     * @return double
+     */
+    private double costOfAssignment(Animal anml, BoundingBox box) {
+        if (anml == null) { return DEFAULT_COST_OF_NON_ASSIGNMENT; }
+        else if (box == null) { return anml.getCurrNonAssignmentCost(); }
+        return  Math.pow(Math.pow(anml.x - box.centerX, 2) + Math.pow(anml.y - box.centerY, 2), 0.5);
+    }
+
+
+    /**
+     * The main function externally called by the SinglePlateTracker class at each time step.
+     *
+     * The parameters passed in are the list of Animals and the BoundingBoxes generated by
+     * the DetectionsParser class, which are converted from the DetectedObject instances
+     * returned by YoloModelContainer.runInference().
+     *
+     * The length of the animals and boundingBoxes may be different at a given time step.
+     * However, when adding fake values to make the matrix square, note that
      * the length of `animals` is always the true value.
      *
-     * @param anmls
-     * @param boxes
-     * @return
+     * Each real Animal instance and real BoundingBox instance is padded with a null value.
+     * This allows much easier handling of short-duration detection errors at runtime.
+     *
+     * For example, during tracking if one animal is not detected for 5 frames,
+     * the Hungarian algorithm can simply give it null assignments for 5 frames
+     * instead of erroneously assigning it to another BoundingBox instance.
+     *
+     * This also handles erroneous extra detections- if a BoundingBox instance appears
+     * that does not correspond to a real Animal instance, it is given a null Animal assignment.
+     *
+     * @param anmls List of animal instances belonging to SinglePlateTracker class
+     * @param boxes List of BoundingBoxes generated by the DetectionsParser class
+     * @return List of Assignment instances
      */
     public List<Assignment> getOptimalAssignments(final List<Animal> anmls, final List<BoundingBox> boxes) {
 
@@ -73,31 +147,33 @@ public class OptimalAssigner {
         final List<Animal> animals = new ArrayList<>(anmls.size() * 2);
         final List<BoundingBox> boundingBoxes = new ArrayList<>(boxes.size() * 2);
 
+        // pad every Animal instance with an extra null value.
         for (Animal a : anmls) {
             animals.add(a);
             animals.add(null);
         }
 
+        // pad every BoundingBox instance with extra null value
         for (BoundingBox b : boxes) {
             boundingBoxes.add(b);
             boundingBoxes.add(null);
         }
 
-//        List<Assignment> assignments = new ArrayList<>(animals.size());
-
         int anmlsSize = animals.size();              // the true value of how many animals there are
-        int boxesSize = boundingBoxes.size();        // will usually be less than or equal to (only in rare cases more than) animals.size()
+        int boxesSize = boundingBoxes.size();        // can be <, ==, or > than animals.size()
 
+        // construct square matrix using whichever size is larger as the dimensions
         int dimension = Math.max(anmlsSize, boxesSize);
         rows = cols = dimension;
 
         costMatrix = new double[dimension][dimension];
         maskMatrix = new int[dimension][dimension];
-        pathMatrix = new int[dimension*2 + 1][2];           // todo:     explain
+        pathMatrix = new int[dimension*2 + 1][2];
 
         rowCover = new int[rows];
         colCover = new int[cols];
 
+        // fill cost matrix with cost values
         for (int i=0; i<anmlsSize; i++) {
             for (int j=0; j<boxesSize; j++) {
                 costMatrix[i][j] = Double.parseDouble(df.format(
@@ -106,33 +182,30 @@ public class OptimalAssigner {
             }
         }
 
-        fillBlanks(anmlsSize, boxesSize);
+        // (no longer used, to be removed soon)
+        // fillBlanks(anmlsSize, boxesSize);
 
-        int[][] solvedMatrix = munkresSolve();
-
-        // reset costmatrix, maskMatrix, etc by setting to null?
-
-        return parseSolvedMatrix(solvedMatrix, animals, boundingBoxes);
+        return parseSolvedMatrix(munkresSolve(), animals, boundingBoxes);
     }
 
     public double[][] getCostMatrix() {
         return costMatrix;
     }
 
-
     public int[][] getMaskMatrix() {
         return maskMatrix;
     }
 
-    private double costOfAssignment(Animal anml, BoundingBox box) {
-        if (anml == null) { return DEFAULT_COST_OF_NON_ASSIGNMENT; }
-        else if (box == null) { return anml.getCurrNonAssignmentCost(); }
-        return  Math.pow(Math.pow(anml.x - box.centerX, 2) + Math.pow(anml.y - box.centerY, 2), 0.5);
-    }
-
-
-    private List<Assignment> parseSolvedMatrix(final int[][] solvedMatrix, final List<Animal> animals,
-                                               final List<BoundingBox> boundingBoxes) {
+    /**
+     * Parse solved cost matrix and create corresponding Assignment instances.
+     *
+     * @param solvedMatrix  costMatrix generated by solveMatrix()
+     * @param animals
+     * @param boundingBoxes
+     * @return
+     */
+    private List<Assignment> parseSolvedMatrix(final int[][] solvedMatrix,
+               final List<Animal> animals, final List<BoundingBox> boundingBoxes) {
 
         ArrayList<Assignment> assignments = new ArrayList<>();
 
@@ -149,35 +222,11 @@ public class OptimalAssigner {
                         }
 
                     } else {
-                        // todo:   do anything here?     -->  this means extra (false) bounding box detections
+                        // do nothing  -->  this means extra (false) bounding box detections
                     }
                 }
             }
         }
-
-        //        if (assignments.size() < animals.size()) {
-
-        // TODO get rid of this    (it shouldn't ever be called?
-        for (Animal anml : animals) {
-
-            if (anml == null) {continue;}
-
-            boolean alreadyAssigned = false;
-
-            for (Assignment assignment : assignments) {
-
-                if (anml.equals(assignment.animal)) {
-                    alreadyAssigned = true;
-                }
-            }
-            if (!alreadyAssigned) {
-                assignments.add(new Assignment(anml, null));    // no box assignment for this animal
-            }
-        }
-
-
-        //TODO remove all double null assignments from list?
-
         return assignments;
     }
 
@@ -250,7 +299,12 @@ public class OptimalAssigner {
         return parseSolvedMatrix(solvedMatrix, animals, boundingBoxes);
     }
 
-
+    /**
+     * No longer used, previously filled the extra cells in the matrix with
+     * DEFAULT_COST_OF_NON_ASSIGNMENT.
+     * @param rows
+     * @param cols
+     */
     private void fillBlanks(int rows, int cols) {
 
         if (cols < rows) {                      // rows = animals.size,   cols = boundingboxes.size
@@ -270,22 +324,15 @@ public class OptimalAssigner {
 
 
     /**
-     * Munkres Assignment Algorithm. Guarantees optimal assignment, with a worst-case runtime complexity of O(n^3)
+     * Munkres Assignment Algorithm. Guarantees optimal assignment,
+     * with a worst-case runtime complexity of O(n^3)
+     *
+     * See
      * @return
      */
     public int[][] munkresSolve() { //double[][] costMatrix) {
 
         List<Assignment> assignments = new ArrayList<>();
-
-        /*int rows = costMatrix.length;       // these dimensions will always be equal, even if they are not completely filled,
-        int cols = costMatrix[0].length;    // but I use separate 'rows' and 'cols' variables for clarity and readability
-        int[][] maskMatrix;
-        int[] rowCover = new int[rows];
-        int[] colCover = new int[cols];
-
-        costMatrix = reduceBySmallest(costMatrix, rows, cols);
-        maskMatrix = starZeroes(costMatrix, rowCover, colCover);
-        colCover = coverColumns(maskMatrix, rowCover, colCover);*/
 
             if (DEBUG) {printUpdate(0);}
 
@@ -355,9 +402,6 @@ public class OptimalAssigner {
             }
         }
 
-        // step 7
-
-//        return costMatrix;
         return maskMatrix;
     }
 
