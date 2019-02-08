@@ -6,7 +6,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 import static sproj.util.IOUtils.readInLargeFile;
 
-
+/**
+ * A few utility functions for performing stats analysis of data
+ */
 public abstract class DataAnalysisFunctions {
 
 
@@ -186,19 +188,5 @@ public abstract class DataAnalysisFunctions {
         System.out.println(String.format("Confidence Intervals for all data: %s", Arrays.toString(
                 getConfidenceIntervals(meanSum, 0.95)))
         );
-
-        /*
-
-        List<Double> data = stringsToDoubles(
-                readInLargeFile(new File("/home/alex/Documents/coding/java/Sproj/src/main/resources/data/raw/evaluationData_1t/1tadpole_1.dat"))
-        );
-
-        System.out.println(String.format("Mean: %.5f  StDev: %.5f ", computeMean(data), standardDeviation(data, null))
-        );
-
-        System.out.println(String.format("Confidence Intervals for given data: %s", Arrays.toString(
-                getConfidenceIntervals(data, 0.95))
-        ));
-        */
     }
 }

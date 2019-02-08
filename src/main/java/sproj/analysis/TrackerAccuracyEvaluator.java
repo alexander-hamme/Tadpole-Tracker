@@ -1,24 +1,23 @@
 package sproj.analysis;
 
-import java.awt.event.KeyEvent;
-import java.util.*;
-import java.io.File;
-import java.io.IOException;
-
 import org.apache.commons.collections4.map.HashedMap;
-
 import org.bytedeco.javacpp.opencv_core;
-import org.bytedeco.javacv.*;
-import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
+import org.bytedeco.javacv.CanvasFrame;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.OpenCVFrameConverter;
 import sproj.tracking.Animal;
 import sproj.tracking.SinglePlateTracker;
-import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
-
 import sproj.util.MissingDataHandeler;
-import sproj.yolo.YOLOModelContainer;
 
-import static org.bytedeco.javacpp.opencv_imgproc.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+
+import static org.bytedeco.javacpp.opencv_imgproc.circle;
 
 
 /**

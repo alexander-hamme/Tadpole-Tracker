@@ -1,8 +1,10 @@
 package sproj.util;
 
+/**
+ * Simple container class to hold bounding box information
+ */
 public class BoundingBox {
-    // todo  decide which to use:  floats?  ints?  doubles?
-    // todo OR don't use a separate class if it takes too much memory / time?
+
     public int topleftX;
     public int topleftY;
     public int botRightX;

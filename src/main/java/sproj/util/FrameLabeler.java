@@ -28,6 +28,22 @@ import java.util.stream.Stream;
 
 import static org.bytedeco.javacpp.opencv_imgproc.circle;
 
+/**
+ * This class is designed for manually labeling objects in the frames of a video.
+ *
+ * Basic keyboard input is allowed as follows:
+ * 'Enter' go to next frame, 'Shift+Z' undo labeling, 'Shift+K' skip current video, 'Esc' quit
+ *
+ * Currently, every 10th frame is displayed for labeling to speed up the process
+ * (at 30 fps, and for tracking tadpoles specifically, nothing significantly changes in 0.3 seconds)
+ *
+ * This program also allows loading many videos at once, to be displayed back to back.
+ *
+ * The labeled coordinates are intermittently saved to file, and if the FrameLabeler program
+ * is exited between videos, progress can be resumed at the next run. However, progress currently
+ * cannot be resumed mid-video.
+ *
+ */
 public class FrameLabeler {
 
     private OpenCVFrameConverter frameConverter = new OpenCVFrameConverter.ToMat();
@@ -121,11 +137,6 @@ public class FrameLabeler {
 
         while ((frame = grabber.grabImage()) != null) {
 
-
-            // TODO   add a way to backtrack (just by one frame),  and also to resume progress if you close
-
-            // TODO   use model to detect & plot points, and just check if they're right
-
             frameNo = grabber.getFrameNumber();
             frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);
 
@@ -173,7 +184,7 @@ public class FrameLabeler {
 
                         case KeyEvent.VK_ENTER: {
 
-                            if (currPointsToDraw.empty()) {break;}      // don't continue if no labels on current frameQQ
+                            if (currPointsToDraw.empty()) {break;}   // don't continue if no labels on current frame
 
                             exitLoop = true;
                             break;
