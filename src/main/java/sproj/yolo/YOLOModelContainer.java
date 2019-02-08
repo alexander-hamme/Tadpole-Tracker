@@ -30,7 +30,12 @@ public class YOLOModelContainer {
     public static final int IMG_HEIGHT = 416;
     private final int IMG_CHANNELS = 3;
     private final int[] INPUT_SHAPE = {1, IMG_CHANNELS, IMG_WIDTH, IMG_HEIGHT};
-    private final double CONF_THRESHOLD = 0.3;
+
+    // this is a relatively low confidence threshold,
+    // but it allows the model to provide accurate detections more reliably,
+    // with false detections being handled by the OptimalAssigner class
+    private final double CONF_THRESHOLD = 0.2;
+
     private final int WARMUP_ITERATIONS = 10;
 
     private final NativeImageLoader imageLoader = new NativeImageLoader(IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS);
@@ -38,22 +43,9 @@ public class YOLOModelContainer {
     private ComputationGraph yoloModel;
     private Yolo2OutputLayer outputLayer;
 
-//    private final double[][] DEFAULT_PRIOR_BOXES = {{0.57273, 0.677385}, {1.87446, 2.06253}, {3.33843, 5.47434}, {7.88282, 3.52778}, {9.77052, 9.16828}};
-//    private int nBoxes = 5;
-//    private double[][] priorBoxes = DEFAULT_PRIOR_BOXES;
-//    public final String[] CLASSES = {"tadpole"};
-
-//    private String layerOutputsName = "conv2d_22";
-//    private long seed = 1234L;
-//    private int numClasses = 1;
-//    private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
-//    private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
-
-
     /**
-     * Passing a Frame object to the asMatrix() function results in it being converted to a Mat object anyway,
-     * so it is more efficient to have only one Frame to Mat conversion happening in each iteration of the main program loop.
-     * That is the reasoning behind having this function take the converted Mat object instead of the original Frame.
+     * This is the function called externally by SinglePlateTracker. Runs inference on
+     * the passed in Mat image and returns a List of DetectedObject instances
      *
      * @param image
      * @return
@@ -73,8 +65,7 @@ public class YOLOModelContainer {
     public YOLOModelContainer(File modelFilePath) throws IOException {
 
         try {
-//            logger.info("Loading model...");
-            System.out.println("Loading model...");
+            logger.info("Loading model...");
             yoloModel = ModelSerializer.restoreComputationGraph(modelFilePath);
         } catch (FileNotFoundException e) {
             throw new IOException("Invalid file path to model: " + modelFilePath, e);
@@ -82,17 +73,16 @@ public class YOLOModelContainer {
             throw new IOException("Model file could not be restored: " + modelFilePath, e);
         }
 
-//        logger.info("Loaded.");
-        System.out.println("Model loaded.");
+        logger.info("Model loaded.");
         warmupModel(WARMUP_ITERATIONS);
         outputLayer = (Yolo2OutputLayer) yoloModel.getOutputLayer(0);
     }
 
 
     /**
-     * Justification for running warm-up iterations before using the model for inference:
+     * Run warm-up iterations before using the model for inference.
      *
-     * (explanation adopted from https://deeplearning4j.org/benchmark)
+     * Explanation of "warming up the model" adopted from https://deeplearning4j.org/benchmark:
      *
      * A warm-up period is where you run a number of iterations (for example, a few hundred) of your benchmark without timing,
      * before commencing timing for further iterations.
@@ -109,8 +99,6 @@ public class YOLOModelContainer {
      * During this initialization phase, performance will be slower than after its completion.
      */
     private void warmupModel(int iterations) {
-
-        // todo time these iterations to verify it does actually speed up
 
         long seed = 12345L; // for reproducibility
 

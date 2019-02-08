@@ -9,13 +9,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 
+/**
+ * Class used to record the motion data of individual
+ * subject animals during tracking
+ */
 public class Animal {
 
     private final boolean DEBUG = false;
 
     private final double DEFAULT_COST_OF_NON_ASSIGNMENT = OptimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT;     // this should be high enough to not be a minimum value in a row or col,
-    // but not high enough that it's worse than giving an assignment a value across the screen
-    // TODO: find out the highest (true) distance that tadpoles can cover in a frame or two and make this a bit higher than that
 
     public Scalar color;
     public final int LINE_THICKNESS = 2;
@@ -31,17 +33,22 @@ public class Animal {
     public double vx, vy;
     public double ax, ay;   // acceleration
     public double currentHeading;
-    public MovementState movementState;
+
     public KalmanFilter trackingFilter;
     private int[] positionBounds;
 
-    private int timeStepsPredicted;         // count of consecutive time steps that have not had true updates
-    private double currCostNonAssignnmnt;
-    private final double MAXCOST = 1000.0;  // better value?
+    // count of consecutive time steps that have not had true assignment updates
+    private int timeStepsPredicted;
 
-    private boolean PREDICT_WITH_VELOCITY = true; //false;
+    // dynamic cost value that increases if `timeStepsPredicted` increases
+    private double currCostNonAssignnmnt;
+
+    private final double MAXCOST = 1000.0;
+
+    private boolean PREDICT_WITH_VELOCITY = true;
 
     public Animal(int _x, int _y, final int[] positionBounds, final Scalar clr, KalmanFilter kFilter) {
+
         this.x = _x; this.y = _y;
         this.positionBounds = positionBounds;
         currentHeading = 0;
@@ -53,13 +60,6 @@ public class Animal {
         this.timeStepsPredicted = 0;
         this.currCostNonAssignnmnt = DEFAULT_COST_OF_NON_ASSIGNMENT;
 
-//        this.MAXCOST = 100.0;
-                /*(double) Math.round(
-                Math.pow(
-                    Math.pow(positionBounds[1] - positionBounds[0], 2)
-                  + Math.pow(positionBounds[3] - positionBounds[2], 2),
-                0.5)
-        );*/
     }
 
     @Override
@@ -93,8 +93,7 @@ public class Animal {
 
         if (isPredicted) {
             timeStepsPredicted++;
-            currCostNonAssignnmnt = (currCostNonAssignnmnt + timeStepsPredicted) % MAXCOST; // todo % some value
-//            currCostNonAssignnmnt = (DEFAULT_COST_OF_NON_ASSIGNMENT + timeStepsPredicted) % MAXCOST; // todo % some value
+            currCostNonAssignnmnt = (currCostNonAssignnmnt + timeStepsPredicted) % MAXCOST;
             if (DEBUG) {System.out.println("Current cost: " + currCostNonAssignnmnt);}
         } else {
             timeStepsPredicted = 0;

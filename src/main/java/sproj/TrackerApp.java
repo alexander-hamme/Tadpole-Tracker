@@ -17,9 +17,11 @@ import sproj.util.Logger;
 
 import java.io.IOException;
 
-
 /**
- * The main app to be run, from which the other classes are called
+ * The main app to be run, from which the other classes are called.
+ *
+ * This is currently functional for displaying tracking but a lot of work remains,
+ * i.e. creating a simple interface for non-CS researchers to use
  */
 public class TrackerApp extends Application {
 

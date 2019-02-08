@@ -241,24 +241,23 @@ public class SinglePlateTracker extends Tracker {
 
         }
 
-
-        // TODO you have to figure out how to prevent the dynamic cost from just making them swap every few frames
-
-        // todo   --> check for whether box has overlap with an animal already and then increase that cost?
-
-
-        // TODO:   DECREASE Model confidence threshold and INCREASE NMS threshold
-        // todo    when lots of tadpoles are close together
-
-        // int proximityCounter
+        /*
+           TODO
+           - figure out how to prevent the dynamic cost algorithms from making Animal instances
+             stay on the same bounding box and swap every few frames
 
 
-        // todo    figure out a way to prevent swapping when the cost of non assignment gets really high
-        // todo    from missing many frames in a row
+           TODO
+           - check for whether box has overlap with an animal already and then increase that cost
+
+           TODO
+           - check if two Animal instances are ~exactly overlapping for more than (10) frames
+             if so, reset one of their currCost to MAX_COST for 5 frames or so
 
 
-        // todo calculate the confidence of how true each position update is, and write that to file too
-
+           TODO
+           - calculate the probability of how accurate each position update is, to be written to file
+        */
 
         double dt = 1.0 / videoFrameRate;
 
@@ -270,25 +269,29 @@ public class SinglePlateTracker extends Tracker {
         }*/
 
 
-        // each animal has its own dynamic COST_OF_NON_ASSIGNMENT
+        // this rectangle drawing is for debugging and will be removed later
         for (BoundingBox box : boundingBoxes) {
             if (DRAW_RECTANGLES) {
-                // this rectangle drawing will be removed later
                 rectangle(frameImage, new Point(box.topleftX, box.topleftY),
                         new Point(box.botRightX, box.botRightY), Scalar.RED, 1, CV_AA, 0);
             }
         }
 
 
-        final List<OptimalAssigner.Assignment> assignments = optimalAssigner.getOptimalAssignments(animals, boundingBoxes);
+        // get optimal assignments
+        final List<OptimalAssigner.Assignment> assignments = optimalAssigner.getOptimalAssignments(
+                animals, boundingBoxes
+        );
 
+        // update Animal instances
         for (OptimalAssigner.Assignment assignment : assignments) {
 
             if (assignment.animal == null) {
+                // skip padded null Animals
                 continue;
             }
 
-            if (assignment.box == null) {       // no assignment
+            if (assignment.box == null) {       // no assignment for current Animal
                 assignment.animal.predictTrajectory(dt, timePos);
             } else {
                 assignment.animal.updateLocation(
@@ -297,7 +300,7 @@ public class SinglePlateTracker extends Tracker {
             }
         }
 
-
+        // trace animal trajectories on the screen
         if (DRAW_ANML_TRACKS) {
             for (Animal animal : animals) {
                 traceAnimalOnFrame(frameImage, animal, 1.0);             // call this here so that this.animals doesn't have to be iterated through again
@@ -317,8 +320,12 @@ public class SinglePlateTracker extends Tracker {
     }
 
 
+
+
+
+
     /**
-     * OLD CODE  for quick testing purposes only
+     * LEGACY CODE  for quick debugging and testing purposes
      *
      * Note that grabber has been initialized by the time this function is called
      *
