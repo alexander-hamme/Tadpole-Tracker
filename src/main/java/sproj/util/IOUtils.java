@@ -1,37 +1,13 @@
 package sproj.util;
 
-import com.google.common.base.Joiner;
 import org.apache.commons.collections4.map.HashedMap;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
-import org.datavec.image.loader.NativeImageLoader;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.CacheMode;
-import org.deeplearning4j.nn.conf.GradientNormalization;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
-import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
-import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
-import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceToDepth;
-import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
-import org.deeplearning4j.nn.transferlearning.TransferLearning;
-import org.deeplearning4j.util.ModelSerializer;
-import org.deeplearning4j.zoo.model.YOLO2;
-import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.linalg.learning.config.IUpdater;
-import sproj.tracking.Animal;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -41,23 +17,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import sproj.tracking.Animal;
+
+
 /**
  * A collection of public static I/O functions
  */
 public abstract class IOUtils {
 
-    /**
-     * Load image as INDArray (n dimensional array format used by nd4j library)
-     * @param imgFile  String
-     * @return INDArray
-     * @throws IOException
-     */
-    public static INDArray loadImage(File imgFile) throws IOException {
-        INDArray image = new NativeImageLoader().asMatrix(imgFile);
-        ImagePreProcessingScaler scaler = new ImagePreProcessingScaler(0, 1);
-        scaler.transform(image);
-        return image;
-    }
+
 
     public static List<Double> stringsToDoubles(List<String> lst) {
         return lst.stream().map(Double::valueOf).collect(Collectors.toList());
@@ -372,114 +340,6 @@ public abstract class IOUtils {
             }
         }
         return parameters;
-    }
-
-    /**
-     * Code taken from ByteDeco's github repository
-     */
-    public static void convertYAD2KWeights(String fileName, String saveName, double[][] priorBoxes) throws InvalidKerasConfigurationException, IOException, UnsupportedKerasConfigurationException {
-
-        // to be run on an .h5 weights file, outputs a zip file
-
-        int nBoxes = 5;
-
-//        double[][] priorBoxes = {{0.57273, 0.677385}, {1.87446, 2.06253}, {3.33843, 5.47434}, {7.88282, 3.52778}, {9.77052, 9.16828}};
-
-        String layerOutputsName = "conv2d_23";
-        long seed = 1234;
-        int[] inputShape = {608, 608, 3};      // todo is this right or wrong?
-        int numClasses = 1;
-        IUpdater updater = new Adam(1e-3);
-        CacheMode cacheMode = CacheMode.NONE;
-        WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
-        ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
-
-        KerasLayer.registerCustomLayer("Lambda", KerasSpaceToDepth.class);
-        ComputationGraph graph = KerasModelImport.importKerasModelAndWeights(fileName, false);
-        INDArray priors = Nd4j.create(priorBoxes);
-
-        FineTuneConfiguration fineTuneConf = new FineTuneConfiguration.Builder()
-                .seed(seed)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
-                .gradientNormalizationThreshold(1.0)
-                .updater(new Adam.Builder().learningRate(1e-3).build())
-                .l2(0.00001)
-                .activation(Activation.IDENTITY)
-                .trainingWorkspaceMode(workspaceMode)
-                .inferenceWorkspaceMode(workspaceMode)
-                .build();
-
-        ComputationGraph model = new TransferLearning.GraphBuilder(graph)
-                .fineTuneConfiguration(fineTuneConf)
-                .addLayer("outputs",
-                        new org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer.Builder()  // different class with same name
-                                .boundingBoxPriors(priors)
-                                .build(),
-                        layerOutputsName)
-                .setOutputs("outputs")
-                .build();
-
-        System.out.println(model.summary(InputType.convolutional(inputShape[0],inputShape[1], inputShape[2])));
-
-        ModelSerializer.writeModel(model, saveName, false);
-    }
-
-
-    public static void saveNewYoloModel(String modelFilePath) throws IOException {
-        try {
-
-            File modelFile = new File(modelFilePath);
-            ComputationGraph yoloModel;
-
-            if (!modelFile.exists()) {
-                System.out.println("Cached model does NOT exists");
-                yoloModel = (ComputationGraph) YOLO2.builder().build().initPretrained();
-                yoloModel.save(modelFile);
-            } else {
-                System.out.println("Cached model does exists");
-                yoloModel = ModelSerializer.restoreComputationGraph(modelFile);
-            }
-
-        } catch (IOException e) {
-            throw new IOException("Not able to init the model", e);
-        }
-    }
-
-
-    public static void main1(String[] args) throws IOException {
-        readYoloTrainingLog(
-    /*fileName*/ "training/trainingOutput.log",
-    /*savename*/ "training/trainingOutputPoints.dat"
-                );
-    }
-
-    /**
-     * Convert a directory full of iteratively named keras model files
-     * into deeplearning4j models
-     */
-    public static void main2(String[] args) throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
-        String modelDir = "/home/ah2166/Documents/darknet/modelConversion/convertedModels";
-        String savePath = "/home/ah2166/Documents/sproj/java/Tadpole-Tracker/src/main/resources/inference/";
-
-        int minModel = 10000;
-        int maxModel = 18000;
-
-        for (int its = minModel; its <= maxModel; ) {
-
-            String yoloModelFile = String.format("%s/yolo-obj_%d.h5", modelDir, its);
-
-            System.out.println("Converting model " + (its  % minModel / 1000 + 1) + " of " + (maxModel - minModel + 1) / 1000
-            + " " + yoloModelFile);
-
-
-            double[][] priorBoxes = {{1.3221, 1.73145}, {3.19275, 4.00944}, {5.05587, 8.09892}, {9.47112, 4.84053}, {11.2364, 10.0071}};
-
-            convertYAD2KWeights(yoloModelFile,
-                    savePath + String.format("yolov2_%d.zip", its), priorBoxes);
-            its += 1000;
-            //*/
-        }
     }
 }
 

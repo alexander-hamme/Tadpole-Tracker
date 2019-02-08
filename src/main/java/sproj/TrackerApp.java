@@ -42,7 +42,6 @@ public class TrackerApp extends Application {
     private Image imageFrame;
     private final ImageView imageView = new ImageView();
 
-
     private Java2DFrameConverter paintConverter = new Java2DFrameConverter();
 
 
@@ -54,14 +53,10 @@ public class TrackerApp extends Application {
         selectTrackerProgram();
     }
 
-    public static Logger getLogger() {
-        return logger;
-    }
-
-
     private void selectTrackerProgram() throws IOException {
-        // input from user todo
-        String selected = "singleplate";
+
+        String selected = "singleplate";   // this will be set by user todo
+
         if (selected == "singleplate") {
             trackerProgram = new SinglePlateTracker(numb_objs_to_track, drawShapes, crop, videoPath, "");
         } else {
@@ -69,8 +64,10 @@ public class TrackerApp extends Application {
         }
     }
 
+    /**
+     * This will eventually set these values by asking for input from user
+     */
     private void getValues() {
-        // input from user
         numb_objs_to_track = 5;
         drawShapes = true;
 
