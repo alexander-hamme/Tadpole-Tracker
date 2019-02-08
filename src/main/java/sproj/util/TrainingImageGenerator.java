@@ -27,6 +27,17 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
 import static org.bytedeco.javacpp.opencv_imgproc.GaussianBlur;
 import static org.bytedeco.javacpp.opencv_imgproc.createCLAHE;
 
+/**
+ * Class to generate massive amounts of training image data from videos,
+ * using keyboard input to save frames, and/or apply various image filters
+ *
+ * Note that RANDOM_CROP and RANDOM_ROTATE cause the selected frames to be
+ * randomly cropped and/or rotated before they are saved to file
+ *
+ * Currently programmed keyboard input:
+ * 'Shift+S' to save frame to file, 'Shift+K' to skip ahead in video,
+ * 'Shift+F' to change image filters, 'Esc' to skip current video, 'Shift+Q' to quit
+ */
 public class TrainingImageGenerator {
 
     private OpenCVFrameConverter frameConverter = new OpenCVFrameConverter.ToMat();
@@ -77,6 +88,7 @@ public class TrainingImageGenerator {
 
 
     public static void main2(String[] args) throws IOException{
+
         TrainingImageGenerator generator = new TrainingImageGenerator();
 
         BufferedImage img = ImageIO.read(new File("/home/ah2166/Pictures/exampleTrainingImage1.png"));

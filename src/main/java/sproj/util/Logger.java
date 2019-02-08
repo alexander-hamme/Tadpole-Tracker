@@ -1,8 +1,7 @@
 package sproj.util;
 
-
 /**
- * Temporary class for logging until formal Log4J logging framework is incorporated
+ * Temporary class for logging until Log4J logging framework is incorporated
  */
 public class Logger {
 
@@ -17,7 +16,6 @@ public class Logger {
     public void info(String msg) {
         System.out.println(msg);
     }
-
 
     public void error(String msg, Exception e) {
         info(msg);
