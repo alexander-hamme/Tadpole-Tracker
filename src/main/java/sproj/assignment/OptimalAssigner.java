@@ -9,9 +9,12 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * A modified implementation of the Munkres Hungarian optimal assignment algorithm
+ * A modified version of the Munkres Hungarian optimal assignment algorithm
  * implementation coded by Robert A. Pilgrim at Murray State University
  * <a href="http://csclab.murraystate.edu/~bob.pilgrim/445/munkres.html">(link)</a>.
+ *
+ * The Hungarian algorithm guarantees optimal assignment, with a worst-case
+ * runtime complexity of O(n^3), and is therefore ideal for real-time applications.
  *
  * See the following resources for detailed explanations of the algorithm:
  *
@@ -20,9 +23,9 @@ import java.util.List;
  * http://www.mathcs.emory.edu/~cheung/Courses/323/Syllabus/Assignment/algorithm.html
  * http://www.hungarianalgorithm.com/solve.php
  *
- * Note that this implementation is different from the version in the link above,
- * in that it uses (both predetermined and dynamically calculated) non-assignment cost values
- * to fill in missing cells in the matrix at each time step.
+ * Note that my implementation is different from the version in the link above,
+ * in that it uses (both predetermined and dynamically calculated) non-assignment
+ * cost values to fill in missing cells in the matrix at each time step.
  */
 public class OptimalAssigner {
 
@@ -43,24 +46,23 @@ public class OptimalAssigner {
     private final int UNPRIMED = 0;
 
     /*
-     * this value is solely used for matrix cells where the BoundingBox instance
+     * This value is solely used for matrix cells where the BoundingBox instance
      * exists but the corresponding Animal instance is null.
      *
      * The value of 30.0 was determined to be a good threshold through trial and error,
      * as it is high enough to rarely be a minimum value in a row or col,
      * but not high enough that the algorithm considered it to be worse
-     * than giving a grossly erroneous assignment across the screen
+     * than giving a grossly erroneous assignment across the screen.
      */
     public static double DEFAULT_COST_OF_NON_ASSIGNMENT = 30.0;
-
 
     private DecimalFormat df = new DecimalFormat("#.###");
 
     private boolean foundOptimalSolution;
 
     private double[][] costMatrix;
-    private int[][] maskMatrix;
-    private int[][] pathMatrix;     // todo:     explain
+    private int[][] maskMatrix;     // todo:     add explanation
+    private int[][] pathMatrix;     // todo:     add explanation
     private int[] rowCover;
     private int[] colCover;
     private int rows, cols;
@@ -222,7 +224,7 @@ public class OptimalAssigner {
                         }
 
                     } else {
-                        // do nothing  -->  this means extra (false) bounding box detections
+                        // do nothing (this should never execute)
                     }
                 }
             }
@@ -231,119 +233,26 @@ public class OptimalAssigner {
     }
 
 
-
-
-
-
-
-
-
-
-
-
     /**
-     * The length of the animals and boundingBoxes may be different at certain points in time.
-     * However, when adding fake values to make the matrix square, it should be kept in mind that
-     * the length of `animals` is always the true value.
+     * The actual implementation of the Munkres Assignment Algorithm.
      *
-     * @param animals
-     * @param boundingBoxes
-     * @return
-     */
-    public List<Assignment> getOptimalAssignmentsWithoutExtraNulls(
-            final List<Animal> animals, final List<BoundingBox> boundingBoxes) {
-
-        // Note: Animals are on rows, Bounding Boxes are on columns.
-
-        this.foundOptimalSolution = false;
-//        List<Assignment> assignments = new ArrayList<>(animals.size());
-
-        int anmlsSize = animals.size();              // the true value of how many animals there are
-        int boxesSize = boundingBoxes.size();        // will usually be less than or equal to (only in rare cases more than) animals.size()
-
-
-        /*
-        rows = anmlsSize;
-        cols = boxesSize;
-
-        int dimension = Math.max(rows, cols); */
-
-
-        int dimension = Math.max(anmlsSize, boxesSize);
-        rows = cols = dimension;
-
-        // TODO     it seems that the assignment algorithm still finds optimal assignments even if the passed in matrices
-        // todo     have unbalanced dimensions... double check that this is always true
-
-
-        costMatrix = new double[dimension][dimension];
-        maskMatrix = new int[dimension][dimension];
-        pathMatrix = new int[dimension*2 + 1][2];           // todo:     explain
-
-        rowCover = new int[rows];
-        colCover = new int[cols];
-
-        for (int i=0; i<anmlsSize; i++) {
-            for (int j=0; j<boxesSize; j++) {
-                costMatrix[i][j] = Double.parseDouble(df.format(costOfAssignment(animals.get(i), boundingBoxes.get(j))));
-            }
-        }
-
-        fillBlanks(anmlsSize, boxesSize);          // TODO     check if this does what you want
-
-        int[][] solvedMatrix = munkresSolve();
-
-
-        // reset costmatrix, maskMatrix, etc by setting to null?
-
-        return parseSolvedMatrix(solvedMatrix, animals, boundingBoxes);
-    }
-
-    /**
-     * No longer used, previously filled the extra cells in the matrix with
-     * DEFAULT_COST_OF_NON_ASSIGNMENT.
-     * @param rows
-     * @param cols
-     */
-    private void fillBlanks(int rows, int cols) {
-
-        if (cols < rows) {                      // rows = animals.size,   cols = boundingboxes.size
-            for (int r=0; r<rows; r++) {
-                for (int c = cols; c < rows; c++) {
-                    costMatrix[r][c] = DEFAULT_COST_OF_NON_ASSIGNMENT;
-                }
-            }
-        } else if (rows < cols) {
-            for (int r = rows; r < cols; r++) {
-                for (int c = 0; c < cols; c++) {
-                    costMatrix[r][c] = DEFAULT_COST_OF_NON_ASSIGNMENT;
-                }
-            }
-        }
-    }
-
-
-    /**
-     * Munkres Assignment Algorithm. Guarantees optimal assignment,
-     * with a worst-case runtime complexity of O(n^3)
+     * Guarantees optimal assignment, with a worst-case runtime complexity of O(n^3)
      *
-     * See
-     * @return
+     * @return int[][], the solved cost matrix
      */
-    public int[][] munkresSolve() { //double[][] costMatrix) {
-
-        List<Assignment> assignments = new ArrayList<>();
+    public int[][] munkresSolve() {
 
             if (DEBUG) {printUpdate(0);}
 
-        reduceBySmallest();         // step 1               //costMatrix, rows, cols);
+        // Step 1
+        reduceBySmallest();
 
             if (DEBUG) {printUpdate(1);}
 
-        starZeroes();               // step 2               //costMatrix, rowCover, colCover);
+        // Step 2
+        starZeroes();
 
             if (DEBUG) {printUpdate(2);}
-
 
         int nextStep = 3;
 
@@ -357,10 +266,9 @@ public class OptimalAssigner {
 
             switch (nextStep) {
 
+                case 3:  // goes to either step 4 or 7 (the end)
 
-                case 3:
-
-                    coverColumns();             // Step 3
+                    coverColumns();
 
                     if (this.foundOptimalSolution) {
                         nextStep = 7;
@@ -369,20 +277,20 @@ public class OptimalAssigner {
                     }
                     break;
 
-                case 4:
+                case 4: // goes to either step 3 or 6
 
-                    int[] position = primeZeros();    // Step 4
+                    int[] position = primeZeros();
 
                     if (position == null) {
                         nextStep = 6;
 
-                    } else {                          // Step 5 happens right after 4
+                    } else {               // Step 5 happens right after 4
                         augmentingPathAlgorithm(position[0], position[1]);
                         nextStep = 3;
                     }
                     break;
 
-                case 6:
+                case 6:  // goes back to step 4
                     applySmallestVal();
                     nextStep = 4;
                     break;
@@ -394,22 +302,26 @@ public class OptimalAssigner {
 
             System.out.println("Solved. Final Matrix:");
 
-            for (double[] aCostMatrix : costMatrix) {
-                System.out.println(Arrays.toString(aCostMatrix));
+            for (double[] subArr : costMatrix) {
+                System.out.println(Arrays.toString(subArr));
             }
-            for (int[] aMaskMatrix : maskMatrix) {
-                System.out.println(Arrays.toString(aMaskMatrix));
+            for (int[] subArr : maskMatrix) {
+                System.out.println(Arrays.toString(subArr));
             }
         }
 
         return maskMatrix;
     }
 
-    /** Step 1
+    /**
+     * Step 1
      *
-     * @return
+     * Finds the smallest value in each row and subtracts it from
+     * all the cells in that row
+     *
+     * Changes: costMatrix
      */
-    private void reduceBySmallest() { //double[][] costMatrix, int rows, int cols) {
+    private void reduceBySmallest() {
 
         double minVal;
 
@@ -427,16 +339,14 @@ public class OptimalAssigner {
         }
     }
 
-    /**Step 2
+    /**
+     * Step 2
      *
-     * @return
+     * todo add explanation
+     *
+     * Changes: maskMatrix, rowCover, and colCover
      */
-    private void starZeroes() { //double[][] costMatrix, int[] rowCover, int[] colCover) {
-
-//        int rows = rowCover.length;
-//        int cols = colCover.length;
-
-//        int[][] maskMatrix = new int[rows][cols];
+    private void starZeroes() {
 
         for (int r=0; r<rows; r++) {
 
@@ -449,18 +359,16 @@ public class OptimalAssigner {
                 }
             }
         }
-
-        /* clearing these rowCover and colCover arrays is unnecessary because they are function-local.
-        If they are turned into class variables, this is necessary.
-        */
         Arrays.fill(rowCover, 0);
         Arrays.fill(colCover, 0);
     }
 
-    /** Step 3
+    /**
+     * Step 3
      *
-     * note: does not change maskMatrix
-     * @return
+     * todo add explanation
+     *
+     * Changes: rowCover and colCover
      */
     private void coverColumns() {
 
@@ -487,9 +395,12 @@ public class OptimalAssigner {
     }
 
 
-    /** Step four
+    /**
+     * Step four
      *
-     * Prime cells in the matrix that contain zeros
+     * Primes the cells in the matrix that contain zeros
+     *
+     * Changes: maskMatrix, rowCover, and colCover
      *
      * @return
      */
@@ -502,10 +413,13 @@ public class OptimalAssigner {
 
             int[] position = findaZero();
 
-            if (position == null) { // go to step 6
+            if (position == null) {
+                // goes to step 6
                 return null;
 
             } else {
+
+                // todo add explanation
 
                 row = position[0];
                 col = position[1];
@@ -519,7 +433,8 @@ public class OptimalAssigner {
                     rowCover[row] = COVERED;
                     colCover[newCol] = UNCOVERED;
 
-                } else {  // go to step 5
+                } else {
+                    // goes to step 5
                     return new int[]{row, col};
                 }
             }
@@ -527,12 +442,21 @@ public class OptimalAssigner {
     }
 
 
-    /** Step Five
+    /**
+     * Step Five
      *
      * Related to the augmenting path algorithm
+     * (see https://theory.stanford.edu/~tim/w16/l/l2.pdf)
+     *
+     * todo add more explanation
      *
      * Returns to step 3
-     * @return
+     *
+     * Changes: pathMatrix, maskMatrix (in flipPathValues() and erasePrimes()),
+     *          rowCover and colCover (in clearCoverMatrices())
+     *
+     * @param pathRow
+     * @param pathCol
      */
     private void augmentingPathAlgorithm(int pathRow, int pathCol) {
 
@@ -548,11 +472,14 @@ public class OptimalAssigner {
                 break;
             }
 
+            // todo     add explanation
+
             pathCount++;
             pathMatrix[pathCount-1][0] = row;
             pathMatrix[pathCount-1][1] = pathMatrix[pathCount-2][1];
 
             int col = locatePrimeInRow(pathMatrix[pathCount-1][0]);
+
             pathCount ++;
             pathMatrix[pathCount-1][0] = pathMatrix[pathCount-2][0];
             pathMatrix[pathCount-1][1] = col;
@@ -563,13 +490,15 @@ public class OptimalAssigner {
         erasePrimes();
     }
 
-    /**Step 6
-     *
+    /**
+     * Step 6
      *
      * For each covered row, add the smallest value to each element.
      * For each uncovered column, subtract that value from each element.
      *
      * Finally, go back to Step 4 without changing any of the stars, primes, or covers
+     *
+     * Changes: costMatrix
      */
     private void applySmallestVal() {
 
@@ -587,6 +516,13 @@ public class OptimalAssigner {
             }
         }
     }
+
+
+    /*
+     * The following functions are utility functions used by the algorithm steps above
+     */
+
+
     private double findSmallestValue() {
 
         double minVal = Double.MAX_VALUE;
@@ -611,13 +547,13 @@ public class OptimalAssigner {
         for (int p=0; p<pathCount; p++) {
             int val = maskMatrix [pathMatrix[p][0]]  [pathMatrix[p][1]];
             // flip all Starred values to Unstarred, and vice versa
-            maskMatrix [pathMatrix[p][0]]  [pathMatrix[p][1]] = (val == STARRED) ? UNSTARRED : STARRED;
+            maskMatrix [pathMatrix[p][0]] [pathMatrix[p][1]] =
+                    (val == STARRED) ? UNSTARRED : STARRED;
 
         }
     }
 
     private void erasePrimes() {
-
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 if (maskMatrix[r][c] == PRIMED) {
@@ -630,11 +566,12 @@ public class OptimalAssigner {
     private int[] findaZero() {
 
         for (int r = 0; r < rows; r++) {
-
             for (int c = 0; c < cols; c++) {
 
-                if (costMatrix[r][c] == UNSTARRED && rowCover[r] == UNCOVERED && colCover[c] == UNCOVERED) {
-                    return new int[]{r, c};
+                if (costMatrix[r][c] == UNSTARRED
+                    && rowCover[r] == UNCOVERED
+                    && colCover[c] == UNCOVERED) {
+                        return new int[]{r, c};
                 }
             }
 
@@ -672,13 +609,7 @@ public class OptimalAssigner {
 
 
 
-
-
-
-
-
-
-    /* Functions for testing purposes */
+    /* Functions only used for testing and debugging purposes */
 
     private void printUpdate(int nextStep) {
         System.out.println(String.format(
@@ -688,12 +619,12 @@ public class OptimalAssigner {
                         "Row Cover: %s\n" +
                         "Col Cover: %s\n" +
                 "---------------------------------\n",
-                nextStep, matrix2dToString(costMatrix), matrix2dIntToString(maskMatrix),
+                nextStep, matrix2dToString(costMatrix), matrix2dToString(maskMatrix),
                 Arrays.toString(rowCover), Arrays.toString(colCover)
         ));
     }
 
-    public static String matrix2dIntToString(int[][] matrix) {
+    public String matrix2dToString(int[][] matrix) {
         StringBuilder stringBuilder = new StringBuilder();
         for (int[] aMatrix : matrix) {
             stringBuilder.append(Arrays.toString(aMatrix)).append("\n");
@@ -709,6 +640,13 @@ public class OptimalAssigner {
         return stringBuilder.toString();
     }
 
+    /**
+     * Used only in the OptimalAssignerTest JUnit Test
+     *
+     * Takes cost matrix as a parameter instead of using the class costMatrix attribute
+     * @param matrix
+     * @return
+     */
     public int[][] munkresSolveMatrix(double[][] matrix) {
 
         int dimension = Math.max(matrix.length, matrix[0].length);
@@ -722,107 +660,40 @@ public class OptimalAssigner {
         colCover = new int[cols];
 
         for (int r=0; r<matrix.length; r++) {
-            if (matrix[r].length >= 0) System.arraycopy(matrix[r], 0, costMatrix[r], 0, matrix[r].length);
+            if (matrix[r].length >= 0) System.arraycopy(
+                    matrix[r], 0, costMatrix[r], 0, matrix[r].length
+            );
         }
-
-
-        // TODO     check if this does what you want
-        fillBlanks(matrix.length, matrix[0].length);
-
-        // Put fake values in the cost matrix to make up for missing data
-
-        /*if (cols < rows) {                      // rows = animals.size,   cols = boundingboxes.size
-            for (int r=0; r<rows; r++) {
-                for (int c = cols; c < rows; c++) {
-                    costMatrix[r][c] = FAKE_VALUE;
-                }
-            }
-        } else if (rows < cols) {
-            for (int r=rows; r<cols; r++) {
-                for (int c = 0; c < cols; c++) {
-                    costMatrix[r][c] = FAKE_VALUE;
-                }
-            }
-        }*/
-
 
         return munkresSolve();
     }
 
 
-
-
-
-
-
-    private List<Assignment> parseSolvedMatrixORIGINAL(final int[][] solvedMatrix, final List<Animal> animals,
-                                                       final List<BoundingBox> boundingBoxes) {
-
-        ArrayList<Assignment> assignments = new ArrayList<>();
-
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                if (solvedMatrix[r][c] == STARRED) {
-
-                    // handle missing assignments
-
-                    if (r < animals.size()) {
-
-                        if (c < boundingBoxes.size()) {
-                            assignments.add(new Assignment(animals.get(r), boundingBoxes.get(c)));
-                        } else {
-                            assignments.add(new Assignment(animals.get(r), null));
-                        }
-
-                    } else {
-                        // todo:   do anything here?     -->  this means extra (false) bounding box detections
-                    }
-                }
-            }
-        }
-
-        //        if (assignments.size() < animals.size()) {
-
-        for (Animal anml : animals) {
-
-            for (Assignment assignment : assignments) {
-
-                if (anml.equals(assignment.animal)) {
-                    break;
-                }
-            }
-            // TODO  make sure this only happens if break doesn't get called in the second for loop!!
-            assignments.add(new Assignment(anml, null));    // no box assignment for this animal
-        }
-
-        return assignments;
-    }
-
-
-
-
-    public static void main(String[] args) {
-
-        OptimalAssigner assigner = new OptimalAssigner();
-
-        double[][] testMatrix = new double[][]{
-                {4d, 3d, 2d, 1d}, //{1d, 2d, 3d},
-                {8d, 6d, 4d, 2d},
-                {12d, 9d, 6d, 3d}
-        };
-
-        assigner.munkresSolveMatrix(testMatrix);
-    }
-
-
     /**
-     * Runtime complexity is O(n!) worst case, will always be at least exponential
-     * @return
-     *//*
-    public List<Assignment> bruteForceSolve(double[][] costMatrix) {
-        List<Assignment> assignments = new ArrayList<>(costMatrix.length);
-        double currentCost;
+     * This function is no longer used.
+     *
+     * Previously filled the extra cells in the matrix with
+     * DEFAULT_COST_OF_NON_ASSIGNMENT.
+     *
+     * Will be removed in the near future.
+     *
+     * @param rows
+     * @param cols
+     */
+    private void fillBlanks(int rows, int cols) {
 
-        return assignments;
-    }*/
+        if (cols < rows) {  // rows = animals.size,   cols = boundingboxes.size
+            for (int r=0; r<rows; r++) {
+                for (int c = cols; c < rows; c++) {
+                    costMatrix[r][c] = DEFAULT_COST_OF_NON_ASSIGNMENT;
+                }
+            }
+        } else if (rows < cols) {
+            for (int r = rows; r < cols; r++) {
+                for (int c = 0; c < cols; c++) {
+                    costMatrix[r][c] = DEFAULT_COST_OF_NON_ASSIGNMENT;
+                }
+            }
+        }
+    }
 }
