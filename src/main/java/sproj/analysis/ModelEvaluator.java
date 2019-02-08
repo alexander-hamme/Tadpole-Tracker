@@ -15,6 +15,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
+/**
+ * Abstract class extended by TrackerAccuracyEvaluator and ModelAccuracyEvaluator classes
+ */
 public abstract class ModelEvaluator {
 
     protected final boolean CHECK_TO_RESUME_PROGRESS = true;      // for resuming evaluation instead of restarting from beginning
@@ -27,8 +30,6 @@ public abstract class ModelEvaluator {
     protected YOLOModelContainer yoloModelContainer;
     protected DetectionsParser detectionsParser;
     protected OpenCVFrameConverter frameConverter;
-
-
 
 
     protected void initializeGrabber(File videoFile) throws FrameGrabber.Exception {

@@ -6,7 +6,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.commons.collections4.map.HashedMap;
-import org.bytedeco.javacpp.avutil;
+
 import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.*;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
@@ -14,12 +14,17 @@ import sproj.tracking.Animal;
 import sproj.tracking.SinglePlateTracker;
 import sproj.util.BoundingBox;
 import sproj.util.DetectionsParser;
-import sproj.util.IOUtils;
+
 import sproj.util.MissingDataHandeler;
 import sproj.yolo.YOLOModelContainer;
 
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 
+
+/**
+ * Class for evaluating SinglePlateTracker tracking accuracy,
+ * using ground-truth coordinate-labeled videos
+ */
 public class TrackerAccuracyEvaluator extends ModelEvaluator {
 
     private final boolean DEBUG = true;
@@ -53,7 +58,14 @@ public class TrackerAccuracyEvaluator extends ModelEvaluator {
     }
 
 
-
+    /**
+     * todo add explanation
+     * @param tracker
+     * @param cropRect
+     * @param truthPoints
+     * @return
+     * @throws IOException
+     */
     protected List<Double> evaluateOnVideo(SinglePlateTracker tracker, opencv_core.Rect cropRect,
                                             List<List<Double[]>> truthPoints) throws IOException {
 
@@ -91,7 +103,7 @@ public class TrackerAccuracyEvaluator extends ModelEvaluator {
 
             if (truthIdx >= truthPoints.size()) {
                 System.out.println("Reached end of truth data");
-                break;      // todo does this break out of while loop
+                break;
             }
 
             List<Double[]> groundTruth = truthPoints.get(truthIdx);
@@ -163,213 +175,8 @@ public class TrackerAccuracyEvaluator extends ModelEvaluator {
             }
         }
 
-        /** TODO REMOVE *
-        System.out.println("Total identity swaps: " + tracker.identitySwitches);
-        * TODO REMOVE **/
-
-
         return accuracyPoints;
     }
-
-
-    /**
-     * By the time this function is called, the framegrabber has already been initialized on the
-     * new video.
-     *
-     * Returns a list of detection accuracy evaluations, one for each frame of the video.
-     *
-     * Current metric for accuracy is just the number of detections / ground truth number of animals
-     *
-     * @param numbAnimals int
-     * @param cropRect
-     * @return
-     * @throws IOException
-     */
-    //@Override
-    protected List<Double> evaluateOnVideoOLD(int numbAnimals, opencv_core.Rect cropRect,
-                                         List<List<Double[]>> truthPoints) throws IOException {
-
-        int frameNo = 0;
-        int totalFrames = grabber.getLengthInVideoFrames();
-
-        List<DetectedObject> detectedObjects;
-        List<Double> detectionAccuracies = new ArrayList<>(totalFrames);   // store one detection accuracy record per frame
-
-        CanvasFrame canvasFrame = null;
-
-        if (SHOW_LIVE_EVAL_DISPLAY) {
-            canvasFrame = new CanvasFrame("Evaluation on video");
-        }
-
-        boolean exitLoop = false;
-        Frame frame;
-        opencv_core.Mat frameImg;
-        KeyEvent keyEvent;
-
-        long startTime = System.currentTimeMillis();
-
-        int trthIndx = 0;   // current index in truth points list
-
-        while ((frame = grabber.grabImage()) != null && !exitLoop) {
-
-            frameNo = grabber.getFrameNumber();
-            frameImg = new opencv_core.Mat(frameConverter.convertToMat(frame), cropRect);
-
-            // frameImg is now of dimensions cropRect.width() x cropRect.height()
-
-            detectedObjects = yoloModelContainer.runInference(frameImg);
-
-            // yolo automatically resizes image, bounding boxes are relative to 416x416 dimensions
-
-            List<BoundingBox> boundingBoxes = detectionsParser.parseDetections(detectedObjects);
-
-
-
-
-            // TODO:   use SinglePlateTracker.timeStep()  here  and test animal locations
-
-
-
-
-            double accuracy = 0.0;
-
-            // TODO:  extrapolate data to cover all frames?
-            if (trthIndx >= truthPoints.size()) {
-                System.out.println("Reached end of truth data");
-                break;
-            }
-
-            List<Double[]> truthCoordinates = truthPoints.get(trthIndx);
-
-            if (SHOW_LIVE_EVAL_DISPLAY) {
-                for (Double[] pt : truthCoordinates) {
-
-                    if (pt == null) {
-                        continue;
-                    }
-                    circle(frameImg, new opencv_core.Point(
-                                    (int) Math.round(pt[0]), (int) Math.round(pt[1])
-                            ),
-                            3, opencv_core.Scalar.RED, -1, 8, 0);       // -1 is CV_FILLED, to fill the circle
-                }
-            }
-
-            truthCoordinates = scalePoints(truthCoordinates, cropRect.width(), cropRect.height());
-
-            int frameNumbStamp = (int) Math.round(truthCoordinates.get(0)[3]);
-
-//                if (frameNo == frameNumbStamp) {
-            if (frameNo != frameNumbStamp) {
-                continue;
-            }
-
-            accuracy = 0.0;
-
-            for (Double[] pt : truthCoordinates) {
-
-                /*if (pt == null) {
-                    continue;
-                }
-                circle(frameImg, new opencv_core.Point(
-                                (int) Math.round(pt[0]), (int) Math.round(pt[1])
-                        ),
-                        3, opencv_core.Scalar.RED, -1, 8, 0);       // -1 is CV_FILLED, to fill the circle
-                */
-
-
-                // todo exclude already "assigned" boxes?
-                for (BoundingBox box : boundingBoxes) {
-                    if (box.contains(pt)) {
-                        /*System.out.println(String.format(
-                                "True: %s is within %s",
-                                Arrays.toString(pt), box.toString())
-                        );*/
-                        accuracy += 1.0 / numbAnimals;   // e.g. if there are 4 animals, each correct one adds 0.25
-                    }
-                }
-                accuracy = Math.min(1.0, accuracy);
-            }
-
-            System.out.println("Accuracy: " + accuracy);
-            trthIndx++;
-
-
-            /*double accuracy = detectedObjects.size() / (double) numbAnimals;
-
-            accuracy = Math.min(1.0, accuracy);*/
-
-            /*
-            if (COUNT_EXTRA_DETECTIONS_NEGATIVELY) {
-                accuracy = accuracy > 1.0 ? 1 - Math.abs(1 - accuracy) : accuracy;     // count each extra detection as one negative detection from the score
-            }*/
-
-            detectionAccuracies.add(accuracy);
-
-            System.out.print("\r" + (frameNo + 1) + " of " + totalFrames + " frames processed");
-
-            if (SHOW_LIVE_EVAL_DISPLAY && canvasFrame != null) {
-
-                resize(frameImg, frameImg, new opencv_core.Size(
-                        YOLOModelContainer.IMG_WIDTH, YOLOModelContainer.IMG_HEIGHT)
-                );
-
-                for (BoundingBox box : boundingBoxes) {
-                    rectangle(frameImg, new opencv_core.Point(box.topleftX, box.topleftY),
-                            new opencv_core.Point(box.botRightX, box.botRightY),
-                            opencv_core.Scalar.RED, 1, CV_AA, 0);
-
-                }
-
-                //resize(frameImg, frameImg, new opencv_core.Size(720, 720));
-
-                canvasFrame.showImage(
-                        frameConverter.convert(frameImg)
-                );
-
-                try {
-                    keyEvent = canvasFrame.waitKey(10);
-                } catch (InterruptedException ignored) {
-                    continue;
-                }
-                if (keyEvent != null) {
-
-                    char keyChar = keyEvent.getKeyChar();
-
-                    switch (keyChar) {
-
-                        case KeyEvent.VK_ESCAPE:
-                            exitLoop = true;
-                            break;      // hold escape key or 'q' to quit
-
-                        case KeyEvent.VK_Q: {       // shift q to quit entirely
-                            canvasFrame.dispose();
-                            grabber.release();
-                            System.exit(0);
-                        }
-
-                    }
-
-                }
-            }
-        }
-
-
-//        System.out.print("\r" + (frameNo + 1) + " of " + totalFrames +
-//                " frames processed. Elapsed time: " + (System.currentTimeMillis()-startTime));
-        long elapsedTime = System.currentTimeMillis()-startTime;
-
-        System.out.println(String.format("\nElapsed time: %dm %.3fs",
-                (int) Math.floor((int) (elapsedTime / 1000) / 60d),
-                elapsedTime / 1000.0 % 60)
-        );
-
-        if (canvasFrame != null) {canvasFrame.dispose();}
-
-        closeGrabber();
-
-        return detectionAccuracies;
-    }
-
 
 
     public static void main(String[] args) throws IOException {
@@ -410,7 +217,5 @@ public class TrackerAccuracyEvaluator extends ModelEvaluator {
 
 
         evaluator.evaluateMultipleModels(modelPaths, anmlGroupsMetaList, evalsSaveDir);
-
-
     }
 }

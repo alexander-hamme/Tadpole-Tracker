@@ -24,10 +24,10 @@ import java.util.List;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
- * Class to test the accuracy of the underlying Yolo model
+ * Class to test the detection accuracy of the underlying Yolo model
  *
- * Calculate metrics of how frequently  the model correctly
- * find all subjects of interest in each frame of a video feed
+ * Calculates metrics of how frequently  the model correctly
+ * finds all subjects of interest in each frame of a video feed
  */
 public class ModelAccuracyEvaluator extends ModelEvaluator {
 
