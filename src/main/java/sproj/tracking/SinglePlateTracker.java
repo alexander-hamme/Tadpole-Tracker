@@ -204,7 +204,6 @@ public class SinglePlateTracker extends Tracker {
         try (PrintWriter writer = new PrintWriter(new FileWriter(baseFileName + ".csv"))) {
 
             StringBuilder sb = new StringBuilder();
-            sb.append("Timestamp,");
 
             for (Animal a : animals) {
 
@@ -438,8 +437,15 @@ public class SinglePlateTracker extends Tracker {
 
                 switch(keyChar) {
 
-                    case KeyEvent.VK_ESCAPE: exitLoop = true; break;      // hold escape key or 'q' to quit
-                    case KeyEvent.VK_Q: exitLoop = true; break;
+                    case KeyEvent.VK_ESCAPE: exitLoop = true; break;      // hold escape key to skip current video
+
+                    case KeyEvent.VK_Q: {  // shift-q to exit immediately
+                        canvasFrame.dispose();
+                        tracking.dispose();
+                        grabber.release();
+                        System.exit(0);
+                    }
+
                     case KeyEvent.VK_P: Thread.sleep(1000); break;// pause? ;
                 }
 
@@ -460,7 +466,7 @@ public class SinglePlateTracker extends Tracker {
             // todo System.out.print("\r" + (frameNo + 1) + " of " + totalFrames + " frames processed");
 
             // todo: calculate uncertainty of each point / assignment and write that value to file for each point
-            if (SAVE_TO_FILE && frameNo % saveFrequency == 0) {
+            if (SAVE_TO_FILE && (frameNo+1) % saveFrequency == 0) {  // avoid saving when frameNo == 0
                 //writeAnimalPointsToSeparateFiles(this.animals, dataSaveNamePrefix, true, true);
                 writeAnimalsToCSV(this.animals, dataSaveNamePrefix, true);
                 for (Animal animal : animals) {
