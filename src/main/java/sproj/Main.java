@@ -2,7 +2,7 @@ package sproj;
 
 import sproj.util.Logger;
 
-/* This class currently just serves one purpose, to launch the TrackerApp */
+/* Launches the TrackerApp */
 public class Main {
 
     static final Logger logger = new Logger();   // LogManager.getLogger("Main");
