@@ -27,10 +27,10 @@ import static sproj.util.IOUtils.writeAnimalsToCSV;
 
 
 /**
- * This class iterates through the input video feed (from a file or a camera device),
+ * This class iterates through an input video feed (from a file or a camera device),
  * and implements tracking functions to record the movement data of the subject animals.
  *
- * The recorded data is intermittently passed to the IOUtils class to be written (or appended) to file.
+ * The recorded data is intermittently written to file using functions from the IOUtils class.
  */
 public class SinglePlateTracker extends Tracker {
 
