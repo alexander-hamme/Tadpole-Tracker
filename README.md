@@ -6,12 +6,11 @@ Notes:
 
 - recent work is on the "dev" branch of this project. The main tracking code is in the SinglePlateTracker class, located [here](src/main/java/sproj/tracking/).
 
-- the thesis paper for this project is also available [in this repository](/paper/senior_thesis.pdf).
+- the thesis paper I wrote for this project is available [here](/paper/senior_thesis.pdf).
 
-- While I am primarily conducting my research in Java at the moment, I will eventually translate it to Python as well, to allow wider access for biology researchers and developers to use and hack in the future. The Python code is functional but requires more work before it can be fully released. Some of it is available [here](https://github.com/alexander-hamme/Tadpole-Tracker-Python).
+- Right now I'm also working on translating it to C++ to run speed benchmarks against the Java code. That code is in [this repository](https://github.com/alexander-hamme/Tadpole-Tracker-Cpp).
 
-- I am also currently working on translating my system to C++ now, in [this respository](https://github.com/alexander-hamme/Tadpole-Tracker-Cpp).
-
+I may eventually translate the code to Python too, to create wider access for fellow hackers and biology researchers to use for their own projects / research in the future. However, the Python code is much slower than Java. Even with a good GPU it is barely fast enough for real-time tracking (on a GTX 1070 GPU the Yolo network inference runs at 19 fps). The Python code is functional but requires more work before it can be fully released. Some of it is available [in this repository](https://github.com/alexander-hamme/Tadpole-Tracker-Python).
 
 -----
 
