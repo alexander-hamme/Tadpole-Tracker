@@ -19,7 +19,6 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static sproj.util.IOUtils.writeAnimalPointsToSeparateFiles;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 import static sproj.util.IOUtils.writeAnimalsToCSV;
 
@@ -76,7 +75,7 @@ public class SinglePlateTracker extends Tracker {
             SAVE_TO_FILE = true;
             this.dataSaveNamePrefix = saveDataFilePrefix;
             //createAnimalFiles(saveDataFilePrefix);
-            createAnimalDataCSV(saveDataFilePrefix);
+            createAnimalCSVFiles(saveDataFilePrefix);
         }
         logger.info("warming up model");
         yoloModelContainer = new YOLOModelContainer();  // loads the model from file in its constructor
@@ -198,7 +197,7 @@ public class SinglePlateTracker extends Tracker {
      * @param baseFileName
      * @throws IOException
      */
-    private void createAnimalDataCSV(String baseFileName) throws IOException {
+    private void createAnimalCSVFiles(String baseFileName) throws IOException {
 
         // try with resources automatically closes Writer objects
         try (PrintWriter writer = new PrintWriter(new FileWriter(baseFileName + ".csv"))) {

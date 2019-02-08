@@ -41,10 +41,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * A collection of public static I/O functions
+ */
 public abstract class IOUtils {
 
-    private IOUtils() {}
-
+    /**
+     * Load image as INDArray (n dimensional array format used by nd4j library)
+     * @param imgFile  String
+     * @return INDArray
+     * @throws IOException
+     */
     public static INDArray loadImage(File imgFile) throws IOException {
         INDArray image = new NativeImageLoader().asMatrix(imgFile);
         ImagePreProcessingScaler scaler = new ImagePreProcessingScaler(0, 1);
@@ -52,66 +59,16 @@ public abstract class IOUtils {
         return image;
     }
 
-
-    public static void createDirIfNotExists(final File directory) {
-        if (!directory.exists()) {
-            directory.mkdir();
-        }
-    }
-
-
     public static List<Double> stringsToDoubles(List<String> lst) {
-        // return Lists.transform(lst, input -> Double.valueOf(input));
         return lst.stream().map(Double::valueOf).collect(Collectors.toList());
     }
 
-
-    static void writeData(String fileName, ArrayList<Animal> anmls, String header, int sigFigs) throws IOException {
-
-        BufferedWriter bw = Files.newBufferedWriter(Paths.get(fileName));
-
-        if (fileName.contains(".csv")) {
-            CSVPrinter out = new CSVPrinter(bw, CSVFormat.DEFAULT);
-            out.printRecord(header);
-
-            int startIdx, endIdx;
-
-            for (Animal anml : anmls) {
-
-//                double[][] dataPoints = anml.getDataPointsIterator();
-
-                double[][] dataPoints = null;
-
-
-                Iterator<double[]> dataPointsIterator = anml.getDataPointsIterator();
-
-//                out.printRecord(Arrays.toString(anml.color));
-                startIdx = dataPoints.length - Animal.DATA_BUFFER_ARRAY_SIZE;
-                endIdx = dataPoints.length;
-
-                if (startIdx < 0) { continue; }
-
-                for (int i=startIdx; i<endIdx; i++) {
-                    out.printRecord(
-                            (double[]) dataPoints[i]
-                    );
-                }
-                out.println();  // two blank lines
-                out.println();
-            }
-            out.close();
-        } else {
-
-        }
-
-        bw.close();
-    }
-
-    public static String getFileName(final String path) {
-        return path.substring(path.lastIndexOf("/") + 1, path.length());
-    }
-
     /**
+     * Write animal data points to CSV file, with one animal per column
+     *
+     * Note: by the time this function is called, the file `baseFileName` + ".csv"
+     * has already been created with headers by the createAnimalCSVFiles()
+     * function in the constructor of the SinglePlateTracker class
      *
      * @param animals list of animal objects
      * @param baseFileName  String, filename without ".csv" extension
@@ -170,6 +127,15 @@ public abstract class IOUtils {
         }
     }
 
+    /**
+     * Unused, but available in case there is a need for each animal's
+     * data to be written to a separate file
+     * @param animals
+     * @param filePrefix
+     * @param appendIfFileExists
+     * @param clearPoints
+     * @throws IOException
+     */
     public static void writeAnimalPointsToSeparateFiles(List<Animal> animals, String filePrefix,
                                                         boolean appendIfFileExists, boolean clearPoints) throws IOException {
 
@@ -181,11 +147,9 @@ public abstract class IOUtils {
 
                 Iterator<double[]> pointsIterator = animal.getDataPointsIterator();
 
-                //writer.write(String.format("Animal Number %d, RGBA color label: %s\n", animals.indexOf(animal)+1, animal.color.toString()));
                 while (pointsIterator.hasNext()) {
                     double[] point = pointsIterator.next();
                     writer.write(point[0] + "," + point[1] + "," + point[2] + "\n");
-//                    writer.write(String.join(",", point) + "\n");
                 }
 
                 if (clearPoints) {
@@ -197,6 +161,18 @@ public abstract class IOUtils {
         }
     }
 
+
+    /**
+     * Function used by the FrameLabeler class for manually labeling tadpoles
+     * in video frames and saving the points to file
+     *
+     * @param nestedArrs
+     * @param fileName
+     * @param separator
+     * @param append
+     * @param <T>
+     * @throws IOException
+     */
     public static <T> void writeNestedObjArraysToFile(List<T[][]> nestedArrs, String fileName, String separator,
                                                 boolean append) throws IOException {
 
@@ -229,6 +205,15 @@ public abstract class IOUtils {
 
     }
 
+    /**
+     * Function used by the FrameLabeler class
+     * @param objArrays
+     * @param fileName
+     * @param separator
+     * @param append
+     * @param <T>
+     * @throws IOException
+     */
     public static <T> void writeObjArraysToFile(List<T[]> objArrays, String fileName, String separator,
                                                 boolean append) throws IOException {
 
@@ -260,6 +245,15 @@ public abstract class IOUtils {
         }
     }
 
+    /**
+     * Function used by the FrameLabeler class
+     * @param objects
+     * @param fileName
+     * @param separator
+     * @param append
+     * @param <T>
+     * @throws IOException
+     */
     public static <T> void writeObjectsToFile(List<T> objects, String fileName, String separator,
                                           boolean append) throws IOException {
         try (FileWriter writer = new FileWriter(fileName, append)) {
@@ -344,7 +338,7 @@ public abstract class IOUtils {
     }
 
 
-    protected List<String> readTextFile(String textFile) throws IOException {
+    public List<String> readTextFile(String textFile) throws IOException {
         List<String> lines = new ArrayList<>();
         try (Stream<String> stream = Files.lines(Paths.get(textFile))) {
             stream.forEach(lines::add);
@@ -352,7 +346,13 @@ public abstract class IOUtils {
         return lines;
     }
 
-    static HashedMap<String, List<String>> parseArgs(String[] args) {
+    /**
+     * Intended for parsing a long list of args containing both flags and data argument.,
+     * Maps flags as keys in a hashmap to a list with their respective data arguments
+     * @param args
+     * @return  Hashmap with flags mapped to their respective data arguments
+     */
+    public static HashedMap<String, List<String>> parseArgs(String[] args) {
 
         HashedMap<String, List<String>> parameters = new HashedMap<>();
         ArrayList<String> options = null;
@@ -377,9 +377,9 @@ public abstract class IOUtils {
     /**
      * Code taken from ByteDeco's github repository
      */
-    private static void convertYAD2KWeights(String fileName, String saveName, double[][] priorBoxes) throws InvalidKerasConfigurationException, IOException, UnsupportedKerasConfigurationException {
+    public static void convertYAD2KWeights(String fileName, String saveName, double[][] priorBoxes) throws InvalidKerasConfigurationException, IOException, UnsupportedKerasConfigurationException {
 
-        // to be run on an .h5 weights file, and output a zip file
+        // to be run on an .h5 weights file, outputs a zip file
 
         int nBoxes = 5;
 
@@ -426,7 +426,7 @@ public abstract class IOUtils {
     }
 
 
-    private void saveNewYoloModel(String modelFilePath) throws IOException {
+    public static void saveNewYoloModel(String modelFilePath) throws IOException {
         try {
 
             File modelFile = new File(modelFilePath);
@@ -467,7 +467,6 @@ public abstract class IOUtils {
 
         for (int its = minModel; its <= maxModel; ) {
 
-//            String yoloModelFile = String.format("%s/%dits/yolov2_%d.h5", modelDir, its, its);
             String yoloModelFile = String.format("%s/yolo-obj_%d.h5", modelDir, its);
 
             System.out.println("Converting model " + (its  % minModel / 1000 + 1) + " of " + (maxModel - minModel + 1) / 1000
