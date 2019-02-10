@@ -162,6 +162,7 @@ public class OptimalAssigner {
         }
 
         int anmlsSize = animals.size();              // the true value of how many animals there are
+
         int boxesSize = boundingBoxes.size();        // can be <, ==, or > than animals.size()
 
         // construct square matrix using whichever size is larger as the dimensions
