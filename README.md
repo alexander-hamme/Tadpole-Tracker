@@ -2,7 +2,7 @@
 A computational system that applies computer vision and deep learning to record and analyze movement data of many *Xenopus laevis* tadpoles in real time, for neuroscience research. This is my undergraduate thesis, in collaboration with the neuroscience department at Bard College.
 
 -----
-Notes: 
+### Notes
 
 
 - The main tracking code is in the SinglePlateTracker class, located [here](src/main/java/sproj/tracking/).
