@@ -1,13 +1,11 @@
 package sproj;
 
-//import org.apache.logging.log4j.LogManager;
-//import org.apache.logging.log4j.Logger;
-
 import sproj.util.Logger;
 
+/* Launches the TrackerApp */
 public class Main {
 
-    static final Logger logger = new sproj.util.Logger();   // LogManager.getLogger("Main");
+    static final Logger logger = new Logger();   // LogManager.getLogger("Main");
 
     private Main(){/* not to be instantiated*/}
 
@@ -24,6 +22,6 @@ public class Main {
             // todo
             logger.info("Exiting SinglePlateTracker App");
         }
-        System.exit(0);     // todo find out why the app isn't exiting even after an Exception is thrown
+        System.exit(0);
     }
 }

@@ -8,21 +8,21 @@ import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.KeyCombination;
 import javafx.stage.Stage;
-
-//import org.apache.logging.log4j.LogManager;
-//import org.apache.logging.log4j.Logger;
-import sproj.util.Logger;
-
 import org.bytedeco.javacv.Java2DFrameConverter;
 import sproj.tracking.MultiPlateTracker;
 import sproj.tracking.SinglePlateTracker;
 import sproj.tracking.Tracker;
+import sproj.util.Logger;
 
 import java.io.IOException;
 
-
+/**
+ * The main app to be run, from which the other classes are called.
+ *
+ * This is currently functional for displaying tracking but the code is messy
+ * and a lot of work remains, i.e. creating a simple interface for non-CS researchers to use
+ */
 public class TrackerApp extends Application {
 
     private static final Logger logger = new Logger(); //LogManager.getLogger("TrackerApplication");
@@ -42,7 +42,6 @@ public class TrackerApp extends Application {
     private Image imageFrame;
     private final ImageView imageView = new ImageView();
 
-
     private Java2DFrameConverter paintConverter = new Java2DFrameConverter();
 
 
@@ -54,39 +53,29 @@ public class TrackerApp extends Application {
         selectTrackerProgram();
     }
 
-    public static Logger getLogger() {
-        return logger;
-    }
-
-
     private void selectTrackerProgram() throws IOException {
-        // input from user todo
-        String selected = "singleplate";
+
+        String selected = "singleplate";   // this will be set by user todo
+
         if (selected == "singleplate") {
-            trackerProgram = new SinglePlateTracker(numb_objs_to_track, drawShapes, crop, videoPath);
+            trackerProgram = new SinglePlateTracker(numb_objs_to_track, drawShapes, crop, videoPath, "");
         } else {
             trackerProgram = new MultiPlateTracker(numb_objs_to_track, drawShapes, videoPath);
         }
     }
 
+    /**
+     * This will eventually set these values by asking for input from user
+     */
     private void getValues() {
-        // input from user
         numb_objs_to_track = 5;
         drawShapes = true;
-        crop = new int[]{60,210,500,500};
-            // video file IMG_3086  -->  {60,210,500,500}
-            // video file IMG_3085  -->  {550, 160, 500, 500}
-        videoPath = "src/main/resources/videos/IMG_3085.MOV";
-    }
 
-    private void getValues() {
-        // input from user
-        numb_objs_to_track = 5;
-        drawShapes = true;
+        //***** Note that x + width must be <= original image width, and y + height must be <= original image height**//
         crop = new int[]{60,210,500,500};
             // video file IMG_3086  -->  {60,210,500,500}
             // video file IMG_3085  -->  {550, 160, 500, 500}
-        videoPath = "src/main/resources/videos/IMG_3085.MOV";
+        videoPath = "data/videos/IMG_5126.MOV";
     }
 
     private void setUpGraphics(Stage stage) {
@@ -119,24 +108,24 @@ public class TrackerApp extends Application {
 //
 //        GraphicsContext gc = canvas.getGraphicsContext2D();
 
-
 //        final long startNanoTime = System.nanoTime();
 
+        //Image imageFrame;
 
         // todo Click Start button to call a function to do this?
         AnimationTimer timer = new AnimationTimer() {
-
-//            Image imageFrame = new Image(new File("src/main/resources/images/test_image.png").toURI().toString());
 
             @Override
             public void handle(long currentNanoTime) {
 
                 try {
                     imageFrame = convert(trackerProgram.timeStep());  // new Image(new File("src/main/resources/images/test_image.png").toURI().toString());  //
-                    if (imageFrame == null) {/* logger.info("Reached end of video")*/
+                    if (imageFrame != null) {/* logger.info("Reached end of video")*/
+                        imageView.setImage(imageFrame);
+                    } else {
                         trackerProgram.tearDown();
-                        stop(); }
-                    imageView.setImage(imageFrame);
+                        stop();
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                     trackerProgram.tearDown();
@@ -169,4 +158,3 @@ public class TrackerApp extends Application {
         }
     }
 }
-

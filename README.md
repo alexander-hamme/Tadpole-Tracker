@@ -4,6 +4,9 @@ A computational system that applies computer vision and deep learning to record 
 -----
 Notes: 
 
+
+- The main tracking code is in the SinglePlateTracker class, located [here](src/main/java/sproj/tracking/).
+
 - recent work is on the **_dev_** branch. The main tracking code resides is in the SinglePlateTracker class, located [here](src/main/java/sproj/tracking/).
 
 - the thesis paper I wrote for this project is available [here](/paper/senior_thesis.pdf).
