@@ -7,7 +7,7 @@ Notes:
 
 - The main tracking code is in the SinglePlateTracker class, located [here](src/main/java/sproj/tracking/).
 
-- the thesis paper I wrote for this project is available [here](/paper/senior_thesis.pdf).
+- The thesis paper I wrote for this project is available [here](/paper/senior_thesis.pdf).
 
 - I'm also working on translating it to C++ to run speed benchmarks against the Java code. That code is in [this repository](https://github.com/alexander-hamme/Tadpole-Tracker-Cpp).
 
@@ -28,7 +28,7 @@ Approaches:
 
 -----
 
-Benchmarks:
+Speed Benchmarks:
 
 This program runs at ~30 frames/second on a GTX 1070 GPU, which is plenty fast enough for real-time analysis. Using Java with the DeepLearning4J library has provided a significant time speedup from the Python version of this project, which runs at ~19 seconds a frame on the same GPU.
 
