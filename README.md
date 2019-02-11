@@ -31,7 +31,7 @@ There are two major components of this tracker program: Detection and Tracking.
 
 ##### Demo:
 
-![Uh oh, it appears the image  didn't load. Please find the proof of concept at /samples/tracking.png in this repositiory.](/sample/tracker.png?raw=true "Proof of Concept")
+![Uh oh, it appears the image  didn't load. Please look at /samples/system_diagram.png in this repositiory.](/sample/system_diagram.png?raw=true "System Overview")
 
 
 -----
