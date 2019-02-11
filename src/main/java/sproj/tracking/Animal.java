@@ -16,8 +16,9 @@ import java.util.Iterator;
 public class Animal {
 
     private final boolean DEBUG = false;
-
-    private final double DEFAULT_COST_OF_NON_ASSIGNMENT = OptimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT;     // this should be high enough to not be a minimum value in a row or col,
+    
+    // detailed explanation of this value is in OptimalAssigner class 
+    private final double DEFAULT_COST_OF_NON_ASSIGNMENT = OptimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT;
 
     public Scalar color;
     public final int LINE_THICKNESS = 2;
@@ -40,7 +41,7 @@ public class Animal {
     // count of consecutive time steps that have not had true assignment updates
     private int timeStepsPredicted;
 
-    // dynamic cost value that increases if `timeStepsPredicted` increases
+    // dynamic cost value that increases with `timeStepsPredicted`
     private double currCostNonAssignnmnt;
 
     private final double MAXCOST = 1000.0;
@@ -75,11 +76,13 @@ public class Animal {
         return currCostNonAssignnmnt;
     }
 
-    public void clearPoints() {
-        this.dataPoints.clear();
-    }
+    public void clearPoints() {     // todo check impact on performance of calling this
+        this.dataPoints.clear();    // obviously the time requirement is directly proportional to the size of the array,
+    }                               // since this nullifies all the array elements, so keep the array size relatively small  
 
     /**
+     * Called once per timestep, after optimal assignments have been solved
+     *
      * Note that the order of parameters to this function does not match
      * the order in which the data points are written to file
      *
