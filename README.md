@@ -17,7 +17,7 @@ A real-time tracking system that applies computer vision and deep learning to re
 
 ### Concepts
 
-There are two major components of this tracker program: Detection and Tracking.
+- There are two major components of this tracker program: Detection and Tracking.
 
 - **Detection** is the process of finding regions of interest (ROI) in each frame (image) from the video input stream.
 
