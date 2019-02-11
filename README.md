@@ -1,5 +1,5 @@
 # Tadpole-Tracker
-A computational system that applies computer vision and deep learning to record and analyze movement data of many *Xenopus laevis* tadpoles in real time, for neuroscience research. This is my undergraduate thesis, in collaboration with the neuroscience department at Bard College.
+A real-time tracking system that applies computer vision and deep learning to record and analyze movement data of multiple *Xenopus laevis* tadpoles at once, for neurobiology research. This is my undergraduate thesis, in collaboration with the neuroscience department at Bard College.
 
 -----
 ### Notes
