@@ -15,16 +15,17 @@ A real-time tracking system that applies computer vision and deep learning to re
 
 -----
 
+### Concepts
+
 There are two major components of this tracker program: **Detection** and **Tracking**.
-  * detection is the process of finding regions of interest (ROI) in each frame (image) from the video input stream
-  * tracking is the process of connecting where each animal was in previous frames to its new position in sequential frames, 
-    i.e. connecting ROIs to the corresponding tadpoles. This becomes complicated when tracking multiple animals, because of the potential for collisions and collusions. Therefore, trajectory prediction and identity assignment algorithms are implemented.
 
-Approaches:
+**Detection** is the process of finding regions of interest (ROI) in each frame (image) from the video input stream.
 
-  * Detection: Convolutional neural networks form the tadpole detection component of the overall system. I trained deep neural networks for xenopus tadpole detection and localization using the [YOLOv2](https://pjreddie.com/darknet/yolov2/) architecture.
+Deep convolutional neural networks form the tadpole detection component of the overall system. I trained a CNN model to perform xenopus tadpole detection and localization using my own dataset and the [YOLOv2](https://pjreddie.com/darknet/yolov2/) architecture.
 
-  * Tracking: I have implemented linear Kalman filters for trajectory estimation, and a modified version of the Munkres Hungarian optimal assignment algorithm for maintaining unique object identities across frames.
+**Tracking** is the process of connecting where each animal was in previous frames to its new position in sequential frames, i.e. connecting ROIs to the corresponding tadpoles. This becomes complicated when tracking multiple animals, because of the potential for collisions and collusions. Therefore, algorithms to handle both identity assignment and trajectory prediction are necessary.
+
+In this system, I use linear Kalman filters are used for trajectory estimation and a modified version of the Munkres Hungarian optimal assignment algorithm for maintaining unique object identities across frames.
 
 -----
 
