@@ -23,16 +23,19 @@ There are two major components of this tracker program: Detection and Tracking.
 
 - Deep convolutional neural networks form the tadpole detection component of the overall system. I trained a CNN model to perform xenopus tadpole detection and localization using my own dataset and the [YOLOv2](https://pjreddie.com/darknet/yolov2/) architecture.
 
-<br>
-
 - **Tracking** is the process of connecting where each animal was in previous frames to its new position in sequential frames, i.e. connecting ROIs to the corresponding tadpoles. This becomes complicated when tracking multiple animals, because of the potential for collisions and collusions. Therefore, algorithms to handle both identity assignment and trajectory prediction are necessary.
 
-- In this system, I use linear Kalman filters are used for trajectory estimation and a modified version of the Munkres Hungarian optimal assignment algorithm for maintaining unique object identities across frames.
+- In this system, I use linear Kalman filters for trajectory estimation and a modified version of the Munkres Hungarian optimal assignment algorithm for maintaining unique object identities across frames.
+
+-----
+
+##### Demo:
+
+![Uh oh, it appears the image  didn't load. Please find the proof of concept at /samples/tracking.png in this repositiory.](/sample/tracker.png?raw=true "Proof of Concept")
+
 
 -----
 
 Speed Benchmarks:
 
 The current iteration of this system runs at ~30 frames/second on a GTX 1070 GPU, which is plenty fast enough for real-time analysis. Using Java with the DeepLearning4J library has provided a significant time speedup from the Python version of this project, which runs at ~19 seconds a frame on the same GPU.
-
-![Uh oh, it appears the image  didn't load. Please find the proof of concept at /samples/tracking.png in this repositiory.](/sample/tracker.png?raw=true "Proof of Concept")
