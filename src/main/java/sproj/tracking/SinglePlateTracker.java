@@ -104,43 +104,34 @@ public class SinglePlateTracker extends Tracker {
             return null;
         }
 
-        Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);   // crop the frame    // TODO: 9/10/18  clone this frame, and rescale the shapes on to the cloned image, so you can pass the original resolution image to the display window
+        Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);   // crops the frame
+        // TODO: experiment with cloning this frame, and performing operations on cloned image, 
+        // and then rescaling the graphics so you can use the original resolution image in the display window
+        // --> what is the time and memory impact of cloning the Mat object every timestep?
+        
+        // resize image to dimensions of neural network  (416x416)
         resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
 
-        List<DetectedObject> detectedObjects = yoloModelContainer.runInference(frameImg);                   // TODO: 9/10/18  pass the numbers of animals, and if the numbers don't match  (or didn't match in the previous frame?), run again with lower confidence?
+        // run inference on image with model
+        List<DetectedObject> detectedObjects = yoloModelContainer.runInference(frameImg);
+        
+        // convert DetectedObject instances to BoundingBox instances
         List<BoundingBox> boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
-
-        /** TODO REMOVE *
-        for (Animal anml : animals) {
-            prevpoints.put(anml, new int[]{anml.x, anml.y});
-        }
-        * TODO REMOVE **/
-
+        // execute identity retainment and trajectory prediction algorithms, updates all Animal instance locations
         updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp() / 1000L);
 
-        /** TODO REMOVE
-
-        double displaceThresh = 45.0;
-        for (Animal anml : animals) {
-            int[] prevPoint = prevpoints.get(anml);
-            double disp = Math.pow(
-                    Math.pow(anml.x-prevPoint[0], 2) +
-                            Math.pow(anml.y-prevPoint[1], 2), 0.5
-            );
-            if (disp >= displaceThresh) {
-                // System.out.println("Identity swap");
-                identitySwitches++;
+        // trace animal trajectories on the image to display
+        if (DRAW_ANML_TRACKS) {
+            for (Animal animal : animals) {
+                traceAnimalOnFrame(frameImage, animal, 1.0);
             }
         }
-
-         TODO REMOVE **/
-
-
-        return frameConverter.convert(frameImg);
-
+        
+        return frameConverter.convert(frameImg);  // todo try to figure out a workaround to avoid having to convert back to Frame object
     }
 
+    
     public final List<Animal> getAnimals() {
         return this.animals;
     }
@@ -148,23 +139,25 @@ public class SinglePlateTracker extends Tracker {
 
     /**
      * Create new Animal objects and distribute them diagonally across screen, so they attach themselves
-     * to the real subject animals more quickly and with fewer conflicts
+     * to the real subject animals more quickly and with fewer conflicts.
+     *
+     * This is only called once, in the constructor of this class.
      */
     @Override
     protected void createAnimalObjects() {
 
         KalmanFilterBuilder filterBuilder = new KalmanFilterBuilder();
 
-        // BGR not RGB
+        // remember these are in BGR format not RGB!
         int[][] colors = {
                 // magenta          cyan           slate blue        green          blue          red
                 {255, 0, 255},   {255, 255, 0},  {160,40,40},  {0, 255, 0},   {255, 0, 0}, {0, 0, 255},
-                // yellow
+                // yellow          ???  IDK what to name these, they just look nice           (black)
                 {0, 255, 255}, {47, 107, 85}, {113, 179, 60},  {0, 180, 0},   {160, 160, 0}, {0, 0, 0},
                 {0, 255, 127},  {40, 46, 78},  {160, 160, 160}, {90, 90, 90},  {202, 204, 249}
         };
 
-        // distribute
+        // distribute Animal instances across screen with initial positions
         int x, y;
         int[] clr;
         for (int i = 0; i < numb_of_anmls; i++) {
@@ -178,19 +171,23 @@ public class SinglePlateTracker extends Tracker {
         }
     }
 
+    /**
+     * Not used, but kept here in case a need arises for Animals to have individual
+     * files to store their data points.
+     */
     @Override
     protected void createAnimalFiles(String baseFilePrefix) throws IOException {
 
         for (Animal a : animals) {
-            try (FileWriter writer = new FileWriter(baseFilePrefix + "_anml" + animals.indexOf(a) + ".dat")) {
-                writer.write(String.format("Animal Number %d | BGRA color label: %s\n", animals.indexOf(a), a.color.toString()));
-
+            try (FileWriter writer = new FileWriter(
+                String.format("%s_animal_%d.dat", baseFilePrefix, animals.indexOf(a))
+                ) {
+                    writer.write(String.format("Anml-BGRA-%s", a.color.toString()));
             }
         }
     }
 
     /**
-     *
      * Create CSV files with headers: Timestamp, Animal 1, Animal 2, etc
      * instead of numbering animals, which is not useful,
      * the identification label is their color, in BGRA format
@@ -243,17 +240,13 @@ public class SinglePlateTracker extends Tracker {
 
         /*
            TODO
-           - figure out how to prevent the dynamic cost algorithms from making Animal instances
-             stay on the same bounding box and swap every few frames
+           - figure out how to prevent the dynamic cost algorithms from allowing Animal instances
+             to stick to the same bounding box and swap every few frames
 
-
-           TODO
            - check for whether box has overlap with an animal already and then increase that cost
-
-           TODO
-           - check if two Animal instances are ~exactly overlapping for more than (10) frames
-             if so, reset one of their currCost to MAX_COST for 5 frames or so
-
+            
+           - check if two Animal instances are overlapping (with a high IOU) for more than (10) frames
+             if so, reset one of their currCost values to MAX_COST for 5 frames or so
 
            TODO
            - calculate the probability of how accurate each position update is, to be written to file
@@ -261,15 +254,7 @@ public class SinglePlateTracker extends Tracker {
 
         double dt = 1.0 / videoFrameRate;
 
-        /*optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = prox_start_val;
-            optimalAssigner.ADD_NULL_FOR_EACH_ANIMAL = false;
-        } else {
-            optimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT = Animal.DEFAULT_COST_OF_NON_ASSIGNMENT;
-            optimalAssigner.ADD_NULL_FOR_EACH_ANIMAL = true;
-        }*/
-
-
-        // this rectangle drawing is for debugging and will be removed later
+        // this rectangle drawing is just for debugging and will be removed later
         for (BoundingBox box : boundingBoxes) {
             if (DRAW_RECTANGLES) {
                 rectangle(frameImage, new Point(box.topleftX, box.topleftY),
@@ -277,13 +262,12 @@ public class SinglePlateTracker extends Tracker {
             }
         }
 
-
         // get optimal assignments
         final List<OptimalAssigner.Assignment> assignments = optimalAssigner.getOptimalAssignments(
                 animals, boundingBoxes
         );
 
-        // update Animal instances
+        // update Animal instances with assignments
         for (OptimalAssigner.Assignment assignment : assignments) {
 
             if (assignment.animal == null) {
@@ -295,20 +279,14 @@ public class SinglePlateTracker extends Tracker {
                 assignment.animal.predictTrajectory(dt, timePos);
             } else {
                 assignment.animal.updateLocation(
-                        assignment.box.centerX, assignment.box.centerY, dt, timePos, false
+                    assignment.box.centerX, assignment.box.centerY, dt, timePos, false
                 );
             }
         }
-
-        // trace animal trajectories on the screen
-        if (DRAW_ANML_TRACKS) {
-            for (Animal animal : animals) {
-                traceAnimalOnFrame(frameImage, animal, 1.0);             // call this here so that this.animals doesn't have to be iterated through again
-            }
-
-        }
     }
 
+    /* simple image filters */
+                 
     private void eqHist(Mat img) {
         equalizeHist(img, img);
     }
@@ -325,7 +303,7 @@ public class SinglePlateTracker extends Tracker {
 
 
     /**
-     * LEGACY CODE  for quick debugging and testing purposes
+     * THE FOLLOWING IS LEGACY CODE  for quick debugging and testing purposes
      *
      * Note that grabber has been initialized by the time this function is called
      *
@@ -337,7 +315,6 @@ public class SinglePlateTracker extends Tracker {
 
         try {
             track();
-        // allow exceptions to be raised
         } finally {
             tearDown();
         }
@@ -348,8 +325,13 @@ public class SinglePlateTracker extends Tracker {
         CanvasFrame canvasFrame = new CanvasFrame("Raw Frame");
         canvasFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-        CanvasFrame tracking = new CanvasFrame("Tracker Display");
+        CanvasFrame tracking = new CanvasFrame("Tracking Display");
         tracking.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
+        /*
+        canvasFrame.setLocationRelativeTo(null);     // centers the window
+        canvasFrame.setResizable(true);
+        */
 
         int msDelay = 10;
         List<BoundingBox> boundingBoxes;
@@ -357,14 +339,6 @@ public class SinglePlateTracker extends Tracker {
 
         KeyEvent keyEvent;
         char keyChar;
-
-        /** TEMPORARY HACK JUST TO SHOW THE FRAMES*/
-
-        /*canvasFrame = new CanvasFrame("SinglePlateTracker");
-        canvasFrame.setLocationRelativeTo(null);     // centers the window
-        canvasFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);    // Exit application when window is closed.
-        canvasFrame.setResizable(true);
-        canvasFrame.setVisible(true);*/
 
         long time1;
         int frameNo;
@@ -382,7 +356,6 @@ public class SinglePlateTracker extends Tracker {
             Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);   // crop the frame
 
             Mat trackingOnly = frameImg.clone();
-
 
             cvtColor(frameImg, frameImg, COLOR_RGB2GRAY);
 //            eqHist(frameImg);
@@ -407,32 +380,7 @@ public class SinglePlateTracker extends Tracker {
 
             boundingBoxes = detectionsParser.parseDetections(detectedObjects);
 
-            /** TODO REMOVE *
-            for (Animal anml : animals) {
-                prevpoints.put(anml, new int[]{anml.x, anml.y});
-            }
-            * TODO REMOVE **/
-
-
             updateObjectTracking(boundingBoxes, frameImg, grabber.getFrameNumber(), grabber.getTimestamp() / 1000L);
-
-            /** TODO REMOVE *
-
-            double displaceThresh = 60.0;
-            for (Animal anml : animals) {
-                int[] prevPoint = prevpoints.get(anml);
-                double disp = Math.pow(
-                        Math.pow(anml.x-prevPoint[0], 2) +
-                        Math.pow(anml.y-prevPoint[1], 2), 0.5
-                );
-                if (disp >= displaceThresh) {
-                    System.out.println("Identity swap");
-                    identitySwitches++;
-                }
-            }
-
-            * TODO REMOVE **/
-
 
 //            System.out.println("Loop time: " + (System.currentTimeMillis() - time1) / 1000.0 + "s");
 
@@ -451,13 +399,17 @@ public class SinglePlateTracker extends Tracker {
                         grabber.release();
                         System.exit(0);
                     }
-
-                    case KeyEvent.VK_P: Thread.sleep(1000); break;// pause? ;
+                    case KeyEvent.VK_P: Thread.sleep(1000); break;   // pause .... todo  is this necessary / useful? 
                 }
-
             }
 
+            // trace animal trajectories on the image to display
             if (DRAW_ANML_TRACKS) {
+                
+                /*for (Animal animal : animals) {
+                    traceAnimalOnFrame(frameImage, animal, 1.0);
+                }*/
+                
                 double scaleMultiplier = trackingOnly.rows() / (double) frameImg.rows();
                 for (Animal animal : animals) {
                     traceAnimalOnFrame(trackingOnly, animal, scaleMultiplier);             // call this here so that this.animals doesn't have to be iterated through again
@@ -476,30 +428,47 @@ public class SinglePlateTracker extends Tracker {
                 //writeAnimalPointsToSeparateFiles(this.animals, dataSaveNamePrefix, true, true);
                 writeAnimalsToCSV(this.animals, dataSaveNamePrefix, true);
                 for (Animal animal : animals) {
-                    animal.clearPoints();
+                    animal.clearPoints();       // todo check if this has a noticeable effect on fps/memory/overall performance
                 }
                 System.out.println("Saved to CSV file");
             }
-
         }
-
         canvasFrame.dispose();
         tracking.dispose();
         grabber.release();
     }
 
 
+    /**
+     * Demonstration of this system being run on a series of video files
+     * 
+     * Note that this is just being used for testing purposes, the 
+     * real application will have an interface that allows the user 
+     * to select files and set other important values in input fields
+     */
     public static void main(String[] args) throws IOException, InterruptedException {
 
         String videoPath = "/home/ah2166/Videos/tad_test_vids/trialVids/4tads/";
-
-
+        
+        /* todo get all MOV files in directory instead of hardcoded video file names
+        
+        File dir = new File(videoPath);
+        File [] files = dir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.endsWith(".MOV");
+            }
+        });
+        
+        */
+        
         String[] testVideos = new String[]{
                 "IMG_5193", "IMG_5194", "IMG_5195", "IMG_5196", "IMG_5197", "IMG_5198", "IMG_5199",
                 "IMG_5200", "IMG_5201", "IMG_5202", "IMG_5203", "IMG_5204", "IMG_5205",
                 "IMG_5206", "IMG_5207", "IMG_5208", "IMG_5209", "IMG_5210", "IMG_5211",
         };
 
+        // todo change this to File object instead of String
         for (String vid : testVideos) {
 
             String fullPath = videoPath + vid + ".MOV";
@@ -511,12 +480,10 @@ public class SinglePlateTracker extends Tracker {
             String dataSaveName = String.format("/home/ah2166/Documents/sproj/java/Tadpole-Tracker" +
                     "/data/tracking_data/%s_data", vid);
 
-
             SinglePlateTracker tracker = new SinglePlateTracker(
                     n_objs, true, cropDims, fullPath, dataSaveName
             );
             tracker.trackVideo();
-
         }
     }
 }
