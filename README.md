@@ -27,7 +27,7 @@ A real-time tracking system that applies computer vision and deep learning to re
 
 - Deep convolutional neural networks form the tadpole detection component of the overall system. I trained a CNN model to perform xenopus tadpole detection and localization using my own dataset and the [YOLOv2](https://pjreddie.com/darknet/yolov2/) architecture.
 
-- I use linear Kalman filters for trajectory estimation and a modified version of the Munkres Hungarian optimal assignment algorithm for maintaining unique object identities across frames.
+- Linear Kalman filters provide the trajectory estimation and a modified version of the Munkres Hungarian optimal assignment algorithm is used for maintaining unique object identities across frames.
 
 -----
 
