@@ -29,9 +29,11 @@ There are two major components of this tracker program: Detection and Tracking.
 
 -----
 
-##### Demo:
-
-![Uh oh, it appears the image  didn't load. Please look at /samples/system_diagram.png in this repositiory.](/sample/system_diagram.png?raw=true "System Overview")
+<p align="center">
+<b>System Overview</b>
+<p>
+  
+![Uh oh, it appears the image  didn't load. Please look at /samples/system_diagram.png in this repositiory.](/sample/system_diagram.png?raw=true "System Diagram")
 
 
 -----
