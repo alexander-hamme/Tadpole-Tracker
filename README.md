@@ -5,7 +5,7 @@ A real-time tracking system that applies computer vision and deep learning to re
 ### Notes
 
 
-- The main tracking code is in the SinglePlateTracker class, located [here](src/main/java/sproj/tracking/).
+- The core of the tracking code is called from the SinglePlateTracker class, located [here](src/main/java/sproj/tracking/).
 
 - The thesis paper I wrote for this project is available [here](/paper/senior_thesis.pdf).
 
