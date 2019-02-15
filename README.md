@@ -2,9 +2,13 @@
 A real-time tracking system that applies computer vision and deep learning to record and analyze movement data of multiple *Xenopus laevis* tadpoles at once for neurobiology research. This is my undergraduate thesis project, conducted in collaboration with the neuroscience department at Bard College.
 
 -----
-
+<!--
 ![Uh oh, it appears the gif  didn't load. Please look at /samples/tracking_demo.gif in this repositiory.](/sample/tracking_demo.gif?raw=true "Tracking Demo")
+-->
 
+<p align="center"> 
+<img src="/sample/tracking_demo.gif">
+</p>
 
 -----
 ### Notes
