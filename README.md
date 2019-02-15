@@ -49,6 +49,6 @@ A real-time tracking system that applies computer vision and deep learning to re
 
 -----
 
-Speed Benchmarks:
+### Speed Benchmarks
 
 The current iteration of this system runs at ~30 frames/second on a GTX 1070 GPU, which is plenty fast enough for real-time analysis. Using Java with the DeepLearning4J library has provided a significant time speedup from the Python version of this project, which runs at ~19 seconds a frame on the same GPU.
