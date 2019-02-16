@@ -23,10 +23,10 @@ public class Animal {
     public static final int LINE_THICKNESS = 2;
     public static final int CIRCLE_RADIUS = 15;
 
-    private final int LINE_POINTS_SIZE = 64;
+    private static final int LINE_POINTS_SIZE = 64;
     private CircularFifoQueue<int[]> linePoints;
 
-    private final int DATA_BUFFER_ARRAY_SIZE = 60;
+    private static final int DATA_BUFFER_ARRAY_SIZE = 60;
     private ArrayList<double[]> dataPoints;
 
     private KalmanFilter trackingFilter;
@@ -53,10 +53,13 @@ public class Animal {
     // to allow Animal instance to snap to the nearest unassigned bounding box
     private final int MAX_FRAMES_PREDICT = 30; // 1 second (30 fps)
 
+    // found through experimentation / trial & error
+    // todo --> calculate more exact value using max displacement & pixel size of tadpoles
+    private static final int MAX_VELOCITY = 80;
+
     private boolean PREDICT_WITH_VELOCITY = true;
 
     public Animal(int _x, int _y, final int[] positionBounds, final Scalar clr, KalmanFilter kFilter) {
-
         this.x = _x; this.y = _y;
         this.positionBounds = positionBounds;
         currentHeading = 0;
@@ -73,7 +76,6 @@ public class Animal {
 
         this.timeStepsPredicted = 0;
         this.currCostNonAssignnmnt = DEFAULT_COST_OF_NON_ASSIGNMENT;
-
     }
 
     @Override
@@ -143,17 +145,6 @@ public class Animal {
 
     public void predictTrajectory(double dt, long timePos) {
 
-//        if (timeStepsPredicted >= 10) {
-//            vx = vx % 50;
-//            vy = vy % 50;
-//        }
-
-        if (this.color.blue() == 255 && this.color.green() == 255 && this.color.red() == 0) {
-            System.out.println(String.format(
-                    "Current velocity: %.3f, %.3f", vx, vy)
-            );
-        }
-
         double[] predictedState = getPredictedState();
 
         if (DEBUG) {
@@ -167,8 +158,8 @@ public class Animal {
         double vx = predictedState[2];
         double vy = predictedState[3];
 
-        int newx, newy;
-        if (PREDICT_WITH_VELOCITY && timeStepsPredicted < 20) {
+        int newx, newy;     // prevent Animal instance from predicting velocity for too long
+        if (PREDICT_WITH_VELOCITY && timeStepsPredicted < MAX_FRAMES_PREDICT) {
 
             /* TODO if movementstate.stationary: just use predicted x & y */
 
@@ -208,8 +199,8 @@ public class Animal {
             this.vy = ((prevPoint[1] - this.y) / (subtractionIdx * dt));
         }
 
-        this.vx = (Math.abs(this.vx) <= 80) ? this.vx : Math.signum(this.vx) * 80.0;
-        this.vy = (Math.abs(this.vy) <= 80) ? this.vy : Math.signum(this.vy) * 80.0;
+        this.vx = (Math.abs(this.vx) <= MAX_VELOCITY) ? this.vx : Math.signum(this.vx) * MAX_VELOCITY;
+        this.vy = (Math.abs(this.vy) <= MAX_VELOCITY) ? this.vy : Math.signum(this.vy) * MAX_VELOCITY;
     }
 
     private void updateKFilter() {

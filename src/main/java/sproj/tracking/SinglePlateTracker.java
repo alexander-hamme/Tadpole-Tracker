@@ -297,7 +297,6 @@ public class SinglePlateTracker extends Tracker {
                         continue;
                     }
                     if (assignment.box.overlaps(new int[]{a.x, a.y})) {
-                        System.out.println("true");
                         overlaps = true;
                         break;
                     }
@@ -496,10 +495,12 @@ public class SinglePlateTracker extends Tracker {
                 "IMG_5206", "IMG_5207", "IMG_5208", "IMG_5209", "IMG_5210", "IMG_5211",
         };
 
+        // difficult: **5195!** 5194
 
         testVideos = new String[]{
-                "IMG_5193", /*"IMG_5194", "IMG_5195",
-                "IMG_5207",  "IMG_5208", "IMG_5209",
+                "IMG_5211", "IMG_5201",  "IMG_5210",
+                "IMG_5193", "IMG_5194", "IMG_5195",
+                /*"IMG_5207",  "IMG_5208", "IMG_5209",
                 "IMG_5211", "IMG_5201",  "IMG_5210",*/
         };
 
