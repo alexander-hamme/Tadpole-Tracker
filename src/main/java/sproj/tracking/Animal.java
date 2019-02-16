@@ -45,7 +45,13 @@ public class Animal {
     // dynamic cost value that increases with `timeStepsPredicted`
     private double currCostNonAssignnmnt;
 
+    // maximum cost of assignment allowed
     private int MAXCOST;
+
+    // number of consecutive frames of trajectory prediction allowed
+    // after this number, prediction is stopped and current cost is set to MAXCOST
+    // to allow Animal instance to snap to the nearest unassigned bounding box
+    private final int MAX_FRAMES_PREDICT = 30; // 1 second (30 fps)
 
     private boolean PREDICT_WITH_VELOCITY = true;
 
@@ -75,11 +81,11 @@ public class Animal {
         return String.format("animal at [%d,%d] with color %s", this.x, this.y, this.color.toString());
     }
 
-    public void setCurrCostNonAssignnmnt(final double val) {
+    public void setCurrCost(final double val) {
         currCostNonAssignnmnt = val;
     }
 
-    public double getCurrNonAssignmentCost() {
+    public double getCurrCost() {
         return currCostNonAssignnmnt;
     }
 
@@ -103,19 +109,25 @@ public class Animal {
 
         if (isPredicted) {
             timeStepsPredicted++;
-            currCostNonAssignnmnt = (currCostNonAssignnmnt + timeStepsPredicted) % MAXCOST;
+
+            currCostNonAssignnmnt = (timeStepsPredicted >= MAX_FRAMES_PREDICT) ? MAXCOST
+                    : (currCostNonAssignnmnt + timeStepsPredicted) % MAXCOST;
+
             if (DEBUG) {System.out.println("Current cost: " + currCostNonAssignnmnt);}
+
         } else {
             timeStepsPredicted = 0;
             currCostNonAssignnmnt = DEFAULT_COST_OF_NON_ASSIGNMENT;
         }
 
-        // todo calculate a probability of correctness instead of binary value
-        double predicted = isPredicted ? 1 : 0;
+        // calculate a probability of correctness of current position
+        double accuracyProb = (!isPredicted) ? 1.0
+                : (timeStepsPredicted >= MAX_FRAMES_PREDICT) ? 0.0
+                    : 1 - (timeStepsPredicted / (double) MAX_FRAMES_PREDICT);
 
         this.x = _x; this.y = _y;
         applyBoundsConstraints();
-        dataPoints.add(new double[]{timePos, this.x, this.y, predicted});
+        dataPoints.add(new double[]{timePos, this.x, this.y, accuracyProb});
         linePoints.add(new int[]{this.x, this.y});   // calls the addFirst() method, adds to front of Deque
         updateVelocity(dt);
         updateKFilter();
@@ -131,6 +143,17 @@ public class Animal {
 
     public void predictTrajectory(double dt, long timePos) {
 
+//        if (timeStepsPredicted >= 10) {
+//            vx = vx % 50;
+//            vy = vy % 50;
+//        }
+
+        if (this.color.blue() == 255 && this.color.green() == 255 && this.color.red() == 0) {
+            System.out.println(String.format(
+                    "Current velocity: %.3f, %.3f", vx, vy)
+            );
+        }
+
         double[] predictedState = getPredictedState();
 
         if (DEBUG) {
@@ -145,7 +168,7 @@ public class Animal {
         double vy = predictedState[3];
 
         int newx, newy;
-        if (PREDICT_WITH_VELOCITY) {
+        if (PREDICT_WITH_VELOCITY && timeStepsPredicted < 20) {
 
             /* TODO if movementstate.stationary: just use predicted x & y */
 
@@ -182,8 +205,11 @@ public class Animal {
             int[] prevPoint = linePoints.get(linePoints.size() - 1 - subtractionIdx);   // the most recent point is at the end index
             this.vx = (this.x - prevPoint[0]) / (subtractionIdx * dt);
             /* flip the subtraction because y axis in graphics increases by going down instead of up */
-             this.vy = ((prevPoint[1] - this.y) / (subtractionIdx * dt));
+            this.vy = ((prevPoint[1] - this.y) / (subtractionIdx * dt));
         }
+
+        this.vx = (Math.abs(this.vx) <= 80) ? this.vx : Math.signum(this.vx) * 80.0;
+        this.vy = (Math.abs(this.vy) <= 80) ? this.vy : Math.signum(this.vy) * 80.0;
     }
 
     private void updateKFilter() {
