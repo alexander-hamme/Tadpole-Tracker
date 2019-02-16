@@ -15,28 +15,29 @@ import java.util.Iterator;
  */
 public class Animal {
 
-    private final boolean DEBUG = false;
+    private static final boolean DEBUG = false;
     
     // detailed explanation of this value is in OptimalAssigner class 
     private final double DEFAULT_COST_OF_NON_ASSIGNMENT = OptimalAssigner.DEFAULT_COST_OF_NON_ASSIGNMENT;
 
-    public Scalar color;
-    public final int LINE_THICKNESS = 2;
-    public final int CIRCLE_RADIUS = 15;
-    public final int LINE_POINTS_SIZE = 64;
+    public static final int LINE_THICKNESS = 2;
+    public static final int CIRCLE_RADIUS = 15;
 
-    public static final int DATA_BUFFER_ARRAY_SIZE = 60;
-
-    private ArrayList<double[]> dataPoints;
+    private final int LINE_POINTS_SIZE = 64;
     private CircularFifoQueue<int[]> linePoints;
 
-    public int x, y;
-    public double vx, vy;
-    public double ax, ay;   // acceleration
-    public double currentHeading;
+    private final int DATA_BUFFER_ARRAY_SIZE = 60;
+    private ArrayList<double[]> dataPoints;
 
-    public KalmanFilter trackingFilter;
-    private int[] positionBounds;
+    private KalmanFilter trackingFilter;
+
+    private double vx, vy;
+    private double ax, ay;   // acceleration
+    private double currentHeading;
+    private int[] positionBounds;        // x1, x2, y1, y2
+
+    public int x, y;
+    public Scalar color;
 
     // count of consecutive time steps that have not had true assignment updates
     private int timeStepsPredicted;
@@ -44,7 +45,7 @@ public class Animal {
     // dynamic cost value that increases with `timeStepsPredicted`
     private double currCostNonAssignnmnt;
 
-    private final double MAXCOST = 1000.0;
+    private int MAXCOST;
 
     private boolean PREDICT_WITH_VELOCITY = true;
 
@@ -57,6 +58,12 @@ public class Animal {
         linePoints = new CircularFifoQueue<>(LINE_POINTS_SIZE);
         dataPoints = new ArrayList<>(DATA_BUFFER_ARRAY_SIZE);
         trackingFilter = kFilter;
+
+        // maximum possible distance, the diagonal length of frame
+        MAXCOST = (int) Math.round(Math.pow(
+                Math.pow(positionBounds[1]-positionBounds[0], 2) +
+                Math.pow(positionBounds[3]-positionBounds[2], 2), 0.5
+        ));
 
         this.timeStepsPredicted = 0;
         this.currCostNonAssignnmnt = DEFAULT_COST_OF_NON_ASSIGNMENT;
