@@ -124,7 +124,7 @@ public class SinglePlateTracker extends Tracker {
         // trace animal trajectories on the image to display
         if (DRAW_ANML_TRACKS) {
             for (Animal animal : animals) {
-                traceAnimalOnFrame(frameImage, animal, 1.0);
+                traceAnimalOnFrame(frameImg, animal, 1.0);
             }
         }
         
@@ -181,8 +181,8 @@ public class SinglePlateTracker extends Tracker {
         for (Animal a : animals) {
             try (FileWriter writer = new FileWriter(
                 String.format("%s_animal_%d.dat", baseFilePrefix, animals.indexOf(a))
-                ) {
-                    writer.write(String.format("Anml-BGRA-%s", a.color.toString()));
+                    )) {
+                        writer.write(String.format("Anml-BGRA-%s", a.color.toString()));
             }
         }
     }
@@ -227,15 +227,18 @@ public class SinglePlateTracker extends Tracker {
      */
     private void updateObjectTracking(List<BoundingBox> boundingBoxes, Mat frameImage, int frameNumber, long timePos) {
 
+        // for the first N frames of the video, animal current costs are set to large values
+        // to enable them to each snap to a detection somewhere on the screen.
+        // Thereafter, and once frameNumber is > NUMB_FRAMES_FOR_INIT, Animal instances are
+        // much less likely to get assignments that result in large displacements.
         if (frameNumber <= NUMB_FRAMES_FOR_INIT) {
 
             // the length of the diagonal across the frame--> the largest possible displacement distance for an object in the image
             int prox_start_val = (int) Math.round(Math.sqrt(Math.pow(frameImage.rows(), 2) + Math.pow(frameImage.cols(), 2)));
 
             for (Animal anml : animals) {
-                anml.setCurrCostNonAssignnmnt(prox_start_val);
+                anml.setCurrCost(prox_start_val);
             }
-
         }
 
         /*
@@ -263,9 +266,11 @@ public class SinglePlateTracker extends Tracker {
         }
 
         // get optimal assignments
-        final List<OptimalAssigner.Assignment> assignments = optimalAssigner.getOptimalAssignments(
-                animals, boundingBoxes
-        );
+        final List<OptimalAssigner.Assignment> assignments =
+                optimalAssigner.getOptimalAssignments(animals, boundingBoxes);
+
+
+        List<BoundingBox> occupiedLocations = new ArrayList<>();
 
         // update Animal instances with assignments
         for (OptimalAssigner.Assignment assignment : assignments) {
@@ -278,9 +283,32 @@ public class SinglePlateTracker extends Tracker {
             if (assignment.box == null) {       // no assignment for current Animal
                 assignment.animal.predictTrajectory(dt, timePos);
             } else {
-                assignment.animal.updateLocation(
-                    assignment.box.centerX, assignment.box.centerY, dt, timePos, false
-                );
+
+                if (frameNumber <= NUMB_FRAMES_FOR_INIT) {
+                    assignment.animal.updateLocation(
+                            assignment.box.centerX, assignment.box.centerY, dt, timePos, false
+                    );
+                    continue;
+                }
+
+                boolean overlaps = false;
+                for (Animal a : animals) {
+                    if (a.equals(assignment.animal)) {
+                        continue;
+                    }
+                    if (assignment.box.overlaps(new int[]{a.x, a.y})) {
+                        System.out.println("true");
+                        overlaps = true;
+                        break;
+                    }
+                }
+                if (overlaps) {
+                    assignment.animal.predictTrajectory(dt, timePos);
+                } else {
+                    assignment.animal.updateLocation(
+                            assignment.box.centerX, assignment.box.centerY, dt, timePos, false
+                    );
+                }
             }
         }
     }
@@ -468,8 +496,17 @@ public class SinglePlateTracker extends Tracker {
                 "IMG_5206", "IMG_5207", "IMG_5208", "IMG_5209", "IMG_5210", "IMG_5211",
         };
 
+
+        testVideos = new String[]{
+                "IMG_5193", /*"IMG_5194", "IMG_5195",
+                "IMG_5207",  "IMG_5208", "IMG_5209",
+                "IMG_5211", "IMG_5201",  "IMG_5210",*/
+        };
+
         // todo change this to File object instead of String
         for (String vid : testVideos) {
+
+            System.out.println("Running on video: " + vid);
 
             String fullPath = videoPath + vid + ".MOV";
             int n_objs = 4;

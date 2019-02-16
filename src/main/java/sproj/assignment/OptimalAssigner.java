@@ -110,7 +110,8 @@ public class OptimalAssigner {
      */
     private double costOfAssignment(Animal anml, BoundingBox box) {
         if (anml == null) { return DEFAULT_COST_OF_NON_ASSIGNMENT; }
-        else if (box == null) { return anml.getCurrNonAssignmentCost(); }
+        else if (box == null) { return anml.getCurrCost(); }
+        // TODO: round to int?  may reduce computation time --> but check effect on assignment accuracy
         return  Math.pow(Math.pow(anml.x - box.centerX, 2) + Math.pow(anml.y - box.centerY, 2), 0.5);
     }
 

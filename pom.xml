@@ -51,17 +51,7 @@
             <artifactId>commons-collections4</artifactId>
             <version>4.2</version>
         </dependency>
-        <!-- http://logging.apache.org/log4j/2.x/maven-artifacts.html -->
-        <!--<dependency>-->
-            <!--<groupId>org.apache.logging.log4j</groupId>-->
-            <!--<artifactId>log4j-api</artifactId>-->
-            <!--<version>2.11.1</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-            <!--<groupId>org.apache.logging.log4j</groupId>-->
-            <!--<artifactId>log4j-core</artifactId>-->
-            <!--<version>2.11.1</version>-->
-        <!--</dependency>-->
+
         <!-- https://mvnrepository.com/artifact/commons-io/commons-io -->
         <dependency>
             <groupId>commons-io</groupId>
@@ -75,7 +65,7 @@
             <version>3.6.1</version>
         </dependency>
 
-
+        <!-- CPU versions of deeplearning4j libraries-->
         <!-- https://mvnrepository.com/artifact/org.deeplearning4j/deeplearning4j-core -->
         <!--
         <dependency>
@@ -101,12 +91,6 @@
         </dependency>
         -->
         <!-- https://mvnrepository.com/artifact/org.deeplearning4j/deeplearning4j-core -->
-        <!-- https://mvnrepository.com/artifact/org.openpnp/opencv -->
-        <dependency>
-            <groupId>org.openpnp</groupId>
-            <artifactId>opencv</artifactId>
-            <version>3.2.0-0</version>
-        </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-cuda-9.2-platform</artifactId>
@@ -137,7 +121,6 @@
             <scope>provided</scope>
         </dependency>
 
-
         <dependency>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-compiler-plugin</artifactId>
@@ -151,14 +134,6 @@
             <scope>test</scope>
         </dependency>
 
-
-        <!--
-        <dependency>
-            <groupId>Sproj-Java</groupId>
-            <artifactId>Sproj</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        -->
     </dependencies>
 
     <build>
