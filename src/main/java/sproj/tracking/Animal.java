@@ -23,7 +23,7 @@ public class Animal {
     public static final int LINE_THICKNESS = 2;
     public static final int CIRCLE_RADIUS = 15;
 
-    private static final int LINE_POINTS_SIZE = 64;
+    private static final int LINE_POINTS_SIZE = 72;
     private CircularFifoQueue<int[]> linePoints;
 
     private static final int DATA_BUFFER_ARRAY_SIZE = 60;

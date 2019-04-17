@@ -13,9 +13,7 @@ import sproj.yolo.YOLOModelContainer;
 
 import javax.swing.*;
 import java.awt.event.KeyEvent;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,7 +40,7 @@ public class SinglePlateTracker extends Tracker {
 
     private String dataSaveNamePrefix;
     private Rect cropRect;
-    private int[] cropDimensions;       // array of four ints, of the form:  [center_x, center_y, width, height]
+    private int[] cropDimensions;       // array of four ints, of the form:  todo is it top left x or center x?? [center_x, center_y, width, height]
     private int videoFrameWidth;
     private int videoFrameHeight;
     private int[] positionBounds;       // x1, x2, y1, y2
@@ -381,24 +379,24 @@ public class SinglePlateTracker extends Tracker {
 
 //            Mat frameImg = frameConverter.convertToMat(frame);
             Mat frameImg = new Mat(frameConverter.convertToMat(frame), cropRect);   // crop the frame
+            Mat resized = new Mat(new Size(IMG_WIDTH, IMG_HEIGHT));
+
+            cvtColor(frameImg, frameImg, COLOR_RGB2GRAY);
+            cvtColor(frameImg, frameImg, COLOR_GRAY2RGB);
+
 
             Mat trackingOnly = frameImg.clone();
 
-            cvtColor(frameImg, frameImg, COLOR_RGB2GRAY);
-//            eqHist(frameImg);
-            //clahe(frameImg);
-            cvtColor(frameImg, frameImg, COLOR_GRAY2RGB);
-
-            cvtColor(trackingOnly, trackingOnly, COLOR_RGB2GRAY);
+//            cvtColor(trackingOnly, trackingOnly, COLOR_RGB2GRAY);
 //            eqHist(trackingOnly);
-            clahe(trackingOnly);
-            cvtColor(trackingOnly, trackingOnly, COLOR_GRAY2RGB);
+            //clahe(trackingOnly);
+//            cvtColor(trackingOnly, trackingOnly, COLOR_GRAY2RGB);
 //            resize(trackingOnly, trackingOnly, new Size(IMG_WIDTH, IMG_HEIGHT));
 
 
-
-            resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
-            detectedObjects = yoloModelContainer.runInference(frameImg);  // frameImg
+            resize(frameImg, resized, new Size(IMG_WIDTH, IMG_HEIGHT));
+            //resize(frameImg, frameImg, new Size(IMG_WIDTH, IMG_HEIGHT));
+            detectedObjects = yoloModelContainer.runInference(resized);  // frameImg
 
 //            Java2DFrameConverter paintConverter = new Java2DFrameConverter();
 //            Component[] arr = canvasFrame.getComponents();
@@ -437,7 +435,7 @@ public class SinglePlateTracker extends Tracker {
                     traceAnimalOnFrame(frameImage, animal, 1.0);
                 }*/
                 
-                double scaleMultiplier = trackingOnly.rows() / (double) frameImg.rows();
+                double scaleMultiplier = trackingOnly.rows() / (double) resized.rows();
                 for (Animal animal : animals) {
                     traceAnimalOnFrame(trackingOnly, animal, scaleMultiplier);             // call this here so that this.animals doesn't have to be iterated through again
                 }
@@ -475,10 +473,10 @@ public class SinglePlateTracker extends Tracker {
      */
     public static void main(String[] args) throws IOException, InterruptedException {
 
-        String videoPath = "/home/ah2166/Videos/tad_test_vids/trialVids/4tads/";
-        
         /* todo get all MOV files in directory instead of hardcoded video file names
-        
+
+        String videoPath = "/home/ah2166/Videos/tad_test_vids/trialVids/4tads/";
+
         File dir = new File(videoPath);
         File [] files = dir.listFiles(new FilenameFilter() {
             @Override
@@ -489,7 +487,7 @@ public class SinglePlateTracker extends Tracker {
         
         */
         
-        String[] testVideos = new String[]{
+        /*String[] testVideos = new String[]{
                 "IMG_5193", "IMG_5194", "IMG_5195", "IMG_5196", "IMG_5197", "IMG_5198", "IMG_5199",
                 "IMG_5200", "IMG_5201", "IMG_5202", "IMG_5203", "IMG_5204", "IMG_5205",
                 "IMG_5206", "IMG_5207", "IMG_5208", "IMG_5209", "IMG_5210", "IMG_5211",
@@ -498,30 +496,56 @@ public class SinglePlateTracker extends Tracker {
         // difficult: **5195!** 5194
 
         testVideos = new String[]{
-                "IMG_5211", "IMG_5201",  "IMG_5210",
-                "IMG_5193", "IMG_5194", "IMG_5195",
-                /*"IMG_5207",  "IMG_5208", "IMG_5209",
-                "IMG_5211", "IMG_5201",  "IMG_5210",*/
+                /*"IMG_5211",
+                "IMG_5201",
+                "IMG_5210",
+                "IMG_5193",
+                "IMG_5194",
+                "IMG_5195",   * /
+//                "IMG_5207",
+//                "IMG_5208",
+//                "IMG_5209",
+                "IMG_5201",
+                "IMG_5201",
+                "IMG_5201",
+
+                "IMG_5211",
+                "IMG_5210",
         };
+        */
 
-        // todo change this to File object instead of String
-        for (String vid : testVideos) {
 
-            System.out.println("Running on video: " + vid);
+        String videoPath = "/home/ah2166/Documents/research/experiment_vids/alcohol_vids/";
+        String savePath = "/home/ah2166/Documents/research/recorded_data/";
 
-            String fullPath = videoPath + vid + ".MOV";
-            int n_objs = 4;
+        File dir = new File(videoPath);
+        File [] videos = dir.listFiles((dir1, name) -> name.endsWith(".MOV"));
 
-            //***** Note that x + width must be <= original image width, and y + height must be <= original image height**//
-            int[] cropDims = new int[]{245, 30, 660, 660};//230,10,700,700};//
+        if (videos != null) {
 
-            String dataSaveName = String.format("/home/ah2166/Documents/sproj/java/Tadpole-Tracker" +
-                    "/data/tracking_data/%s_data", vid);
+            for (File vid : videos) {
 
-            SinglePlateTracker tracker = new SinglePlateTracker(
-                    n_objs, true, cropDims, fullPath, dataSaveName
-            );
-            tracker.trackVideo();
+                System.out.println("Running on video: " + videoPath + vid.getName());
+
+                String fullPath = videoPath + vid.getName();
+                int n_objs = 5;
+
+
+                //TODO: make GUI to crop video with mouse!
+
+
+                //***** Note that x + width must be <= original image width, and y + height must be <= original image height**//
+                int[] cropDims = new int[]{1870, 0, 50, 50};//230,10,700,700};//    // left x, left y, width, height
+
+                String dataSaveName = savePath + String.format("%s", vid.getName().split("\\.")[0]) + ".csv";
+
+                SinglePlateTracker tracker = new SinglePlateTracker(
+                        n_objs, true, cropDims, fullPath, dataSaveName
+                );
+                tracker.trackVideo();
+
+                System.out.println("Saved data to " + dataSaveName);
+            }
         }
     }
 }

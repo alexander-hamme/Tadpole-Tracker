@@ -26,7 +26,7 @@ public abstract class Tracker {          //  TODO make this an interface?
     final int DISPL_THRESH = 15;
     final int ARRAY_MAX_SIZE = 60;              // buffer size of array to accumulate data
     final int frame_resize_width = 720;
-    boolean DRAW_RECTANGLES = true; //false;    // uwef
+    boolean DRAW_RECTANGLES = false;
     boolean DRAW_ANML_TRACKS;
     int circleRadius = 5;
 
