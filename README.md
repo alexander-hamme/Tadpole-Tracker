@@ -18,9 +18,7 @@ A real-time tracking system that applies computer vision and deep learning to re
 
 - The thesis paper I wrote for this project is available [here](/paper/senior_thesis.pdf).
 
-- I'm currently translating the system to C++ to run speed benchmarks against Java. That code is in [this repository](https://github.com/alexander-hamme/Tadpole-Tracker-Cpp).
-
-- I may eventually translate the code to Python too, to create wider access for fellow hackers and biology researchers to use for their own projects / research in the future. However, the Python code is much slower than Java. Even with a good GPU it is barely fast enough for real-time tracking (on a GTX 1070 GPU the Yolo network inference runs at 19 fps). My original Python code is functional but requires more work before I can make it available. Some of it is in [this repository](https://github.com/alexander-hamme/Tadpole-Tracker-Python).
+- I may eventually translate the code to Python, to create wider access for fellow hackers and biology researchers to use for their own projects / research in the future. However, the Python code is much slower than Java. Even with a good GPU it is barely fast enough for real-time tracking (on a GTX 1070 GPU the Yolo network inference runs at 19 fps). My original Python code is functional but requires more work before I can make it available. Some of it is in [this repository](https://github.com/alexander-hamme/Tadpole-Tracker-Python).
 
 -----
 
