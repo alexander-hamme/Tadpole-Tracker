@@ -18,7 +18,7 @@ A real-time tracking system that applies computer vision and deep learning to re
 
 - The thesis paper I wrote for this project is available [here](/paper/senior_thesis.pdf).
 
-- I may eventually translate the code to Python, to create wider access for fellow hackers and biology researchers to use for their own projects / research in the future. However, the Python code is much slower than Java. Even with a good GPU it is barely fast enough for real-time tracking (on a GTX 1070 GPU the Yolo network inference runs at 19 fps). My original Python code is functional but requires more work before I can make it available. Some of it is in [this repository](https://github.com/alexander-hamme/Tadpole-Tracker-Python).
+- Real-time tracking is capable on a GTX 1070 GPU or better - fps should be around 28-30 with default settings.
 
 -----
 
@@ -49,4 +49,4 @@ A real-time tracking system that applies computer vision and deep learning to re
 
 ### Speed Benchmarks
 
-The current iteration of this system runs at ~30 frames/second on a GTX 1070 GPU, which is plenty fast enough for real-time analysis. Using Java with the DeepLearning4J library has provided a significant time speedup from the Python version of this project, which runs at ~19 seconds a frame on the same GPU.
+The current iteration of this system runs at ~30 frames/second on a GTX 1070 GPU. Using Java with the DeepLearning4J library provided an overhead speedup in additional to the core algorithmic and model-based improvements evaluated for the paper.
