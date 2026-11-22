@@ -10,13 +10,6 @@ A real-time tracking system that applies computer vision and deep learning to re
 <img src="/sample/tracking_demo.gif">
 </p>
 
------
-
-### Poster Presentation
-
-![Uh oh, it appears the image  didn't load. Please look at /paper/project_poster.png in this repository.](/paper/project_poster.png?raw=true "Poster Presentation")
-
-
 
 -----
 ### Notes
@@ -58,3 +51,12 @@ A real-time tracking system that applies computer vision and deep learning to re
 ### Speed Benchmarks
 
 The current iteration of this system runs at ~30 frames/second on a GTX 1070 GPU. Using Java with the DeepLearning4J library provided an overhead speedup in additional to the core algorithmic and model-based improvements evaluated for the paper.
+
+-----
+
+### Poster Presentation
+
+![Uh oh, it appears the image  didn't load. Please look at /paper/project_poster.png in this repository.](/paper/project_poster.png?raw=true "Poster Presentation")
+
+
+
