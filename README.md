@@ -11,6 +11,14 @@ A real-time tracking system that applies computer vision and deep learning to re
 </p>
 
 -----
+
+### Poster
+
+![Uh oh, it appears the image  didn't load. Please look at /paper/senior_project_poster.png in this repository.](/paper/senior_project_poster.png?raw=true "Poster Presentation")
+
+
+
+-----
 ### Notes
 
 
